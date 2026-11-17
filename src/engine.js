@@ -528,31 +528,113 @@ function chipLines(c, el) {
 }
 
 /* rubber stamp */
-def('stamp', 'Rubber stamp', { w: 22, h: 22, style: 'round', text: 'DISTRICT CLERK', text2: 'NINTH RAIL', center: 'APPROVED', color: '#b3302a', distress: .5, font: 'Courier Prime', blend: 'multiply', opacity: .85 },
-  [['style', 'Shape', 'select', [['round', 'Round'], ['rect', 'Rectangular']]], ['text', 'Top text', 'text'], ['center', 'Centre text', 'text'], ['text2', 'Bottom text', 'text'], ['font', 'Font', 'font'], ['color', 'Ink', 'color'], ['distress', 'Wear', 'range', { min: 0, max: 1, step: .01 }]],
+const STAMP_STYLES = [['round', 'Round'], ['rect', 'Rectangular'], ['oval', 'Oval'], ['box', 'Bold box'], ['date', 'Date band'], ['hex', 'Hexagon'], ['octagon', 'Octagon'], ['shield', 'Shield'], ['burst', 'Starburst'], ['triangle', 'Triangle'], ['entry', 'Entry stamp (icon)'], ['postmark', 'Postmark'], ['ticket', 'Notched ticket'], ['gear', 'Notary gear'], ['banner', 'Banner']];
+const STAMP_ICONS = [['none', 'None'], ['star', 'Star'], ['check', 'Tick'], ['cross', 'Cross'], ['arrowIn', 'Arrow in'], ['arrowOut', 'Arrow out'], ['plane', 'Aeroplane'], ['ship', 'Ship'], ['train', 'Train'], ['airship', 'Airship'], ['crown', 'Crown'], ['anchor', 'Anchor'], ['skull', 'Skull'], ['eye', 'Eye'], ['planet', 'Planet'], ['rocket', 'Rocket'], ['key', 'Key'], ['feather', 'Quill'], ['sun', 'Sun'], ['hazard', 'Hazard'], ['cog', 'Cog'], ['tower', 'Tower'], ['tree', 'Pine'], ['mountain', 'Mountain'], ['heart', 'Heart'], ['hand', 'Pointing hand']];
+function stampIcon(x, kind, s) {   // centred at 0,0, roughly s mm across, ink = current fill/stroke
+  const L = s * .09; x.lineWidth = L; x.lineCap = 'round'; x.lineJoin = 'round';
+  const P = (pts, close = true, fill = true) => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a * s, b * s) : x.moveTo(a * s, b * s)); if (close) x.closePath(); fill ? x.fill() : x.stroke(); };
+  const C = (cx, cy, r, fill = true) => { x.beginPath(); x.arc(cx * s, cy * s, r * s, 0, Math.PI * 2); fill ? x.fill() : x.stroke(); };
+  const hole = (f) => { x.save(); x.globalCompositeOperation = 'destination-out'; f(); x.restore(); };
+  switch (kind) {
+    case 'star': x.beginPath(); starPoly(x, 5, s * .5, s * .21); x.fill(); break;
+    case 'check': P([[-.38, .02], [-.12, .3], [.4, -.3]], false, false); break;
+    case 'cross': P([[-.32, -.32], [.32, .32]], false, false); P([[.32, -.32], [-.32, .32]], false, false); break;
+    case 'arrowIn': P([[-.45, 0], [.12, 0]], false, false); P([[-.06, -.2], [.14, 0], [-.06, .2]], false, false); P([[.36, -.4], [.36, .4]], false, false); break;
+    case 'arrowOut': P([[-.36, -.4], [-.36, .4]], false, false); P([[-.18, 0], [.42, 0]], false, false); P([[.22, -.2], [.44, 0], [.22, .2]], false, false); break;
+    case 'plane': P([[.5, 0], [.36, -.06], [.06, -.06], [-.16, -.46], [-.26, -.46], [-.12, -.06], [-.36, -.06], [-.46, -.2], [-.52, -.2], [-.46, 0], [-.52, .2], [-.46, .2], [-.36, .06], [-.12, .06], [-.26, .46], [-.16, .46], [.06, .06], [.36, .06]]); break;
+    case 'ship': P([[-.5, .1], [.5, .1], [.36, .34], [-.38, .34]]); P([[-.02, .06], [-.02, -.46]], false, false); P([[.04, -.42], [.04, .02], [.34, .02]]); P([[-.08, -.32], [-.08, .02], [-.32, .02]]); break;
+    case 'train': x.beginPath(); rr(x, -.44 * s, -.36 * s, .88 * s, .6 * s, .14 * s); x.fill(); hole(() => { x.beginPath(); rr(x, -.32 * s, -.26 * s, .26 * s, .2 * s, .04 * s); rr(x, .06 * s, -.26 * s, .26 * s, .2 * s, .04 * s); x.fill(); }); C(-.24, .34, .1); C(.24, .34, .1); P([[-.5, .48], [.5, .48]], false, false); break;
+    case 'airship': x.beginPath(); x.ellipse(0, -.1 * s, .44 * s, .2 * s, 0, 0, Math.PI * 2); x.fill(); P([[.34, -.1], [.52, -.3], [.52, .1]]); x.fillRect(-.14 * s, .14 * s, .24 * s, .12 * s); P([[-.1, .1], [-.1, .14]], false, false); P([[.06, .1], [.06, .14]], false, false); break;
+    case 'crown': P([[-.46, .3], [-.46, -.24], [-.24, .02], [0, -.36], [.24, .02], [.46, -.24], [.46, .3]]); C(-.46, -.3, .07); C(0, -.42, .07); C(.46, -.3, .07); break;
+    case 'anchor': C(0, -.38, .09, false); P([[0, -.29], [0, .44]], false, false); P([[-.2, -.16], [.2, -.16]], false, false); x.beginPath(); x.arc(0, .06 * s, .38 * s, Math.PI * .15, Math.PI * .85); x.stroke(); P([[-.42, .14], [-.32, .28], [-.24, .16]], false, false); P([[.42, .14], [.32, .28], [.24, .16]], false, false); break;
+    case 'skull': C(0, -.08, .36); x.fillRect(-.2 * s, .18 * s, .4 * s, .2 * s); hole(() => { C(-.14, -.06, .1); C(.14, -.06, .1); P([[0, .06], [-.05, .16], [.05, .16]]); x.fillRect(-.07 * s, .3 * s, .04 * s, .1 * s); x.fillRect(.03 * s, .3 * s, .04 * s, .1 * s); }); break;
+    case 'eye': x.beginPath(); x.moveTo(-.5 * s, 0); x.quadraticCurveTo(0, -.46 * s, .5 * s, 0); x.quadraticCurveTo(0, .46 * s, -.5 * s, 0); x.stroke(); C(0, 0, .15); break;
+    case 'planet': C(0, 0, .27); x.save(); x.rotate(-.35); x.beginPath(); x.ellipse(0, 0, .5 * s, .14 * s, 0, 0, Math.PI * 2); x.lineWidth = L * .8; x.stroke(); x.restore(); break;
+    case 'rocket': x.beginPath(); x.moveTo(0, -.5 * s); x.quadraticCurveTo(.24 * s, -.2 * s, .16 * s, .26 * s); x.lineTo(-.16 * s, .26 * s); x.quadraticCurveTo(-.24 * s, -.2 * s, 0, -.5 * s); x.fill(); P([[-.16, .06], [-.32, .34], [-.14, .26]]); P([[.16, .06], [.32, .34], [.14, .26]]); hole(() => C(0, -.12, .07)); P([[-.06, .34], [0, .5], [.06, .34]]); break;
+    case 'key': C(-.28, 0, .17, false); P([[-.11, 0], [.48, 0]], false, false); P([[.3, 0], [.3, .16]], false, false); P([[.42, 0], [.42, .13]], false, false); break;
+    case 'feather': x.beginPath(); x.moveTo(.4 * s, -.46 * s); x.quadraticCurveTo(-.36 * s, -.3 * s, -.3 * s, .3 * s); x.quadraticCurveTo(.2 * s, .1 * s, .4 * s, -.46 * s); x.fill(); P([[.3, -.32], [-.46, .48]], false, false); break;
+    case 'sun': C(0, 0, .2); for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; P([[Math.cos(a) * .3, Math.sin(a) * .3], [Math.cos(a) * .48, Math.sin(a) * .48]], false, false); } break;
+    case 'hazard': x.lineWidth = L * 1.1; P([[0, -.44], [.48, .38], [-.48, .38]], true, false); P([[0, -.14], [0, .12]], false, false); C(0, .24, .05); break;
+    case 'cog': x.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = (i % 2 ? .34 : .46) * s; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.fill(); hole(() => C(0, 0, .16)); break;
+    case 'tower': P([[-.3, .48], [-.3, -.3], [-.3, -.46], [-.18, -.46], [-.18, -.36], [-.06, -.36], [-.06, -.46], [.06, -.46], [.06, -.36], [.18, -.36], [.18, -.46], [.3, -.46], [.3, .48]]); hole(() => { x.beginPath(); x.moveTo(-.1 * s, .48 * s); x.lineTo(-.1 * s, .26 * s); x.arc(0, .26 * s, .1 * s, Math.PI, 0); x.lineTo(.1 * s, .48 * s); x.fill(); }); break;
+    case 'tree': P([[0, -.5], [.24, -.14], [.12, -.14], [.34, .18], [.16, .18], [.4, .4], [-.4, .4], [-.16, .18], [-.34, .18], [-.12, -.14], [-.24, -.14]]); x.fillRect(-.05 * s, .4 * s, .1 * s, .1 * s); break;
+    case 'mountain': P([[-.5, .36], [-.14, -.28], [.04, 0], [.2, -.4], [.5, .36]]); hole(() => P([[.2, -.4], [.08, -.18], [.15, -.22], [.2, -.14], [.25, -.22], [.32, -.18]])); break;
+    case 'heart': x.beginPath(); x.moveTo(0, .42 * s); x.bezierCurveTo(-.56 * s, 0, -.36 * s, -.5 * s, 0, -.18 * s); x.bezierCurveTo(.36 * s, -.5 * s, .56 * s, 0, 0, .42 * s); x.fill(); break;
+    case 'hand': x.beginPath(); rr(x, -.46 * s, -.12 * s, .4 * s, .4 * s, .08 * s); x.fill(); x.beginPath(); rr(x, -.12 * s, -.12 * s, .62 * s, .12 * s, .06 * s); x.fill(); x.fillRect(-.46 * s, -.04 * s, .08 * s, .3 * s); break;
+  }
+}
+def('stamp', 'Rubber stamp', { w: 22, h: 22, style: 'round', text: 'DISTRICT CLERK', text2: 'NINTH RAIL', center: 'APPROVED', icon: 'none', color: '#b3302a', distress: .5, uneven: 0, ghost: 0, font: 'Courier Prime', blend: 'multiply', opacity: .85 },
+  [['style', 'Shape', 'select', STAMP_STYLES], ['icon', 'Icon', 'select', STAMP_ICONS], ['text', 'Top text', 'text'], ['center', 'Centre text', 'text'], ['text2', 'Bottom text', 'text'], ['font', 'Font', 'font'], ['color', 'Ink', 'color'], ['distress', 'Wear', 'range', { min: 0, max: 1, step: .01 }], ['uneven', 'Uneven ink', 'range', { min: 0, max: 1, step: .01 }], ['ghost', 'Double strike', 'range', { min: 0, max: 1, step: .01 }]],
   function (c, el, ov, k) {
     const w = el.w, h = el.h, pw = Math.max(8, Math.ceil(w * k)), ph = Math.max(8, Math.ceil(h * k)), kk = pw / w; const t = tmpCanvas(pw, ph), x = t.getContext('2d');
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, pw, ph); x.translate(pw / 2, ph / 2);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, pw, ph); x.translate(pw / 2, ph / 2); x.scale(kk, kk);
     const col = fillOf(ov, el.color); x.strokeStyle = col; x.fillStyle = col; x.textAlign = 'center'; x.textBaseline = 'middle'; setSp(x, 0);
-    const txt = (s, y, sz, wgt) => { setFont(x, el.font, wgt || 700, sz * kk, false); const tw = x.measureText(s).width, mx = w * .8 * kk; x.save(); if (tw > mx) x.scale(mx / tw, 1); x.fillText(s, 0, y * kk); x.restore(); };
-    if (el.style === 'rect') {
-      const lw = Math.min(w, h) * .06; x.lineWidth = lw * kk; x.beginPath(); rr(x, (-w / 2 + lw) * kk, (-h / 2 + lw) * kk, (w - 2 * lw) * kk, (h - 2 * lw) * kk, lw * 1.5 * kk); x.stroke();
-      x.lineWidth = lw * .45 * kk; x.beginPath(); rr(x, (-w / 2 + lw * 2.3) * kk, (-h / 2 + lw * 2.3) * kk, (w - 4.6 * lw) * kk, (h - 4.6 * lw) * kk, lw * kk); x.stroke();
-      txt(el.text, -h * .24, h * .14); txt(el.center, h * .02, h * .26, 700); txt(el.text2, h * .27, h * .12);
+    const T1 = String(el.text || ''), T2 = String(el.text2 || ''), CT = String(el.center || ''), ic = el.icon && el.icon !== 'none' ? el.icon : null, m = Math.min(w, h);
+    const txt = (s, X, Y, sz, mx, wgt) => { if (!s) return; setFont(x, el.font, wgt || 700, sz, false); const lines = s.split('\n'), lh = sz * 1.05; lines.forEach((ln, i) => { const tw = x.measureText(ln).width; x.save(); x.translate(X, Y + (i - (lines.length - 1) / 2) * lh); if (tw > mx) x.scale(mx / tw, 1); x.fillText(ln, 0, 0); x.restore(); }); };
+    const poly = (n, R, rot = -Math.PI / 2, sx = 1) => { x.beginPath(); for (let i = 0; i < n; i++) { const a = rot + i * Math.PI * 2 / n; x.lineTo(Math.cos(a) * R * sx, Math.sin(a) * R); } x.closePath(); };
+    const ring = (R, lw) => { x.lineWidth = lw; x.beginPath(); x.arc(0, 0, R, 0, Math.PI * 2); x.stroke(); };
+    const arcs = (R, sz) => { setFont(x, el.font, 700, sz, false); if (T1) arcText(x, T1, 0, 0, R, -Math.PI / 2, sz * .1, false); if (T2) arcText(x, T2, 0, 0, R, Math.PI / 2, sz * .1, true); };
+    const stack = (W, H) => { // three straight lines inside a W×H area, with an optional icon above the centre line
+      if (ic) { txt(T1, 0, -H * .37, H * .12, W * .68); x.save(); x.translate(0, -H * .11); stampIcon(x, ic, H * .22); x.restore(); txt(CT, 0, H * .14, H * .15, W * .86, 800); txt(T2, 0, H * .35, H * .1, W * .64); }
+      else { txt(T1, 0, -H * .28, H * .14, W * .78); txt(CT, 0, H * .02, H * .24, W * .92, 800); txt(T2, 0, H * .3, H * .12, W * .78); } };
+    const st = el.style;
+    if (st === 'rect' || st === 'box' || st === 'date') {
+      const lw = m * (st === 'box' ? .085 : .06); x.lineWidth = lw; x.beginPath(); rr(x, -w / 2 + lw, -h / 2 + lw, w - 2 * lw, h - 2 * lw, lw * 1.5); x.stroke();
+      if (st === 'rect') { x.lineWidth = lw * .45; x.beginPath(); rr(x, -w / 2 + lw * 2.3, -h / 2 + lw * 2.3, w - 4.6 * lw, h - 4.6 * lw, lw); x.stroke(); }
+      if (st === 'rect') { const nl = CT.split('\n').length; txt(T1, 0, -h * .26, h * .13, w * .8); txt(CT, 0, h * .02, h * .26 / (nl > 1 ? nl * 1.05 : 1), w * .8); txt(T2, 0, h * .27, h * .12, w * .8); if (ic) { x.save(); x.translate(-w * .36, h * .02); stampIcon(x, ic, h * .26); x.restore(); } }
+      else if (st === 'box') { const big = !T1 && !T2; if (ic) { x.save(); x.translate(-w / 2 + h * .5, 0); stampIcon(x, ic, h * .5); x.restore(); } const cx = ic ? h * .38 : 0, mw = (w - (ic ? h * .9 : 0)) * .84; txt(T1, cx, -h * .27, h * .13, mw); const nl = CT.split('\n').length; txt(CT, cx, h * .02, h * (big ? .5 : .32) / (nl > 1 ? nl * .92 : 1), mw, 800); txt(T2, cx, h * .29, h * .12, mw); }
+      else { txt(T1, 0, -h * .3, h * .15, w * .84); x.lineWidth = lw * .5; x.beginPath(); x.moveTo(-w / 2 + lw * 2.5, -h * .14); x.lineTo(w / 2 - lw * 2.5, -h * .14); x.moveTo(-w / 2 + lw * 2.5, h * .16); x.lineTo(w / 2 - lw * 2.5, h * .16); x.stroke(); txt(CT, 0, h * .01, h * .21, w * .84, 800); txt(T2, 0, h * .31, h * .13, w * .84); }
+    } else if (st === 'oval') {
+      const R = h / 2, sx = w / h; x.save(); x.scale(sx, 1); ring(R - m * .04, m * .07 / sx); ring(R * .64, m * .035 / sx); arcs(R * .8, R * .19); x.restore();
+      if (ic) { x.save(); x.translate(0, -R * .2); stampIcon(x, ic, R * .38); x.restore(); txt(CT, 0, R * .22, R * .22, w * .5); } else txt(CT, 0, 0, R * .26, w * .55);
+    } else if (st === 'hex' || st === 'octagon') {
+      const n = st === 'hex' ? 6 : 8, R = m / 2, rot = st === 'hex' ? 0 : Math.PI / 8, sx = w / h; x.lineWidth = m * .065; poly(n, R - m * .04, rot, sx); x.stroke(); x.lineWidth = m * .03; poly(n, R * .82, rot, sx); x.stroke();
+      stack(w * .66, h * .74);
+    } else if (st === 'shield') {
+      const sh = (s) => { x.beginPath(); x.moveTo(-w / 2 * s, -h / 2 * s); x.lineTo(w / 2 * s, -h / 2 * s); x.lineTo(w / 2 * s, h * .02 * s); x.quadraticCurveTo(w * .45 * s, h * .36 * s, 0, h / 2 * s); x.quadraticCurveTo(-w * .45 * s, h * .36 * s, -w / 2 * s, h * .02 * s); x.closePath(); };
+      x.lineWidth = m * .06; sh(.94); x.stroke(); x.lineWidth = m * .025; sh(.8); x.stroke();
+      txt(T1, 0, -h * .28, h * .11, w * .7); if (ic) { x.save(); x.translate(0, -h * .08); stampIcon(x, ic, h * .22); x.restore(); txt(CT, 0, h * .13, h * .12, w * .6, 800); txt(T2, 0, h * .29, h * .075, w * .36); } else { txt(CT, 0, -h * .02, h * .2, w * .7, 800); txt(T2, 0, h * .28, h * .1, w * .4); }
+    } else if (st === 'burst') {
+      const R = m / 2; x.lineWidth = m * .045; x.beginPath(); starPoly(x, 22, R * .97, R * .84); x.stroke(); ring(R * .72, m * .03);
+      txt(T1, 0, -R * .4, R * .15, R * 1.1); if (ic) { x.save(); x.translate(0, -R * .05); stampIcon(x, ic, R * .5); x.restore(); txt(CT, 0, R * .36, R * .2, R * 1.2); } else txt(CT, 0, 0, R * .34, R * 1.25, 800); txt(T2, 0, R * .42, R * .14, R * 1.1);
+    } else if (st === 'triangle') {
+      x.lineWidth = m * .06; x.beginPath(); x.moveTo(0, -h / 2 + m * .06); x.lineTo(w / 2 - m * .05, h / 2 - m * .05); x.lineTo(-w / 2 + m * .05, h / 2 - m * .05); x.closePath(); x.stroke();
+      if (ic) { x.save(); x.translate(0, -h * .02); stampIcon(x, ic, h * .26); x.restore(); } txt(CT, 0, h * .22, h * .14, w * .5, 800); txt(T1 || T2, 0, h * .37, h * .08, w * .72);
+    } else if (st === 'entry') {
+      const lw = m * .06; x.lineWidth = lw; x.beginPath(); rr(x, -w / 2 + lw, -h / 2 + lw, w - 2 * lw, h - 2 * lw, h * .16); x.stroke();
+      const iw = h * .82, dx = -w / 2 + lw + iw; x.lineWidth = lw * .5; x.beginPath(); x.moveTo(dx, -h / 2 + lw * 2); x.lineTo(dx, h / 2 - lw * 2); x.stroke();
+      x.save(); x.translate(-w / 2 + lw + iw / 2, 0); stampIcon(x, ic || 'arrowIn', h * .48); x.restore();
+      const cx = (dx + w / 2 - lw) / 2, mw = (w / 2 - lw - dx) * .86; txt(T1, cx, -h * .26, h * .15, mw); txt(CT, cx, h * .02, h * .22, mw, 800); txt(T2, cx, h * .29, h * .13, mw);
+    } else if (st === 'postmark') {
+      const R = h / 2 - m * .03, ox = -w / 2 + R + m * .03; x.save(); x.translate(ox, 0); ring(R, m * .045); ring(R * .62, m * .025); arcs(R * .8, R * .19); txt(CT, 0, 0, R * .2, R * 1.1, 800); x.restore();
+      x.lineWidth = m * .035; for (let i = 0; i < 5; i++) { const y = (i - 2) * h * .14; x.beginPath(); for (let X = ox + R + m * .06; X <= w / 2 - m * .02; X += .2) x.lineTo(X, y + Math.sin(X * 1.25) * h * .035); x.stroke(); }
+      if (ic) { x.save(); x.translate((ox + R + w / 2) / 2, 0); x.globalCompositeOperation = 'destination-out'; x.fillRect(-h * .24, -h * .24, h * .48, h * .48); x.restore(); x.save(); x.translate((ox + R + w / 2) / 2, 0); x.globalCompositeOperation = 'source-over'; stampIcon(x, ic, h * .38); x.restore(); }
+    } else if (st === 'ticket') {
+      const lw = m * .055, r = m * .16, X0 = -w / 2 + lw, Y0 = -h / 2 + lw, X1 = w / 2 - lw, Y1 = h / 2 - lw; x.lineWidth = lw; x.beginPath(); x.moveTo(X0 + r, Y0); x.lineTo(X1 - r, Y0); x.arc(X1, Y0, r, Math.PI, Math.PI / 2, true); x.lineTo(X1, Y1 - r); x.arc(X1, Y1, r, -Math.PI / 2, Math.PI, true); x.lineTo(X0 + r, Y1); x.arc(X0, Y1, r, 0, -Math.PI / 2, true); x.lineTo(X0, Y0 + r); x.arc(X0, Y0, r, Math.PI / 2, 0, true); x.closePath(); x.stroke();
+      x.setLineDash([m * .05, m * .05]); x.lineWidth = lw * .45; x.beginPath(); rr(x, X0 + r * .9, Y0 + lw * 1.6, X1 - X0 - r * 1.8, Y1 - Y0 - lw * 3.2, 0); x.stroke(); x.setLineDash([]);
+      stack(w * .7, h * .8);
+    } else if (st === 'gear') {
+      const R = m / 2; x.beginPath(); for (let i = 0; i < 72; i++) { const a = i * Math.PI / 36, r = (i % 2 ? .9 : 1) * R * .98; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.lineWidth = m * .03; x.stroke(); ring(R * .84, m * .025); ring(R * .56, m * .02); arcs(R * .7, R * .15);
+      if (ic) { stampIcon(x, ic, R * .5); } else txt(CT, 0, 0, R * .2, R * .9, 800);
+    } else if (st === 'banner') {
+      const bh = h * .36, bw = w * .9, notch = bh * .45; x.lineWidth = m * .05; x.beginPath(); x.moveTo(-bw / 2, -bh / 2); x.lineTo(bw / 2, -bh / 2); x.lineTo(bw / 2 - notch, 0); x.lineTo(bw / 2, bh / 2); x.lineTo(-bw / 2, bh / 2); x.lineTo(-bw / 2 + notch, 0); x.closePath(); x.stroke();
+      txt(CT, 0, 0, bh * .58, bw - notch * 2.2, 800); if (ic) { x.save(); x.translate(0, -h * .34); stampIcon(x, ic, h * .26); x.restore(); txt(T1, 0, h * .35, h * .12, w * .82); } else { txt(T1, 0, -h * .34, h * .14, w * .82); txt(T2, 0, h * .35, h * .12, w * .82); }
     } else {
-      const R = Math.min(w, h) / 2, lw = R * .07; x.lineWidth = lw * kk; x.beginPath(); x.arc(0, 0, (R - lw / 2) * kk, 0, Math.PI * 2); x.stroke();
-      x.lineWidth = lw * .55 * kk; x.beginPath(); x.arc(0, 0, R * .64 * kk, 0, Math.PI * 2); x.stroke();
-      setFont(x, el.font, 700, R * .19 * kk, false); arcText(x, String(el.text), 0, 0, R * .8 * kk, -Math.PI / 2, R * .02 * kk, false); arcText(x, String(el.text2), 0, 0, R * .8 * kk, Math.PI / 2, R * .02 * kk, true);
-      for (const s of [-1, 1]) { x.save(); x.translate(s * R * .8 * kk, 0); x.beginPath(); starPoly(x, 5, R * .07 * kk, R * .03 * kk); x.fill(); x.restore(); }
-      x.lineWidth = lw * .45 * kk; x.beginPath(); x.moveTo(-R * .6 * kk, -R * .17 * kk); x.lineTo(R * .6 * kk, -R * .17 * kk); x.moveTo(-R * .6 * kk, R * .17 * kk); x.lineTo(R * .6 * kk, R * .17 * kk); x.stroke();
-      setFont(x, el.font, 700, R * .22 * kk, false); const tw = x.measureText(el.center).width, mx = R * 1.15 * kk; x.save(); if (tw > mx) x.scale(mx / tw, 1); x.fillText(el.center, 0, 0); x.restore();
+      const R = m / 2, lw = R * .07; ring(R - lw / 2, lw); ring(R * .64, lw * .55); arcs(R * .8, R * .19);
+      for (const s of [-1, 1]) { x.save(); x.translate(s * R * .8, 0); x.beginPath(); starPoly(x, 5, R * .07, R * .03); x.fill(); x.restore(); }
+      if (ic) { x.save(); x.translate(0, -R * .14); stampIcon(x, ic, R * .5); x.restore(); txt(CT, 0, R * .32, R * .17, R * 1.05); }
+      else { x.lineWidth = lw * .45; x.beginPath(); x.moveTo(-R * .6, -R * .17); x.lineTo(R * .6, -R * .17); x.moveTo(-R * .6, R * .17); x.lineTo(R * .6, R * .17); x.stroke(); txt(CT, 0, 0, R * .22, R * 1.15); }
     }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    const Rg = rng(hashStr(el.id || el.name || 'stamp'));
+    if (el.uneven > 0) { const a = Rg() * Math.PI * 2, gx = Math.cos(a) * pw / 2, gy = Math.sin(a) * ph / 2, g = x.createLinearGradient(pw / 2 - gx, ph / 2 - gy, pw / 2 + gx, ph / 2 + gy); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${Math.min(.9, el.uneven * .85)})`); x.globalCompositeOperation = 'destination-out'; x.fillStyle = g; x.fillRect(0, 0, pw, ph); x.globalCompositeOperation = 'source-over'; }
     if (el.distress > 0) {
-      x.setTransform(1, 0, 0, 1, 0, 0); const R = rng(hashStr(el.id || 'stamp')); x.globalCompositeOperation = 'destination-out';
-      const n = Math.round(pw * ph / 90 * el.distress); for (let i = 0; i < n; i++) { x.globalAlpha = R() * .9; const r = R() * R() * Math.max(1, pw / 70); x.beginPath(); x.arc(R() * pw, R() * ph, r, 0, Math.PI * 2); x.fill(); }
+      x.globalCompositeOperation = 'destination-out';
+      const n = Math.round(pw * ph / 90 * el.distress); for (let i = 0; i < n; i++) { x.globalAlpha = Rg() * .9; const r = Rg() * Rg() * Math.max(1, pw / 70); x.beginPath(); x.arc(Rg() * pw, Rg() * ph, r, 0, Math.PI * 2); x.fill(); }
       x.globalAlpha = Math.min(1, el.distress * 1.1); x.fillStyle = pat(x, 'alpha', pw * .45); x.fillRect(0, 0, pw, ph); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
     }
     c.drawImage(t, -w / 2, -h / 2, w, h);
+    if (el.ghost > 0) { c.save(); c.globalAlpha *= Math.min(.6, el.ghost * .5); c.drawImage(t, -w / 2 + w * .025, -h / 2 + h * .02, w, h); c.restore(); }
   }, 'M8 4h8v5l3 3v3H5v-3l3-3zM5 19h14');
 
 /* hologram patch */

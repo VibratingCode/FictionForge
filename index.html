@@ -767,31 +767,113 @@ function chipLines(c, el) {
 }
 
 /* rubber stamp */
-def('stamp', 'Rubber stamp', { w: 22, h: 22, style: 'round', text: 'DISTRICT CLERK', text2: 'NINTH RAIL', center: 'APPROVED', color: '#b3302a', distress: .5, font: 'Courier Prime', blend: 'multiply', opacity: .85 },
-  [['style', 'Shape', 'select', [['round', 'Round'], ['rect', 'Rectangular']]], ['text', 'Top text', 'text'], ['center', 'Centre text', 'text'], ['text2', 'Bottom text', 'text'], ['font', 'Font', 'font'], ['color', 'Ink', 'color'], ['distress', 'Wear', 'range', { min: 0, max: 1, step: .01 }]],
+const STAMP_STYLES = [['round', 'Round'], ['rect', 'Rectangular'], ['oval', 'Oval'], ['box', 'Bold box'], ['date', 'Date band'], ['hex', 'Hexagon'], ['octagon', 'Octagon'], ['shield', 'Shield'], ['burst', 'Starburst'], ['triangle', 'Triangle'], ['entry', 'Entry stamp (icon)'], ['postmark', 'Postmark'], ['ticket', 'Notched ticket'], ['gear', 'Notary gear'], ['banner', 'Banner']];
+const STAMP_ICONS = [['none', 'None'], ['star', 'Star'], ['check', 'Tick'], ['cross', 'Cross'], ['arrowIn', 'Arrow in'], ['arrowOut', 'Arrow out'], ['plane', 'Aeroplane'], ['ship', 'Ship'], ['train', 'Train'], ['airship', 'Airship'], ['crown', 'Crown'], ['anchor', 'Anchor'], ['skull', 'Skull'], ['eye', 'Eye'], ['planet', 'Planet'], ['rocket', 'Rocket'], ['key', 'Key'], ['feather', 'Quill'], ['sun', 'Sun'], ['hazard', 'Hazard'], ['cog', 'Cog'], ['tower', 'Tower'], ['tree', 'Pine'], ['mountain', 'Mountain'], ['heart', 'Heart'], ['hand', 'Pointing hand']];
+function stampIcon(x, kind, s) {   // centred at 0,0, roughly s mm across, ink = current fill/stroke
+  const L = s * .09; x.lineWidth = L; x.lineCap = 'round'; x.lineJoin = 'round';
+  const P = (pts, close = true, fill = true) => { x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a * s, b * s) : x.moveTo(a * s, b * s)); if (close) x.closePath(); fill ? x.fill() : x.stroke(); };
+  const C = (cx, cy, r, fill = true) => { x.beginPath(); x.arc(cx * s, cy * s, r * s, 0, Math.PI * 2); fill ? x.fill() : x.stroke(); };
+  const hole = (f) => { x.save(); x.globalCompositeOperation = 'destination-out'; f(); x.restore(); };
+  switch (kind) {
+    case 'star': x.beginPath(); starPoly(x, 5, s * .5, s * .21); x.fill(); break;
+    case 'check': P([[-.38, .02], [-.12, .3], [.4, -.3]], false, false); break;
+    case 'cross': P([[-.32, -.32], [.32, .32]], false, false); P([[.32, -.32], [-.32, .32]], false, false); break;
+    case 'arrowIn': P([[-.45, 0], [.12, 0]], false, false); P([[-.06, -.2], [.14, 0], [-.06, .2]], false, false); P([[.36, -.4], [.36, .4]], false, false); break;
+    case 'arrowOut': P([[-.36, -.4], [-.36, .4]], false, false); P([[-.18, 0], [.42, 0]], false, false); P([[.22, -.2], [.44, 0], [.22, .2]], false, false); break;
+    case 'plane': P([[.5, 0], [.36, -.06], [.06, -.06], [-.16, -.46], [-.26, -.46], [-.12, -.06], [-.36, -.06], [-.46, -.2], [-.52, -.2], [-.46, 0], [-.52, .2], [-.46, .2], [-.36, .06], [-.12, .06], [-.26, .46], [-.16, .46], [.06, .06], [.36, .06]]); break;
+    case 'ship': P([[-.5, .1], [.5, .1], [.36, .34], [-.38, .34]]); P([[-.02, .06], [-.02, -.46]], false, false); P([[.04, -.42], [.04, .02], [.34, .02]]); P([[-.08, -.32], [-.08, .02], [-.32, .02]]); break;
+    case 'train': x.beginPath(); rr(x, -.44 * s, -.36 * s, .88 * s, .6 * s, .14 * s); x.fill(); hole(() => { x.beginPath(); rr(x, -.32 * s, -.26 * s, .26 * s, .2 * s, .04 * s); rr(x, .06 * s, -.26 * s, .26 * s, .2 * s, .04 * s); x.fill(); }); C(-.24, .34, .1); C(.24, .34, .1); P([[-.5, .48], [.5, .48]], false, false); break;
+    case 'airship': x.beginPath(); x.ellipse(0, -.1 * s, .44 * s, .2 * s, 0, 0, Math.PI * 2); x.fill(); P([[.34, -.1], [.52, -.3], [.52, .1]]); x.fillRect(-.14 * s, .14 * s, .24 * s, .12 * s); P([[-.1, .1], [-.1, .14]], false, false); P([[.06, .1], [.06, .14]], false, false); break;
+    case 'crown': P([[-.46, .3], [-.46, -.24], [-.24, .02], [0, -.36], [.24, .02], [.46, -.24], [.46, .3]]); C(-.46, -.3, .07); C(0, -.42, .07); C(.46, -.3, .07); break;
+    case 'anchor': C(0, -.38, .09, false); P([[0, -.29], [0, .44]], false, false); P([[-.2, -.16], [.2, -.16]], false, false); x.beginPath(); x.arc(0, .06 * s, .38 * s, Math.PI * .15, Math.PI * .85); x.stroke(); P([[-.42, .14], [-.32, .28], [-.24, .16]], false, false); P([[.42, .14], [.32, .28], [.24, .16]], false, false); break;
+    case 'skull': C(0, -.08, .36); x.fillRect(-.2 * s, .18 * s, .4 * s, .2 * s); hole(() => { C(-.14, -.06, .1); C(.14, -.06, .1); P([[0, .06], [-.05, .16], [.05, .16]]); x.fillRect(-.07 * s, .3 * s, .04 * s, .1 * s); x.fillRect(.03 * s, .3 * s, .04 * s, .1 * s); }); break;
+    case 'eye': x.beginPath(); x.moveTo(-.5 * s, 0); x.quadraticCurveTo(0, -.46 * s, .5 * s, 0); x.quadraticCurveTo(0, .46 * s, -.5 * s, 0); x.stroke(); C(0, 0, .15); break;
+    case 'planet': C(0, 0, .27); x.save(); x.rotate(-.35); x.beginPath(); x.ellipse(0, 0, .5 * s, .14 * s, 0, 0, Math.PI * 2); x.lineWidth = L * .8; x.stroke(); x.restore(); break;
+    case 'rocket': x.beginPath(); x.moveTo(0, -.5 * s); x.quadraticCurveTo(.24 * s, -.2 * s, .16 * s, .26 * s); x.lineTo(-.16 * s, .26 * s); x.quadraticCurveTo(-.24 * s, -.2 * s, 0, -.5 * s); x.fill(); P([[-.16, .06], [-.32, .34], [-.14, .26]]); P([[.16, .06], [.32, .34], [.14, .26]]); hole(() => C(0, -.12, .07)); P([[-.06, .34], [0, .5], [.06, .34]]); break;
+    case 'key': C(-.28, 0, .17, false); P([[-.11, 0], [.48, 0]], false, false); P([[.3, 0], [.3, .16]], false, false); P([[.42, 0], [.42, .13]], false, false); break;
+    case 'feather': x.beginPath(); x.moveTo(.4 * s, -.46 * s); x.quadraticCurveTo(-.36 * s, -.3 * s, -.3 * s, .3 * s); x.quadraticCurveTo(.2 * s, .1 * s, .4 * s, -.46 * s); x.fill(); P([[.3, -.32], [-.46, .48]], false, false); break;
+    case 'sun': C(0, 0, .2); for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; P([[Math.cos(a) * .3, Math.sin(a) * .3], [Math.cos(a) * .48, Math.sin(a) * .48]], false, false); } break;
+    case 'hazard': x.lineWidth = L * 1.1; P([[0, -.44], [.48, .38], [-.48, .38]], true, false); P([[0, -.14], [0, .12]], false, false); C(0, .24, .05); break;
+    case 'cog': x.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = (i % 2 ? .34 : .46) * s; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.fill(); hole(() => C(0, 0, .16)); break;
+    case 'tower': P([[-.3, .48], [-.3, -.3], [-.3, -.46], [-.18, -.46], [-.18, -.36], [-.06, -.36], [-.06, -.46], [.06, -.46], [.06, -.36], [.18, -.36], [.18, -.46], [.3, -.46], [.3, .48]]); hole(() => { x.beginPath(); x.moveTo(-.1 * s, .48 * s); x.lineTo(-.1 * s, .26 * s); x.arc(0, .26 * s, .1 * s, Math.PI, 0); x.lineTo(.1 * s, .48 * s); x.fill(); }); break;
+    case 'tree': P([[0, -.5], [.24, -.14], [.12, -.14], [.34, .18], [.16, .18], [.4, .4], [-.4, .4], [-.16, .18], [-.34, .18], [-.12, -.14], [-.24, -.14]]); x.fillRect(-.05 * s, .4 * s, .1 * s, .1 * s); break;
+    case 'mountain': P([[-.5, .36], [-.14, -.28], [.04, 0], [.2, -.4], [.5, .36]]); hole(() => P([[.2, -.4], [.08, -.18], [.15, -.22], [.2, -.14], [.25, -.22], [.32, -.18]])); break;
+    case 'heart': x.beginPath(); x.moveTo(0, .42 * s); x.bezierCurveTo(-.56 * s, 0, -.36 * s, -.5 * s, 0, -.18 * s); x.bezierCurveTo(.36 * s, -.5 * s, .56 * s, 0, 0, .42 * s); x.fill(); break;
+    case 'hand': x.beginPath(); rr(x, -.46 * s, -.12 * s, .4 * s, .4 * s, .08 * s); x.fill(); x.beginPath(); rr(x, -.12 * s, -.12 * s, .62 * s, .12 * s, .06 * s); x.fill(); x.fillRect(-.46 * s, -.04 * s, .08 * s, .3 * s); break;
+  }
+}
+def('stamp', 'Rubber stamp', { w: 22, h: 22, style: 'round', text: 'DISTRICT CLERK', text2: 'NINTH RAIL', center: 'APPROVED', icon: 'none', color: '#b3302a', distress: .5, uneven: 0, ghost: 0, font: 'Courier Prime', blend: 'multiply', opacity: .85 },
+  [['style', 'Shape', 'select', STAMP_STYLES], ['icon', 'Icon', 'select', STAMP_ICONS], ['text', 'Top text', 'text'], ['center', 'Centre text', 'text'], ['text2', 'Bottom text', 'text'], ['font', 'Font', 'font'], ['color', 'Ink', 'color'], ['distress', 'Wear', 'range', { min: 0, max: 1, step: .01 }], ['uneven', 'Uneven ink', 'range', { min: 0, max: 1, step: .01 }], ['ghost', 'Double strike', 'range', { min: 0, max: 1, step: .01 }]],
   function (c, el, ov, k) {
     const w = el.w, h = el.h, pw = Math.max(8, Math.ceil(w * k)), ph = Math.max(8, Math.ceil(h * k)), kk = pw / w; const t = tmpCanvas(pw, ph), x = t.getContext('2d');
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, pw, ph); x.translate(pw / 2, ph / 2);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, pw, ph); x.translate(pw / 2, ph / 2); x.scale(kk, kk);
     const col = fillOf(ov, el.color); x.strokeStyle = col; x.fillStyle = col; x.textAlign = 'center'; x.textBaseline = 'middle'; setSp(x, 0);
-    const txt = (s, y, sz, wgt) => { setFont(x, el.font, wgt || 700, sz * kk, false); const tw = x.measureText(s).width, mx = w * .8 * kk; x.save(); if (tw > mx) x.scale(mx / tw, 1); x.fillText(s, 0, y * kk); x.restore(); };
-    if (el.style === 'rect') {
-      const lw = Math.min(w, h) * .06; x.lineWidth = lw * kk; x.beginPath(); rr(x, (-w / 2 + lw) * kk, (-h / 2 + lw) * kk, (w - 2 * lw) * kk, (h - 2 * lw) * kk, lw * 1.5 * kk); x.stroke();
-      x.lineWidth = lw * .45 * kk; x.beginPath(); rr(x, (-w / 2 + lw * 2.3) * kk, (-h / 2 + lw * 2.3) * kk, (w - 4.6 * lw) * kk, (h - 4.6 * lw) * kk, lw * kk); x.stroke();
-      txt(el.text, -h * .24, h * .14); txt(el.center, h * .02, h * .26, 700); txt(el.text2, h * .27, h * .12);
+    const T1 = String(el.text || ''), T2 = String(el.text2 || ''), CT = String(el.center || ''), ic = el.icon && el.icon !== 'none' ? el.icon : null, m = Math.min(w, h);
+    const txt = (s, X, Y, sz, mx, wgt) => { if (!s) return; setFont(x, el.font, wgt || 700, sz, false); const lines = s.split('\n'), lh = sz * 1.05; lines.forEach((ln, i) => { const tw = x.measureText(ln).width; x.save(); x.translate(X, Y + (i - (lines.length - 1) / 2) * lh); if (tw > mx) x.scale(mx / tw, 1); x.fillText(ln, 0, 0); x.restore(); }); };
+    const poly = (n, R, rot = -Math.PI / 2, sx = 1) => { x.beginPath(); for (let i = 0; i < n; i++) { const a = rot + i * Math.PI * 2 / n; x.lineTo(Math.cos(a) * R * sx, Math.sin(a) * R); } x.closePath(); };
+    const ring = (R, lw) => { x.lineWidth = lw; x.beginPath(); x.arc(0, 0, R, 0, Math.PI * 2); x.stroke(); };
+    const arcs = (R, sz) => { setFont(x, el.font, 700, sz, false); if (T1) arcText(x, T1, 0, 0, R, -Math.PI / 2, sz * .1, false); if (T2) arcText(x, T2, 0, 0, R, Math.PI / 2, sz * .1, true); };
+    const stack = (W, H) => { // three straight lines inside a W×H area, with an optional icon above the centre line
+      if (ic) { txt(T1, 0, -H * .37, H * .12, W * .68); x.save(); x.translate(0, -H * .11); stampIcon(x, ic, H * .22); x.restore(); txt(CT, 0, H * .14, H * .15, W * .86, 800); txt(T2, 0, H * .35, H * .1, W * .64); }
+      else { txt(T1, 0, -H * .28, H * .14, W * .78); txt(CT, 0, H * .02, H * .24, W * .92, 800); txt(T2, 0, H * .3, H * .12, W * .78); } };
+    const st = el.style;
+    if (st === 'rect' || st === 'box' || st === 'date') {
+      const lw = m * (st === 'box' ? .085 : .06); x.lineWidth = lw; x.beginPath(); rr(x, -w / 2 + lw, -h / 2 + lw, w - 2 * lw, h - 2 * lw, lw * 1.5); x.stroke();
+      if (st === 'rect') { x.lineWidth = lw * .45; x.beginPath(); rr(x, -w / 2 + lw * 2.3, -h / 2 + lw * 2.3, w - 4.6 * lw, h - 4.6 * lw, lw); x.stroke(); }
+      if (st === 'rect') { const nl = CT.split('\n').length; txt(T1, 0, -h * .26, h * .13, w * .8); txt(CT, 0, h * .02, h * .26 / (nl > 1 ? nl * 1.05 : 1), w * .8); txt(T2, 0, h * .27, h * .12, w * .8); if (ic) { x.save(); x.translate(-w * .36, h * .02); stampIcon(x, ic, h * .26); x.restore(); } }
+      else if (st === 'box') { const big = !T1 && !T2; if (ic) { x.save(); x.translate(-w / 2 + h * .5, 0); stampIcon(x, ic, h * .5); x.restore(); } const cx = ic ? h * .38 : 0, mw = (w - (ic ? h * .9 : 0)) * .84; txt(T1, cx, -h * .27, h * .13, mw); const nl = CT.split('\n').length; txt(CT, cx, h * .02, h * (big ? .5 : .32) / (nl > 1 ? nl * .92 : 1), mw, 800); txt(T2, cx, h * .29, h * .12, mw); }
+      else { txt(T1, 0, -h * .3, h * .15, w * .84); x.lineWidth = lw * .5; x.beginPath(); x.moveTo(-w / 2 + lw * 2.5, -h * .14); x.lineTo(w / 2 - lw * 2.5, -h * .14); x.moveTo(-w / 2 + lw * 2.5, h * .16); x.lineTo(w / 2 - lw * 2.5, h * .16); x.stroke(); txt(CT, 0, h * .01, h * .21, w * .84, 800); txt(T2, 0, h * .31, h * .13, w * .84); }
+    } else if (st === 'oval') {
+      const R = h / 2, sx = w / h; x.save(); x.scale(sx, 1); ring(R - m * .04, m * .07 / sx); ring(R * .64, m * .035 / sx); arcs(R * .8, R * .19); x.restore();
+      if (ic) { x.save(); x.translate(0, -R * .2); stampIcon(x, ic, R * .38); x.restore(); txt(CT, 0, R * .22, R * .22, w * .5); } else txt(CT, 0, 0, R * .26, w * .55);
+    } else if (st === 'hex' || st === 'octagon') {
+      const n = st === 'hex' ? 6 : 8, R = m / 2, rot = st === 'hex' ? 0 : Math.PI / 8, sx = w / h; x.lineWidth = m * .065; poly(n, R - m * .04, rot, sx); x.stroke(); x.lineWidth = m * .03; poly(n, R * .82, rot, sx); x.stroke();
+      stack(w * .66, h * .74);
+    } else if (st === 'shield') {
+      const sh = (s) => { x.beginPath(); x.moveTo(-w / 2 * s, -h / 2 * s); x.lineTo(w / 2 * s, -h / 2 * s); x.lineTo(w / 2 * s, h * .02 * s); x.quadraticCurveTo(w * .45 * s, h * .36 * s, 0, h / 2 * s); x.quadraticCurveTo(-w * .45 * s, h * .36 * s, -w / 2 * s, h * .02 * s); x.closePath(); };
+      x.lineWidth = m * .06; sh(.94); x.stroke(); x.lineWidth = m * .025; sh(.8); x.stroke();
+      txt(T1, 0, -h * .28, h * .11, w * .7); if (ic) { x.save(); x.translate(0, -h * .08); stampIcon(x, ic, h * .22); x.restore(); txt(CT, 0, h * .13, h * .12, w * .6, 800); txt(T2, 0, h * .29, h * .075, w * .36); } else { txt(CT, 0, -h * .02, h * .2, w * .7, 800); txt(T2, 0, h * .28, h * .1, w * .4); }
+    } else if (st === 'burst') {
+      const R = m / 2; x.lineWidth = m * .045; x.beginPath(); starPoly(x, 22, R * .97, R * .84); x.stroke(); ring(R * .72, m * .03);
+      txt(T1, 0, -R * .4, R * .15, R * 1.1); if (ic) { x.save(); x.translate(0, -R * .05); stampIcon(x, ic, R * .5); x.restore(); txt(CT, 0, R * .36, R * .2, R * 1.2); } else txt(CT, 0, 0, R * .34, R * 1.25, 800); txt(T2, 0, R * .42, R * .14, R * 1.1);
+    } else if (st === 'triangle') {
+      x.lineWidth = m * .06; x.beginPath(); x.moveTo(0, -h / 2 + m * .06); x.lineTo(w / 2 - m * .05, h / 2 - m * .05); x.lineTo(-w / 2 + m * .05, h / 2 - m * .05); x.closePath(); x.stroke();
+      if (ic) { x.save(); x.translate(0, -h * .02); stampIcon(x, ic, h * .26); x.restore(); } txt(CT, 0, h * .22, h * .14, w * .5, 800); txt(T1 || T2, 0, h * .37, h * .08, w * .72);
+    } else if (st === 'entry') {
+      const lw = m * .06; x.lineWidth = lw; x.beginPath(); rr(x, -w / 2 + lw, -h / 2 + lw, w - 2 * lw, h - 2 * lw, h * .16); x.stroke();
+      const iw = h * .82, dx = -w / 2 + lw + iw; x.lineWidth = lw * .5; x.beginPath(); x.moveTo(dx, -h / 2 + lw * 2); x.lineTo(dx, h / 2 - lw * 2); x.stroke();
+      x.save(); x.translate(-w / 2 + lw + iw / 2, 0); stampIcon(x, ic || 'arrowIn', h * .48); x.restore();
+      const cx = (dx + w / 2 - lw) / 2, mw = (w / 2 - lw - dx) * .86; txt(T1, cx, -h * .26, h * .15, mw); txt(CT, cx, h * .02, h * .22, mw, 800); txt(T2, cx, h * .29, h * .13, mw);
+    } else if (st === 'postmark') {
+      const R = h / 2 - m * .03, ox = -w / 2 + R + m * .03; x.save(); x.translate(ox, 0); ring(R, m * .045); ring(R * .62, m * .025); arcs(R * .8, R * .19); txt(CT, 0, 0, R * .2, R * 1.1, 800); x.restore();
+      x.lineWidth = m * .035; for (let i = 0; i < 5; i++) { const y = (i - 2) * h * .14; x.beginPath(); for (let X = ox + R + m * .06; X <= w / 2 - m * .02; X += .2) x.lineTo(X, y + Math.sin(X * 1.25) * h * .035); x.stroke(); }
+      if (ic) { x.save(); x.translate((ox + R + w / 2) / 2, 0); x.globalCompositeOperation = 'destination-out'; x.fillRect(-h * .24, -h * .24, h * .48, h * .48); x.restore(); x.save(); x.translate((ox + R + w / 2) / 2, 0); x.globalCompositeOperation = 'source-over'; stampIcon(x, ic, h * .38); x.restore(); }
+    } else if (st === 'ticket') {
+      const lw = m * .055, r = m * .16, X0 = -w / 2 + lw, Y0 = -h / 2 + lw, X1 = w / 2 - lw, Y1 = h / 2 - lw; x.lineWidth = lw; x.beginPath(); x.moveTo(X0 + r, Y0); x.lineTo(X1 - r, Y0); x.arc(X1, Y0, r, Math.PI, Math.PI / 2, true); x.lineTo(X1, Y1 - r); x.arc(X1, Y1, r, -Math.PI / 2, Math.PI, true); x.lineTo(X0 + r, Y1); x.arc(X0, Y1, r, 0, -Math.PI / 2, true); x.lineTo(X0, Y0 + r); x.arc(X0, Y0, r, Math.PI / 2, 0, true); x.closePath(); x.stroke();
+      x.setLineDash([m * .05, m * .05]); x.lineWidth = lw * .45; x.beginPath(); rr(x, X0 + r * .9, Y0 + lw * 1.6, X1 - X0 - r * 1.8, Y1 - Y0 - lw * 3.2, 0); x.stroke(); x.setLineDash([]);
+      stack(w * .7, h * .8);
+    } else if (st === 'gear') {
+      const R = m / 2; x.beginPath(); for (let i = 0; i < 72; i++) { const a = i * Math.PI / 36, r = (i % 2 ? .9 : 1) * R * .98; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); } x.closePath(); x.lineWidth = m * .03; x.stroke(); ring(R * .84, m * .025); ring(R * .56, m * .02); arcs(R * .7, R * .15);
+      if (ic) { stampIcon(x, ic, R * .5); } else txt(CT, 0, 0, R * .2, R * .9, 800);
+    } else if (st === 'banner') {
+      const bh = h * .36, bw = w * .9, notch = bh * .45; x.lineWidth = m * .05; x.beginPath(); x.moveTo(-bw / 2, -bh / 2); x.lineTo(bw / 2, -bh / 2); x.lineTo(bw / 2 - notch, 0); x.lineTo(bw / 2, bh / 2); x.lineTo(-bw / 2, bh / 2); x.lineTo(-bw / 2 + notch, 0); x.closePath(); x.stroke();
+      txt(CT, 0, 0, bh * .58, bw - notch * 2.2, 800); if (ic) { x.save(); x.translate(0, -h * .34); stampIcon(x, ic, h * .26); x.restore(); txt(T1, 0, h * .35, h * .12, w * .82); } else { txt(T1, 0, -h * .34, h * .14, w * .82); txt(T2, 0, h * .35, h * .12, w * .82); }
     } else {
-      const R = Math.min(w, h) / 2, lw = R * .07; x.lineWidth = lw * kk; x.beginPath(); x.arc(0, 0, (R - lw / 2) * kk, 0, Math.PI * 2); x.stroke();
-      x.lineWidth = lw * .55 * kk; x.beginPath(); x.arc(0, 0, R * .64 * kk, 0, Math.PI * 2); x.stroke();
-      setFont(x, el.font, 700, R * .19 * kk, false); arcText(x, String(el.text), 0, 0, R * .8 * kk, -Math.PI / 2, R * .02 * kk, false); arcText(x, String(el.text2), 0, 0, R * .8 * kk, Math.PI / 2, R * .02 * kk, true);
-      for (const s of [-1, 1]) { x.save(); x.translate(s * R * .8 * kk, 0); x.beginPath(); starPoly(x, 5, R * .07 * kk, R * .03 * kk); x.fill(); x.restore(); }
-      x.lineWidth = lw * .45 * kk; x.beginPath(); x.moveTo(-R * .6 * kk, -R * .17 * kk); x.lineTo(R * .6 * kk, -R * .17 * kk); x.moveTo(-R * .6 * kk, R * .17 * kk); x.lineTo(R * .6 * kk, R * .17 * kk); x.stroke();
-      setFont(x, el.font, 700, R * .22 * kk, false); const tw = x.measureText(el.center).width, mx = R * 1.15 * kk; x.save(); if (tw > mx) x.scale(mx / tw, 1); x.fillText(el.center, 0, 0); x.restore();
+      const R = m / 2, lw = R * .07; ring(R - lw / 2, lw); ring(R * .64, lw * .55); arcs(R * .8, R * .19);
+      for (const s of [-1, 1]) { x.save(); x.translate(s * R * .8, 0); x.beginPath(); starPoly(x, 5, R * .07, R * .03); x.fill(); x.restore(); }
+      if (ic) { x.save(); x.translate(0, -R * .14); stampIcon(x, ic, R * .5); x.restore(); txt(CT, 0, R * .32, R * .17, R * 1.05); }
+      else { x.lineWidth = lw * .45; x.beginPath(); x.moveTo(-R * .6, -R * .17); x.lineTo(R * .6, -R * .17); x.moveTo(-R * .6, R * .17); x.lineTo(R * .6, R * .17); x.stroke(); txt(CT, 0, 0, R * .22, R * 1.15); }
     }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    const Rg = rng(hashStr(el.id || el.name || 'stamp'));
+    if (el.uneven > 0) { const a = Rg() * Math.PI * 2, gx = Math.cos(a) * pw / 2, gy = Math.sin(a) * ph / 2, g = x.createLinearGradient(pw / 2 - gx, ph / 2 - gy, pw / 2 + gx, ph / 2 + gy); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${Math.min(.9, el.uneven * .85)})`); x.globalCompositeOperation = 'destination-out'; x.fillStyle = g; x.fillRect(0, 0, pw, ph); x.globalCompositeOperation = 'source-over'; }
     if (el.distress > 0) {
-      x.setTransform(1, 0, 0, 1, 0, 0); const R = rng(hashStr(el.id || 'stamp')); x.globalCompositeOperation = 'destination-out';
-      const n = Math.round(pw * ph / 90 * el.distress); for (let i = 0; i < n; i++) { x.globalAlpha = R() * .9; const r = R() * R() * Math.max(1, pw / 70); x.beginPath(); x.arc(R() * pw, R() * ph, r, 0, Math.PI * 2); x.fill(); }
+      x.globalCompositeOperation = 'destination-out';
+      const n = Math.round(pw * ph / 90 * el.distress); for (let i = 0; i < n; i++) { x.globalAlpha = Rg() * .9; const r = Rg() * Rg() * Math.max(1, pw / 70); x.beginPath(); x.arc(Rg() * pw, Rg() * ph, r, 0, Math.PI * 2); x.fill(); }
       x.globalAlpha = Math.min(1, el.distress * 1.1); x.fillStyle = pat(x, 'alpha', pw * .45); x.fillRect(0, 0, pw, ph); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
     }
     c.drawImage(t, -w / 2, -h / 2, w, h);
+    if (el.ghost > 0) { c.save(); c.globalAlpha *= Math.min(.6, el.ghost * .5); c.drawImage(t, -w / 2 + w * .025, -h / 2 + h * .02, w, h); c.restore(); }
   }, 'M8 4h8v5l3 3v3H5v-3l3-3zM5 19h14');
 
 /* hologram patch */
@@ -2474,7 +2556,232 @@ function layKit(C, seed) {
   COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
 
-Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent;
+Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent; Forge.thumbEls = thumbEls;
+
+/* ================= 200 rubber stamps & seals, plus stickers, labels, ribbons and insignia ================= */
+(() => {
+  const INK = { red: '#b3302a', blue: '#2d4a8a', violet: '#5a3a8a', green: '#2f6b3a', black: '#26262a', purple: '#6a2a7a', teal: '#1f6f78', brown: '#6a3a1a', orange: '#c25e00', navy: '#1f2f5a', crimson: '#9a1b2b', magenta: '#b0207a', cyan: '#0f8aa0', olive: '#5a6420' };
+  const SIZE = { round: [22, 22], gear: [22, 22], burst: [22, 22], oval: [30, 20], hex: [25, 21], octagon: [22, 22], shield: [19, 22], triangle: [24, 21], rect: [34, 17], box: [32, 12], date: [30, 17], entry: [36, 15], postmark: [44, 18], ticket: [32, 16], banner: [34, 18] };
+  const FONTS = ['Courier Prime', 'Special Elite', 'Oswald', 'Archivo Black', 'IBM Plex Mono', 'Bebas Neue', 'Cinzel', 'Playfair Display', 'Share Tech Mono', 'Rajdhani'];
+  const date = (seed, fmt = 0) => { const r = rng(hashStr(seed)); const d = 1 + (r() * 28 | 0), mo = r() * 12 | 0, y = 2019 + (r() * 8 | 0); return fmt === 1 ? `${String(d).padStart(2, '0')}.${String(mo + 1).padStart(2, '0')}.${String(y).slice(2)}` : fmt === 2 ? `${String(d).padStart(2, '0')} ${MONTHS[mo]}\n${y}` : `${String(d).padStart(2, '0')} ${MONTHS[mo]} ${y}`; };
+  const stamp = (cat, name, style, center, text, text2, ink, o = {}) => COMPONENTS.push({ cat, name, make: C => {
+    const u = Math.min(C.w, C.h) / 54, [w, h] = SIZE[style], sc = (o.scale || 1) * Math.min(1.5, u), seed = hashStr(name);
+    return [{ type: 'stamp', name, x: C.w * (o.px ?? .64), y: C.h * (o.py ?? .6), w: w * sc, h: h * sc, style, center, text, text2, color: INK[ink] || ink, icon: o.icon || 'none', font: o.font || 'Courier Prime', rot: o.rot ?? ((seed % 17) - 8), distress: o.distress ?? (.22 + (seed % 5) * .07), uneven: o.uneven ?? (.15 + (seed % 4) * .1), ghost: o.ghost || 0, opacity: o.opacity ?? .88, ...(o.extra || {}) }];
+  } });
+
+  /* ---------- office (50) ---------- */
+  const OFF = 'Office stamps';
+  [
+    ['Approved', 'box', 'APPROVED', '', '', 'green', { font: 'Archivo Black' }],
+    ['Rejected', 'box', 'REJECTED', '', '', 'red', { font: 'Archivo Black' }],
+    ['Denied', 'rect', 'DENIED', 'APPLICATION', 'REF 0417-C', 'red'],
+    ['Paid', 'burst', 'PAID', 'ACCOUNTS', date('paid', 1), 'red', { font: 'Archivo Black' }],
+    ['Received · date', 'date', date('recv'), 'RECEIVED', 'POST ROOM', 'blue'],
+    ['Filed · date', 'date', date('filed'), 'FILED', 'CENTRAL REGISTRY', 'violet'],
+    ['Copy', 'box', 'COPY', '', '', 'black', { font: 'Oswald' }],
+    ['Original', 'rect', 'ORIGINAL', 'THIS IS AN', 'DOCUMENT', 'blue'],
+    ['Draft', 'box', 'DRAFT', '', '', 'red', { font: 'Bebas Neue' }],
+    ['Void', 'box', 'VOID', '', '', 'red', { font: 'Archivo Black', distress: .65 }],
+    ['Cancelled', 'rect', 'CANCELLED', 'CERTIFICATE', 'NOT VALID', 'red'],
+    ['Confidential', 'box', 'CONFIDENTIAL', '', '', 'red', { font: 'Special Elite' }],
+    ['Top secret', 'rect', 'TOP SECRET', 'CLASSIFIED', 'EYES ONLY', 'crimson', { font: 'Oswald' }],
+    ['Urgent', 'box', 'URGENT', '', '', 'red', { font: 'Archivo Black', ghost: .5 }],
+    ['Priority', 'banner', 'PRIORITY', 'HANDLE AS', '', 'red', { font: 'Oswald' }],
+    ['Verified · tick', 'round', 'VERIFIED', 'IDENTITY OFFICE', 'AURELIA', 'green', { icon: 'check' }],
+    ['Checked · tick', 'round', 'CHECKED', 'QUALITY CONTROL', 'LINE 4', 'blue', { icon: 'check' }],
+    ['Inspected', 'octagon', 'INSPECTED', 'INSPECTOR', 'Nº 12', 'black'],
+    ['Certified · gear', 'gear', 'CERTIFIED', 'CERTIFIED BY THE', 'BOARD OF TRADE', 'blue'],
+    ['Certified true copy', 'rect', 'TRUE COPY', 'CERTIFIED', 'COMMISSIONER', 'blue', { font: 'Playfair Display' }],
+    ['For office use only', 'box', 'FOR OFFICE\nUSE ONLY', '', '', 'black', { font: 'IBM Plex Mono' }],
+    ['Specimen', 'box', 'SPECIMEN', '', '', 'red', { font: 'Oswald' }],
+    ['Sample', 'box', 'SAMPLE', '', '', 'blue', { font: 'Archivo Black' }],
+    ['Not valid for travel', 'box', 'NOT VALID\nFOR TRAVEL', '', '', 'red', { font: 'Oswald' }],
+    ['Expired', 'box', 'EXPIRED', '', '', 'crimson', { font: 'Archivo Black', ghost: .4 }],
+    ['Renewed · date', 'date', date('renew'), 'RENEWED', 'LICENSING OFFICE', 'green'],
+    ['Issued · date', 'date', date('issued'), 'ISSUED', 'COUNTY CLERK', 'blue', { font: 'Special Elite' }],
+    ['Entered · date', 'date', date('entered', 1), 'ENTERED', 'LEDGER 7', 'violet', { font: 'IBM Plex Mono' }],
+    ['Processed', 'date', date('proc'), 'PROCESSED', 'BATCH 0091', 'black'],
+    ['Posted', 'round', 'POSTED', 'ACCOUNTS DEPT', 'ASHBY CROSS', 'blue'],
+    ['Faxed', 'rect', 'FAXED', 'SENT BY', 'TIME ________', 'black', { font: 'Special Elite' }],
+    ['Scanned', 'rect', 'SCANNED', 'DIGITISED', 'ARCHIVE SERVICES', 'teal', { font: 'IBM Plex Mono' }],
+    ['Archived', 'hex', 'ARCHIVED', 'RECORDS', 'VAULT C', 'brown'],
+    ['Duplicate', 'box', 'DUPLICATE', '', '', 'violet', { font: 'Oswald' }],
+    ['Pending review', 'hex', 'PENDING', 'REVIEW', 'DESK 3', 'orange'],
+    ['On hold', 'octagon', 'ON HOLD', 'DO NOT', 'PROCESS', 'red', { font: 'Oswald' }],
+    ['Signed & sealed', 'rect', 'SIGNED', 'WITNESSED &', 'SEALED', 'blue', { font: 'Playfair Display' }],
+    ['Witnessed · eye', 'round', 'WITNESSED', 'SIGNATURE OF', 'THE BEARER', 'violet', { icon: 'eye' }],
+    ['Audited', 'hex', 'AUDITED', 'FINANCE', 'Q3 2026', 'green', { icon: 'check' }],
+    ['Cleared · tick', 'round', 'CLEARED', 'SECURITY OFFICE', 'GREYHAVEN', 'green', { icon: 'check' }],
+    ['Passed · shield', 'shield', 'PASSED', 'EXAMINATION', '2026', 'green', { icon: 'check' }],
+    ['Failed · cross', 'box', 'FAILED', '', '', 'red', { icon: 'cross', font: 'Archivo Black' }],
+    ['Overdue', 'burst', 'OVERDUE', 'LIBRARY', 'FINE DUE', 'red', { font: 'Oswald' }],
+    ['Rush', 'burst', 'RUSH', '', '', 'orange', { font: 'Archivo Black' }],
+    ['Final notice', 'box', 'FINAL\nNOTICE', '', '', 'crimson', { font: 'Archivo Black' }],
+    ['Received with thanks', 'round', 'WITH THANKS', 'RECEIVED', 'THE TREASURER', 'blue', { font: 'Playfair Display' }],
+    ['Do not copy', 'box', 'DO NOT COPY', '', '', 'red', { font: 'Oswald' }],
+    ['Internal', 'box', 'INTERNAL', '', '', 'teal', { font: 'IBM Plex Mono' }],
+    ['Seen · consulate', 'round', 'SEEN', 'CONSULATE OF', 'MERIDIAN', 'blue'],
+    ['Authorised · crown', 'shield', 'AUTHORISED', 'BY ORDER', '', 'navy', { icon: 'crown', font: 'Cinzel' }],
+  ].forEach(([n, s, c, t, t2, ink, o]) => stamp(OFF, n, s, c, t, t2, ink, o));
+
+  /* ---------- travel (50): 25 fictional ports, entry & exit ---------- */
+  const TRV = 'Travel stamps';
+  const PORTS = [['SALTMERE HARBOUR', 'ship'], ['GREYHAVEN AIRFIELD', 'plane'], ['PORT ELLING', 'ship'], ['LANTERN BAY', 'anchor'], ['CALDRIS CENTRAL', 'train'], ['MERROWGATE', 'tower'], ['SILVERFORD', 'train'], ['NORTHWOLD PASS', 'mountain'], ['HALVORSEN ISLES', 'ship'], ['THORNWICK', 'tower'], ['VELORIA INTL', 'plane'], ['AURELIA SKYPORT', 'airship'], ['WYVERN HOLLOW', 'tree'], ['ASHBY CROSS', 'train'], ['FENWICK QUAY', 'anchor'], ['KESTREL FIELD', 'plane'], ['FROSTLINE BASE', 'mountain'], ['ARES BASIN', 'rocket'], ['OBERON STATION', 'planet'], ['DUSTLINE GATE', 'tower'], ['NEON MILE', 'eye'], ['MARROW CITY', 'train'], ['RUSTWATER', 'cog'], ['ELDERMOOR', 'tree'], ['STARFALL DOCKS', 'rocket']];
+  const IN_STY = ['entry', 'round', 'oval', 'octagon', 'rect', 'hex', 'triangle', 'shield', 'ticket', 'entry'], OUT_STY = ['rect', 'entry', 'hex', 'oval', 'round', 'ticket', 'octagon', 'entry', 'shield', 'triangle'];
+  const INKS = ['blue', 'violet', 'green', 'red', 'teal', 'black', 'purple', 'navy', 'brown', 'orange', 'magenta', 'olive'];
+  const TF = ['IBM Plex Mono', 'Courier Prime', 'Oswald', 'Share Tech Mono', 'Rajdhani'];
+  const title = s => s.toLowerCase().replace(/\b\w/g, m => m.toUpperCase());
+  PORTS.forEach(([port, icon], i) => {
+    for (const dir of ['in', 'out']) {
+      const sty = (dir === 'in' ? IN_STY : OUT_STY)[i % 10], ink = INKS[(i * 2 + (dir === 'out')) % INKS.length], d = date(port + dir, i % 3 === 2 ? 1 : 0).replace('\n', ' ');
+      const word = dir === 'in' ? ['ADMITTED', 'ENTRY', 'ARRIVAL', 'LANDED'][i % 4] : ['DEPARTED', 'EXIT', 'DEPARTURE', 'LEFT'][i % 4];
+      const ic = sty === 'entry' ? icon : (dir === 'in' ? 'arrowIn' : 'arrowOut');
+      const top = sty === 'triangle' ? word : port, mid = sty === 'triangle' ? d.slice(0, 6) : d, bot = sty === 'triangle' ? port : `${word} · ${['GATE', 'BERTH', 'DESK', 'PIER', 'BAY'][i % 5]} ${1 + (hashStr(port) % 19)}`;
+      stamp(TRV, `${title(port)} · ${dir === 'in' ? 'entry' : 'exit'}`, sty, mid, top, bot, ink, { icon: ['round', 'oval', 'shield', 'hex', 'octagon', 'triangle', 'entry'].includes(sty) ? ic : 'none', font: TF[(i + (dir === 'out')) % TF.length], px: dir === 'in' ? .38 : .66, py: dir === 'in' ? .42 : .64 });
+    }
+  });
+
+  /* ---------- postal & date (25) ---------- */
+  const PST = 'Postal & date';
+  ['Saltmere', 'Greyhaven', 'Lantern Bay', 'Caldris', 'Merrowgate', 'Silverford', 'Ashby Cross', 'Fenwick', 'Marrow City', 'Eldermoor'].forEach((t, i) => stamp(PST, `Postmark · ${t}`, 'postmark', date('pm' + t, 1), t.toUpperCase(), ['POST OFFICE', 'SORTING', 'CENTRAL', 'HARBOUR', 'NORTH'][i % 5], ['black', 'black', 'blue', 'black', 'red', 'black', 'violet', 'black', 'blue', 'black'][i], { font: i % 2 ? 'IBM Plex Mono' : 'Courier Prime', rot: (i % 5) - 2, px: .6, py: .5, icon: i === 2 ? 'ship' : i === 5 ? 'train' : i === 9 ? 'tree' : 'none' }));
+  [
+    ['Air mail', 'box', 'AIR MAIL', '', '', 'blue', { icon: 'plane', font: 'Oswald' }],
+    ['By airship', 'banner', 'BY AIRSHIP', 'PAR DIRIGEABLE', '', 'violet', { icon: 'airship', font: 'Oswald' }],
+    ['Registered', 'rect', 'REGISTERED', 'R', 'Nº 0412 77', 'blue', { font: 'Oswald' }],
+    ['Postage paid', 'rect', 'POSTAGE PAID', 'SALTMERE', 'PERMIT 214', 'black', { font: 'IBM Plex Mono' }],
+    ['First class', 'box', 'FIRST CLASS', '', '', 'red', { font: 'Archivo Black' }],
+    ['Insufficient postage', 'box', 'INSUFFICIENT\nPOSTAGE', '', '', 'red', { icon: 'hand', font: 'Oswald' }],
+    ['Return to sender', 'box', 'RETURN TO\nSENDER', '', '', 'violet', { icon: 'hand', font: 'Oswald' }],
+    ['Missent', 'rect', 'MISSENT', 'MISSENT TO', 'SILVERFORD', 'black'],
+    ['Forwarded', 'oval', 'FORWARDED', 'POST OFFICE', 'GREYHAVEN', 'blue'],
+    ['Delivered · tick', 'round', 'DELIVERED', 'COURIER', 'SIGNED', 'green', { icon: 'check' }],
+    ['Signed for', 'date', date('signed'), 'SIGNED FOR', 'COUNTER 2', 'blue'],
+    ['Parcel post', 'ticket', 'PARCEL POST', 'HANDLE WITH CARE', 'THIS WAY UP', 'brown', { font: 'Oswald' }],
+    ['Express', 'burst', 'EXPRESS', '', '', 'red', { font: 'Archivo Black' }],
+    ['Hold at counter', 'rect', 'HOLD AT\nCOUNTER', 'COLLECT FROM', 'BRANCH 9', 'black'],
+    ['Opened for inspection', 'oval', 'OPENED', 'FOR INSPECTION', 'RESEALED', 'red'],
+  ].forEach(([n, s, c, t, t2, ink, o]) => stamp(PST, n, s, c, t, t2, ink, o));
+
+  /* ---------- genre (50) ---------- */
+  const GEN = 'Genre stamps';
+  [
+    // fantasy
+    ['By order of the crown', 'shield', 'BY ORDER', 'OF THE CROWN', 'THORNWICK', 'crimson', { icon: 'crown', font: 'Cinzel' }],
+    ['Guild approved', 'gear', 'GUILD', 'APPROVED BY THE', 'GUILD OF SMITHS', 'brown', { font: 'Cinzel', icon: 'cog' }],
+    ['Sealed by the archmage', 'round', 'SEALED', 'BY THE ARCHMAGE', 'NINE LANTERNS', 'violet', { icon: 'star', font: 'Cinzel' }],
+    ['Dragon-proofed', 'triangle', 'PROOFED', 'DRAGON', '', 'red', { icon: 'hazard', font: 'Cinzel' }],
+    ['Royal treasury · tax paid', 'burst', 'TAX PAID', 'ROYAL TREASURY', 'ANNO XLII', 'olive', { font: 'Cinzel' }],
+    ['Cursed · do not open', 'box', 'CURSED · DO\nNOT OPEN', '', '', 'black', { icon: 'skull', font: 'Cinzel' }],
+    ['North gate passage', 'entry', 'PASSAGE', 'NORTH GATE', 'GRANTED BY THE WARDEN', 'brown', { icon: 'tower', font: 'Cinzel' }],
+    ['Adventurers guild · rank B', 'shield', 'RANK B', 'ADVENTURERS', 'GUILD', 'navy', { icon: 'star', font: 'Cinzel' }],
+    ['Inn of the gilded stag', 'round', 'LODGING', 'INN OF THE', 'GILDED STAG', 'brown', { font: 'Playfair Display' }],
+    ['Quest complete', 'banner', 'QUEST COMPLETE', '', '', 'green', { font: 'Cinzel' }],
+    ['Bounty paid', 'burst', 'BOUNTY PAID', 'SHERIFF', 'ELDERMOOR', 'crimson', { font: 'Playfair Display' }],
+    ['Magic licence renewed', 'date', 'MOON IX · YR 412', 'RENEWED', 'COLLEGE OF ARCANA', 'purple', { font: 'Cinzel' }],
+    // sci-fi
+    ['Decontaminated', 'hex', 'DECON', 'AIRLOCK 3', 'CLEAN', 'teal', { icon: 'hazard', font: 'Rajdhani' }],
+    ['Cleared for docking', 'entry', 'DOCK 14', 'CLEARED FOR DOCKING', 'OBERON STATION', 'cyan', { icon: 'rocket', font: 'Share Tech Mono' }],
+    ['Orbital customs', 'octagon', 'CUSTOMS', 'ORBITAL', 'DECK 4', 'blue', { icon: 'planet', font: 'Rajdhani' }],
+    ['Quarantine', 'triangle', 'QUARANTINE', 'BIOHAZARD', '', 'orange', { icon: 'hazard', font: 'Rajdhani' }],
+    ['Cryo certified', 'round', 'CRYO OK', 'CRYOGENIC', 'CERTIFIED', 'cyan', { icon: 'star', font: 'Share Tech Mono' }],
+    ['Gravity class 2', 'hex', 'G-CLASS 2', 'GRAVITY', 'RATED', 'violet', { font: 'Rajdhani' }],
+    ['Colony entry · Ares Basin', 'entry', date('ares', 1), 'ARES BASIN COLONY', 'ENTRY · HAB 12', 'red', { icon: 'planet', font: 'Share Tech Mono' }],
+    ['AI verified', 'round', 'AI VERIFIED', 'NEURAL AUDIT', 'PASS', 'magenta', { icon: 'eye', font: 'Rajdhani' }],
+    ['Void-rated', 'box', 'VOID-RATED', '', '', 'black', { font: 'Rajdhani' }],
+    ['Jump gate transit', 'oval', 'GATE 7', 'JUMP GATE', 'TRANSIT', 'blue', { icon: 'rocket', font: 'Rajdhani' }],
+    ['Synthetic registered', 'gear', 'SYNTH', 'REGISTERED', 'SERIES 9', 'magenta', { font: 'Rajdhani' }],
+    ['Oxygen quota paid', 'burst', 'O₂ PAID', 'QUOTA', 'HAB 12', 'cyan', { font: 'Rajdhani' }],
+    ['Restricted sector', 'triangle', 'RESTRICTED', 'SECTOR 9', '', 'red', { icon: 'hazard', font: 'Rajdhani' }],
+    // noir & vintage
+    ['Evidence', 'box', 'EVIDENCE', '', '', 'red', { font: 'Special Elite' }],
+    ['Case closed', 'rect', 'CASE CLOSED', 'MARROW CITY PD', 'FILE 47', 'black', { font: 'Special Elite' }],
+    ['Bureau of inquiry', 'gear', 'BUREAU', 'BUREAU OF', 'INQUIRY', 'navy', { font: 'Playfair Display' }],
+    ['Passed by censor', 'round', 'PASSED', 'PASSED BY', 'CENSOR 14', 'violet', { font: 'Special Elite' }],
+    ['File no. 47', 'box', 'FILE Nº 47', '', '', 'black', { font: 'Special Elite' }],
+    ['Telegram received', 'date', date('tele', 1), 'TELEGRAM RECEIVED', 'HARBOUR WIRELESS', 'blue', { font: 'Special Elite' }],
+    ['Missing', 'box', 'MISSING', '', '', 'red', { font: 'Playfair Display' }],
+    ['Witness statement', 'rect', 'STATEMENT', 'WITNESS', 'TAKEN BY DET. ROOK', 'black', { font: 'Special Elite' }],
+    // wasteland
+    ['Rad-free', 'triangle', 'RAD-FREE', 'TESTED', '', 'olive', { icon: 'hazard', font: 'Oswald' }],
+    ['Water ration issued', 'date', date('water', 1), 'WATER RATION', 'ISSUED · 3 TAGS', 'blue', { font: 'Oswald' }],
+    ['Scrap weighed', 'octagon', '40 T', 'SCRAP', 'WEIGHED', 'brown', { icon: 'cog', font: 'Oswald' }],
+    ['Gate 4 cleared', 'entry', 'CLEARED', 'GATE 4', 'DUSTLINE ASSEMBLY', 'red', { icon: 'tower', font: 'Oswald' }],
+    ['Condemned', 'box', 'CONDEMNED', '', '', 'black', { font: 'Bebas Neue', distress: .7 }],
+    ['Survivor registered', 'round', 'REGISTERED', 'SURVIVOR', 'SECTOR 9', 'olive', { font: 'Oswald' }],
+    ['No trade', 'box', 'NO TRADE', '', '', 'red', { icon: 'cross', font: 'Bebas Neue' }],
+    ['Fuel rationed', 'hex', 'FUEL', 'RATIONED', 'CLASS C', 'orange', { font: 'Oswald' }],
+    ['Outpost visited', 'round', 'VISITED', 'OUTPOST', 'RUSTWATER', 'brown', { icon: 'mountain', font: 'Oswald' }],
+    // cyber
+    ['Access granted', 'box', 'ACCESS GRANTED', '', '', 'green', { icon: 'check', font: 'Share Tech Mono' }],
+    ['Access denied', 'box', 'ACCESS DENIED', '', '', 'red', { icon: 'cross', font: 'Share Tech Mono' }],
+    ['Encrypted', 'hex', 'ENCRYPTED', 'AES-∞', 'NODE 7', 'cyan', { icon: 'key', font: 'Share Tech Mono' }],
+    ['Firewall passed', 'shield', 'PASSED', 'FIREWALL', 'v9.2', 'green', { icon: 'check', font: 'Share Tech Mono' }],
+    ['Blacklisted', 'box', 'BLACKLISTED', '', '', 'magenta', { icon: 'skull', font: 'Share Tech Mono' }],
+    ['Corp property', 'rect', 'CORP PROPERTY', 'HALCYON', 'DO NOT REMOVE', 'black', { font: 'Rajdhani' }],
+    ['Neon Mile checkpoint', 'entry', date('neon', 1), 'NEON MILE', 'CHECKPOINT 3', 'magenta', { icon: 'eye', font: 'Share Tech Mono' }],
+    ['Data purged', 'burst', 'PURGED', 'DATA', '0 BYTES LEFT', 'cyan', { font: 'Share Tech Mono' }],
+  ].forEach(([n, s, c, t, t2, ink, o]) => stamp(GEN, n, s, c, t, t2, ink, o));
+
+  /* ---------- seals (25): notary gears, wax, foil and blind embossing ---------- */
+  const SEA = 'Seals & stamps';
+  const REALMS = ['AURELIAN COMMONWEALTH', 'REPUBLIC OF VELORIA', 'MERIDIAN UNION', 'HALVORSEN ISLES', 'KINGDOM OF THORNWICK', 'FREE CITY OF SALTMERE'];
+  REALMS.forEach((r, i) => stamp(SEA, `Notary seal · ${title(r)}`, 'gear', 'SEAL', 'NOTARY PUBLIC', r, i % 2 ? 'blue' : 'black', { font: i % 3 === 0 ? 'Cinzel' : 'Playfair Display', icon: ['star', 'crown', 'sun', 'anchor', 'tower', 'ship'][i], scale: .9, distress: .15, uneven: .2, px: .7, py: .66, ...(i >= 3 ? { extra: { finish: 'blind', relief: .8, blend: 'source-over', opacity: 1 } } : {}) }));
+  const WAX = [['Crimson', '#8e1f1f', 'star'], ['Royal blue', '#2a3f8a', 'compass'], ['Forest green', '#2f6b3a', 'laurel'], ['Black', '#1a1a1c', 'shield'], ['Ochre', '#b07a1a', 'sun'], ['Purple', '#5a2a7a', 'rosette'], ['Copper', '#9a5a2a', 'star'], ['Teal', '#1f6f78', 'compass'], ['Rose', '#b04a6a', 'rosette'], ['Ivory', '#e8dcc0', 'laurel']];
+  WAX.forEach(([n, c, sty], i) => COMPONENTS.push({ cat: SEA, name: `Wax seal · ${n.toLowerCase()}`, make: C => { const s = 13 * Math.min(1.4, Math.min(C.w, C.h) / 54), x = C.w * .8, y = C.h * .74; return [{ type: 'ellipse', name: 'Wax seal', x, y, w: s * 1.06, h: s, fill: c, fill2: shiftColor(c, 0, 1, -.18), grad: true, angle: 60, relief: .75, rot: (i * 37) % 30 - 15 }, { type: 'seal', name: 'Seal impression', x, y, w: s * .72, h: s * .72, style: sty, text: i % 2 ? 'SIGILLUM · ' : '', points: 8 + (i % 4) * 2, color: shiftColor(c, 0, 1, c === '#e8dcc0' ? -.25 : -.14), relief: -.45 }]; } }));
+  [['Gold', '#d6b25e', 'sun'], ['Silver', '#c8ccd3', 'compass'], ['Copper', '#c47a4a', 'rosette'], ['Rose gold', '#d9a08a', 'laurel']].forEach(([n, f, sty]) => COMPONENTS.push({ cat: SEA, name: `Foil seal · ${n.toLowerCase()}`, make: C => [{ type: 'seal', name: `${n} seal`, x: C.w * .8, y: C.h * .28, w: 15, h: 15, style: sty, text: 'GENUINE · AUTHENTIC · ', points: 16, finish: 'foil', foil: f, relief: .25 }] }));
+  [['Blind emboss · rosette', 'rosette'], ['Blind emboss · laurel', 'laurel'], ['Blind emboss · compass', 'compass'], ['Blind emboss · shield', 'shield'], ['Holographic seal', 'star']].forEach(([n, sty], i) => COMPONENTS.push({ cat: SEA, name: n, make: C => [{ type: 'seal', name: n, x: C.w * .78, y: C.h * .7, w: 17, h: 17, style: sty, text: 'OFFICIAL · SEAL · ', points: 12, ...(i === 4 ? { finish: 'holo', holoPat: 2 } : { finish: 'blind', relief: .85 }) }] }));
+
+  /* ---------- stickers & labels (25) ---------- */
+  const STK = 'Stickers & labels', add = (cat, name, make) => COMPONENTS.push({ cat, name, make });
+  const T = (text, x, y, w, h, o = {}) => ({ type: 'text', name: o.name || text, x, y, w, h, text, font: 'Inter', weight: 800, size: h * .7, align: 'center', color: '#ffffff', ...o });
+  add(STK, 'Validation sticker · holo 2026', C => [{ type: 'holo', name: 'Validation sticker', x: C.w - 9, y: 9, w: 11, h: 11, shape: 'circle', holoPat: 4, emblem: 'none' }, T('26', C.w - 9, 9, 8, 5, { color: '#20242a', font: 'Archivo Black' })]);
+  add(STK, 'Validation sticker · green 2027', C => [{ type: 'ellipse', name: 'Sticker', x: C.w - 9, y: 9, w: 10, h: 10, fill: '#2f9a4a' }, T('27', C.w - 9, 9, 8, 4.6, { font: 'Archivo Black' })]);
+  add(STK, 'Quarter sticker · Q3', C => [{ type: 'rect', name: 'Sticker', x: C.w - 9, y: 9, w: 10, h: 10, radius: 2, fill: '#f2b632' }, T('Q3', C.w - 9, 9, 8, 4.6, { color: '#2a2010', font: 'Archivo Black' })]);
+  add(STK, 'Semester sticker · spring', C => [{ type: 'rect', name: 'Sticker', x: C.w - 12, y: 8, w: 18, h: 6.5, radius: 3.25, fill: '#e0306a' }, T('SPRING 26', C.w - 12, 8, 16, 3.6, { spacing: .08 })]);
+  add(STK, 'Verified holo shield', C => [{ type: 'holo', name: 'Verified shield', x: C.w * .82, y: C.h * .32, w: 12, h: 14, shape: 'shield', holoPat: 0, emblem: 'star' }, T('VERIFIED', C.w * .82, C.h * .32 + 9.5, 16, 2.6, { color: '#30363e', spacing: .15 })]);
+  add(STK, 'Corner ribbon · staff', C => [{ type: 'rect', name: 'Corner ribbon', x: C.w - 7, y: 7, w: 34, h: 5.6, rot: 45, fill: '#c4202b' }, T('STAFF', C.w - 7, 7, 18, 3.4, { rot: 45, spacing: .2 })]);
+  add(STK, 'Corner ribbon · new', C => [{ type: 'rect', name: 'Corner ribbon', x: 7, y: 7, w: 34, h: 5.6, rot: -45, fill: '#1f7f4a' }, T('NEW', 7, 7, 14, 3.4, { rot: -45, spacing: .2 })]);
+  add(STK, 'VIP gold tab', C => [{ type: 'rect', name: 'VIP tab', x: C.w * .8, y: C.h * .2, w: 20, h: 7, radius: 3.5, fill: '#d6b25e', finish: 'foil', foil: '#d6b25e' }, T('VIP', C.w * .8, C.h * .2, 16, 4.4, { color: '#2a2010', font: 'Cinzel', spacing: .3 })]);
+  add(STK, 'Access level dots', C => [T('ACCESS', C.w * .78, C.h * .78 - 4, 20, 2.2, { color: '#3a4048', spacing: .3, weight: 700 }), ...[0, 1, 2, 3, 4].map(i => ({ type: 'ellipse', name: 'Level dot ' + (i + 1), x: C.w * .78 - 8 + i * 4, y: C.h * .78, w: 3, h: 3, fill: i < 3 ? '#c4202b' : '#ffffff', stroke: '#c4202b', strokeW: .3 }))]);
+  add(STK, 'Temporary band', C => [{ type: 'rect', name: 'Temporary band', x: C.w / 2, y: C.h - 4, w: C.w, h: 8, fill: '#c4202b' }, T('TEMPORARY', C.w / 2, C.h - 4, C.w * .8, 4.4, { spacing: .5, font: 'Oswald', weight: 700 })]);
+  add(STK, 'Escort required band', C => [{ type: 'pattern', name: 'Stripes', x: C.w / 2, y: C.h - 4, w: C.w, h: 8, kind: 'stripes', color: '#111111', color2: '#f2b632', density: 10 }, { type: 'rect', name: 'Label', x: C.w / 2, y: C.h - 4, w: 40, h: 5.6, fill: '#111111' }, T('ESCORT REQUIRED', C.w / 2, C.h - 4, 36, 3.2, { color: '#f2b632', spacing: .2, font: 'Oswald', weight: 700 })]);
+  add(STK, 'Barcode label', C => [{ type: 'rect', name: 'Label', x: C.w * .7, y: C.h * .8, w: 30, h: 12, radius: 1, fill: '#ffffff', stroke: '#c9ccd1', strokeW: .2 }, { type: 'barcode', name: 'Barcode', x: C.w * .7, y: C.h * .8 - 1, w: 26, h: 7, data: 'LBL-' + '20417', showText: false }, T('LBL-20417', C.w * .7, C.h * .8 + 4.2, 26, 2, { color: '#20242a', font: 'IBM Plex Mono', weight: 500 })]);
+  add(STK, 'Asset tag', C => [{ type: 'rect', name: 'Asset tag', x: C.w * .7, y: C.h * .78, w: 34, h: 14, radius: 1.6, fill: '#d9dde2', finish: 'foil', foil: '#c8ccd3' }, T('PROPERTY OF NORTHWIND LABS', C.w * .7, C.h * .78 - 4.6, 30, 2.1, { color: '#20242a', weight: 700, spacing: .08 }), { type: 'barcode', name: 'Barcode', x: C.w * .7, y: C.h * .78 + 1, w: 28, h: 6, data: 'NWL-08812', showText: false }, T('NWL-08812', C.w * .7, C.h * .78 + 5.4, 20, 1.8, { color: '#20242a', font: 'IBM Plex Mono', weight: 500 })]);
+  add(STK, 'QR sticker · scan me', C => [{ type: 'rect', name: 'Sticker', x: C.w * .82, y: C.h * .62, w: 16, h: 20, radius: 2, fill: '#ffffff', stroke: '#111111', strokeW: .35 }, { type: 'qr', name: 'QR code', x: C.w * .82, y: C.h * .62 - 2, w: 13, h: 13, data: 'https://example.com/scan', quiet: 1 }, T('SCAN ME', C.w * .82, C.h * .62 + 7, 13, 2.6, { color: '#111111', spacing: .2 })]);
+  add(STK, 'Donor heart', C => [{ type: 'shape', name: 'Heart', x: C.w * .84, y: C.h * .3, w: 10, h: 9, kind: 'heart', fill: '#d6303a' }, T('DONOR', C.w * .84, C.h * .3 + 7, 14, 2.4, { color: '#d6303a', spacing: .2 })]);
+  add(STK, 'Blood type label', C => [{ type: 'rect', name: 'Label', x: C.w * .84, y: C.h * .3, w: 14, h: 10, radius: 1.2, fill: '#b3202a' }, T('BLOOD', C.w * .84, C.h * .3 - 2.6, 12, 2, { spacing: .2 }), T('O+', C.w * .84, C.h * .3 + 1.4, 12, 5, { font: 'Archivo Black' })]);
+  add(STK, 'Parking zone disc', C => [{ type: 'ellipse', name: 'Parking disc', x: C.w * .82, y: C.h * .3, w: 14, h: 14, fill: '#1f5f9e' }, T('P', C.w * .82, C.h * .3 - 1.2, 10, 7, { font: 'Archivo Black' }), T('ZONE B', C.w * .82, C.h * .3 + 3.8, 10, 2, { spacing: .15 })]);
+  add(STK, 'Number tag', C => [{ type: 'rect', name: 'Number tag', x: C.w * .84, y: C.h * .2, w: 14, h: 7, radius: 1.4, fill: '#111111' }, T('047', C.w * .84, C.h * .2, 12, 4.4, { font: 'Share Tech Mono', weight: 400, spacing: .1 })]);
+  add(STK, 'Tested dot', C => [{ type: 'ellipse', name: 'Tested dot', x: C.w * .86, y: C.h * .2, w: 9, h: 9, fill: '#2f9a4a' }, T('OK', C.w * .86, C.h * .2, 7, 3.8, { font: 'Archivo Black' })]);
+  add(STK, 'Lot & batch label', C => [{ type: 'rect', name: 'Label', x: C.w * .72, y: C.h * .8, w: 30, h: 11, radius: .8, fill: '#ffffff', stroke: '#20242a', strokeW: .25 }, { type: 'field', name: 'Lot', x: C.w * .72 - 7.5, y: C.h * .8, w: 13, h: 7, label: 'LOT', value: 'A-2207', color: '#20242a', lcolor: '#6a7078', font: 'IBM Plex Mono' }, { type: 'field', name: 'Batch', x: C.w * .72 + 7.5, y: C.h * .8, w: 13, h: 7, label: 'BATCH', value: '0914', color: '#20242a', lcolor: '#6a7078', font: 'IBM Plex Mono' }]);
+  add(STK, 'Sample watermark', C => [T('SAMPLE', C.w / 2, C.h / 2, C.w * .9, C.h * .32, { name: 'Sample watermark', rot: -22, color: '#c4202b', opacity: .16, font: 'Archivo Black', spacing: .1 })]);
+  add(STK, 'Not for sale strip', C => [{ type: 'rect', name: 'Strip', x: C.w / 2, y: 5, w: C.w, h: 5, fill: '#111111' }, T('NOT FOR SALE · DISPLAY ONLY · NOT FOR SALE', C.w / 2, 5, C.w * .94, 2.6, { color: '#f2f2f2', spacing: .25, weight: 700 })]);
+  add(STK, 'Warning triangle label', C => [{ type: 'shape', name: 'Warning', x: C.w * .84, y: C.h * .3, w: 12, h: 11, kind: 'polygon', sides: 3, fill: '#f2b632', stroke: '#111111', strokeW: .5 }, T('!', C.w * .84, C.h * .3 + 1.6, 6, 6, { color: '#111111', font: 'Archivo Black' })]);
+  add(STK, 'Press armband label', C => [{ type: 'rect', name: 'Armband', x: C.w * .3, y: C.h - 6, w: 30, h: 7, fill: '#1f4f9e' }, T('PRESS', C.w * .3, C.h - 6, 26, 4.6, { font: 'Archivo Black', spacing: .3 })]);
+  add(STK, 'Holo strip · thin', C => [{ type: 'holo', name: 'Holo strip', x: C.w * .5, y: C.h * .88, w: C.w * .9, h: 3, shape: 'rect', holoPat: 6, emblem: 'none' }]);
+
+  /* ---------- ribbons & insignia (25) ---------- */
+  const RIB = 'Ribbons & insignia';
+  [['Member', '#1f4f9e'], ['Honours', '#8a1c2a'], ['Est. 1887', '#2f6b3a'], ['Champion', '#b8892b']].forEach(([t, c]) => add(RIB, `Ribbon banner · ${t.toLowerCase()}`, C => [{ type: 'shape', name: 'Ribbon', x: C.w / 2, y: C.h * .2, w: 40, h: 9, kind: 'ribbon', fill: c }, T(t.toUpperCase(), C.w / 2, C.h * .2 - .6, 28, 3.6, { font: 'Cinzel', spacing: .2 })]));
+  [['1st', '#d6b25e', '#8a1c2a'], ['2nd', '#c8ccd3', '#1f4f9e'], ['3rd', '#c47a4a', '#2f6b3a']].forEach(([t, f, rc]) => add(RIB, `Award rosette · ${t}`, C => { const x = C.w * .82, y = C.h * .34; return [{ type: 'rect', name: 'Tail L', x: x - 2.4, y: y + 8, w: 4, h: 11, rot: 14, fill: rc }, { type: 'rect', name: 'Tail R', x: x + 2.4, y: y + 8, w: 4, h: 11, rot: -14, fill: rc }, { type: 'shape', name: 'Rosette', x, y, w: 14, h: 14, kind: 'burst', points: 24, inner: .82, fill: rc }, { type: 'ellipse', name: 'Medallion', x, y, w: 10, h: 10, fill: f, finish: 'foil', foil: f }, T(t.toUpperCase(), x, y, 8, 3.6, { color: '#2a2010', font: 'Archivo Black' })]; }));
+  [1, 2, 3].forEach(n => add(RIB, `Rank chevrons · ${n}`, C => Array.from({ length: n }, (_, i) => ({ type: 'shape', name: 'Chevron ' + (i + 1), x: C.w * .84, y: C.h * .26 + i * 3.4, w: 12, h: 5, kind: 'chevron', fill: '#b8892b', finish: 'foil', foil: '#d6b25e', rot: 180 }))));
+  [1, 2, 3].forEach(n => add(RIB, `Rank stars · ${n}`, C => Array.from({ length: n }, (_, i) => ({ type: 'shape', name: 'Star ' + (i + 1), x: C.w * .84 - (n - 1) * 2.6 + i * 5.2, y: C.h * .2, w: 4.6, h: 4.6, kind: 'star', points: 5, inner: .42, fill: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }))));
+  add(RIB, 'Laurel · merit', C => [{ type: 'seal', name: 'Laurel', x: C.w * .8, y: C.h * .32, w: 16, h: 16, style: 'laurel', text: '', color: '#2f6b3a' }, T('MERIT', C.w * .8, C.h * .32 + 10, 14, 2.8, { color: '#2f6b3a', font: 'Cinzel', spacing: .25 })]);
+  [['Crest · azure', '#1f4f9e', '#d6b25e'], ['Crest · gules', '#8a1c2a', '#f3efe4'], ['Crest · vert', '#2f6b3a', '#d6b25e']].forEach(([n, c, c2]) => add(RIB, n, C => { const x = C.w * .82, y = C.h * .32; return [{ type: 'shape', name: 'Shield', x, y, w: 13, h: 15, kind: 'shield', fill: c, stroke: c2, strokeW: .5 }, { type: 'shape', name: 'Chevron', x, y: y + 1.2, w: 9, h: 4, kind: 'chevron', fill: c2, rot: 180 }, { type: 'shape', name: 'Star', x, y: y - 3.4, w: 4, h: 4, kind: 'star', points: 5, inner: .42, fill: c2 }]; }));
+  add(RIB, 'Diamond badge', C => [{ type: 'shape', name: 'Diamond', x: C.w * .82, y: C.h * .3, w: 14, h: 14, kind: 'diamond', fill: '#2a2f7a' }, T('A', C.w * .82, C.h * .3, 8, 7, { font: 'Cinzel' })]);
+  add(RIB, 'Medal on ribbon', C => { const x = C.w * .82, y = C.h * .3; return [{ type: 'pattern', name: 'Ribbon', x, y: y - 5, w: 7, h: 9, kind: 'stripes', color: '#8a1c2a', color2: '#f3efe4', density: 6 }, { type: 'ellipse', name: 'Medal', x, y: y + 3.5, w: 10, h: 10, fill: '#d6b25e', finish: 'foil', foil: '#d6b25e', relief: .4 }, { type: 'shape', name: 'Medal star', x, y: y + 3.5, w: 6, h: 6, kind: 'star', points: 5, inner: .42, fill: '#b8892b' }]; });
+  add(RIB, 'Diagonal sash', C => [{ type: 'rect', name: 'Sash', x: C.w / 2, y: C.h / 2, w: Math.hypot(C.w, C.h) * 1.2, h: 6, rot: -28, fill: '#8a1c2a', opacity: .9 }, { type: 'rect', name: 'Sash edge', x: C.w / 2, y: C.h / 2, w: Math.hypot(C.w, C.h) * 1.2, h: 7.2, rot: -28, fillOn: false, stroke: '#d6b25e', strokeW: .35 }]);
+  add(RIB, 'Heart badge', C => [{ type: 'shape', name: 'Heart', x: C.w * .84, y: C.h * .26, w: 11, h: 10, kind: 'heart', fill: '#e0306a' }]);
+  add(RIB, 'Arrow tag', C => [{ type: 'shape', name: 'Arrow', x: C.w * .78, y: C.h * .2, w: 22, h: 8, kind: 'arrow', fill: '#111111' }, T('THIS WAY', C.w * .76, C.h * .2, 14, 3, { spacing: .15 })]);
+  add(RIB, 'Luggage tag · crew', C => [{ type: 'shape', name: 'Tag', x: C.w * .8, y: C.h * .3, w: 22, h: 12, kind: 'tag', fill: '#f2b632' }, T('CREW', C.w * .82, C.h * .3, 14, 4.4, { color: '#2a2010', font: 'Archivo Black', spacing: .15 })]);
+  add(RIB, 'Sunburst badge · new', C => [{ type: 'shape', name: 'Burst', x: C.w * .84, y: C.h * .26, w: 14, h: 14, kind: 'burst', points: 18, inner: .8, fill: '#e0306a' }, T('NEW!', C.w * .84, C.h * .26, 10, 3.6, { font: 'Archivo Black', rot: -12 })]);
+  add(RIB, 'Wings insignia', C => { const x = C.w * .8, y = C.h * .22, o = [{ type: 'ellipse', name: 'Centre', x, y, w: 4.6, h: 4.6, fill: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }]; for (const s of [-1, 1]) for (let i = 0; i < 3; i++) o.push({ type: 'rect', name: 'Feather', x: x + s * (5 + i * 1.4), y: y - 1 + i * 1.4, w: 8 - i * 1.8, h: 1.2, radius: .6, rot: s * 10, fill: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }); return o; });
+  add(RIB, 'Service bars', C => [['#8a1c2a', '#f3efe4'], ['#1f4f9e', '#d6b25e'], ['#2f6b3a', '#111111']].map(([a, b], i) => ({ type: 'pattern', name: 'Bar ' + (i + 1), x: C.w * .8 - 7 + i * 7, y: C.h * .2, w: 6.6, h: 2.6, kind: 'stripes', color: a, color2: b, density: 5 })));
+  add(RIB, 'Monogram roundel', C => [{ type: 'ellipse', name: 'Roundel', x: C.w * .82, y: C.h * .3, w: 14, h: 14, fillOn: false, stroke: '#b8892b', strokeW: .5, finish: 'foil', foil: '#d6b25e' }, T('AF', C.w * .82, C.h * .3, 10, 6, { color: '#b8892b', font: 'Cinzel', finish: 'foil', foil: '#d6b25e' })]);
+
+  const order = ['Security', 'Holograms', 'Seals & stamps', 'Office stamps', 'Travel stamps', 'Postal & date', 'Genre stamps', 'Stickers & labels', 'Ribbons & insignia', 'Identity', 'Decoration', 'Text styles', ...LAYOUT_CATS];
+  COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
+})();
 
 /* ================= UI ================= */
 const ui = Forge.ui = {};
