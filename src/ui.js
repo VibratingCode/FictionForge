@@ -483,23 +483,44 @@ const _litT = document.createElement('canvas');
 function litLayers(r) {   // soft-light relief + metal map, and a screen map of highlights and holographic rainbow
   if (r._lit) return r._lit;
   const W = Math.min(1100, r.A.width), H = Math.max(2, Math.round(W * r.A.height / r.A.width)); _litT.width = W; _litT.height = H; const x = _litT.getContext('2d', { willReadFrequently: true });
-  const read = cv => { if (!cv) return null; x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
-  const h = read(r.H), m = read(r.M), o = read(r.O), sd = new ImageData(W, H), hd = new ImageData(W, H), gain = 1.7 * Math.min(2.5, P.card.relief || 1.5);
+  const read = cv => { if (!cv) return null; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
+  const h = read(r.H), m = read(r.M), o = read(r.O), sd = new ImageData(W, H), hd = new ImageData(W, H), gain = 1.5 * Math.min(2.5, P.card.relief || 1.5);
   const hue2 = (hh) => { const f = n => { const k = (n + hh * 12) % 12; return 255 * (.62 - .53 * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
   for (let y = 0; y < H; y++) { const ya = Math.max(0, y - 1), yb = Math.min(H - 1, y + 1); for (let xx = 0; xx < W; xx++) {
     const i = (y * W + xx) * 4; let v = 128;
     if (h) v += (h[(ya * W + Math.max(0, xx - 1)) * 4] - h[(yb * W + Math.min(W - 1, xx + 1)) * 4]) * gain;
-    const met = m ? m[i] / 255 : 0, band = .5 + .5 * Math.sin((xx / W * .9 + y / H * .55) * Math.PI * 3.1 + 1.1);
-    if (met > .02) v += (band - .5) * 160 * met;
+    const met = m ? m[i] / 255 : 0, t = xx / W * .62 + y / H * .38, env = .12 + .88 * Math.exp(-(((t - .3) / .34) ** 2));   // one broad, soft reflection
+    if (met > .02) v += (env - .55) * 84 * met;
     sd.data[i] = sd.data[i + 1] = sd.data[i + 2] = v < 0 ? 0 : v > 255 ? 255 : v; sd.data[i + 3] = 255;
     let a = 0, cr = 255, cg = 255, cb = 255;
-    if (met > .02 && band > .8) a = (band - .8) / .2 * met * .6;
-    if (o && o[i] > 8) { const k = o[i] / 255 * .72; if (k > a) { [cr, cg, cb] = hue2(((xx / W) * 1.7 + (y / H) * 1.2 + o[i + 1] / 255 * .5) % 1); a = k; } }
+    if (met > .02 && env > .7) a = (env - .7) / .3 * met * .15;
+    if (o && o[i] > 8) { const k = o[i] / 255 * .32; if (k > a) { [cr, cg, cb] = hue2(((xx / W) * 1.1 + (y / H) * .8 + o[i + 1] / 255 * .5) % 1); a = k; } }
     hd.data[i] = cr; hd.data[i + 1] = cg; hd.data[i + 2] = cb; hd.data[i + 3] = a * 255;
   } }
   const soft = document.createElement('canvas'), scr = document.createElement('canvas'); soft.width = scr.width = W; soft.height = scr.height = H; soft.getContext('2d').putImageData(sd, 0, 0); scr.getContext('2d').putImageData(hd, 0, 0);
   return (r._lit = { soft, scr });
 }
+/* the lit card face, shared by the flat view and the substrate sheet: substrate, relief and sheen, glow, rim */
+ui.paintCard = function (g, r, X, Y, CW, CH, path, o = {}) {
+  const C = P.card, S = sub(), lit = o.lit !== false, uv = !!o.uv, s = o.s || CW / C.w;
+  g.save(); path(); g.clip(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  if (S.clear && r.E) { if (!lit) checker(g, X, Y, CW, CH); g.fillStyle = S.disp || 'rgba(30,30,30,.5)'; g.fillRect(X, Y, CW, CH); g.drawImage(r.E, X, Y, CW, CH); }
+  else g.drawImage(r.A, X, Y, CW, CH);
+  if (lit && !uv) {
+    const L = litLayers(r); g.save(); g.globalCompositeOperation = 'soft-light'; g.drawImage(L.soft, X, Y, CW, CH); g.globalCompositeOperation = 'screen'; g.drawImage(L.scr, X, Y, CW, CH);
+    const gl = C.lam === 'gloss' ? .07 : C.lam === 'matte' ? .02 : Math.min(.07, (S.cc || 0) * .05 + (S.metal ? .02 : 0) + (S.clear ? .05 : 0));
+    if (gl > 0) { const q = g.createLinearGradient(X, Y, X + CW * .7, Y + CH); q.addColorStop(0, `rgba(255,255,255,${gl})`); q.addColorStop(.45, `rgba(255,255,255,${gl * .35})`); q.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = q; g.fillRect(X, Y, CW, CH); }
+    const lf = g.createLinearGradient(X, Y, X + CW * .55, Y + CH); lf.addColorStop(0, 'rgba(255,255,255,.05)'); lf.addColorStop(1, 'rgba(0,0,0,.12)'); g.globalCompositeOperation = 'source-over'; g.fillStyle = lf; g.fillRect(X, Y, CW, CH); g.restore();
+  }
+  if (!uv && r.G) { g.save(); g.globalCompositeOperation = 'screen'; g.globalAlpha = .9; g.drawImage(r.G, X, Y, CW, CH); g.restore(); }
+  if (uv) { g.fillStyle = 'rgba(14,6,30,.88)'; g.fillRect(X, Y, CW, CH); if (r.X) { g.globalCompositeOperation = 'lighter'; g.drawImage(r.X, X, Y, CW, CH); g.globalCompositeOperation = 'source-over'; } }
+  if (o.after) o.after();
+  g.restore();
+  if (lit) { g.save(); path(); const lw = Math.max(1, Math.min(6, C.thick * s * .3));
+    if (S.glow) { g.shadowColor = S.glow; g.shadowBlur = 14; g.strokeStyle = S.glow; g.lineWidth = lw * 1.2; g.stroke(); }
+    else { const q = g.createLinearGradient(X, Y, X + CW, Y + CH); q.addColorStop(0, `rgba(255,255,255,${S.clear ? .55 : .38})`); q.addColorStop(.5, 'rgba(255,255,255,.05)'); q.addColorStop(1, 'rgba(0,0,0,.45)'); g.strokeStyle = q; g.lineWidth = lw; g.stroke(); }
+    g.restore(); }
+};
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
   fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
@@ -511,25 +532,7 @@ ui.drawFlat = function () {
   const lit = fv.lit !== false;
   const X = fv.ox, Y = fv.oy, CW = C.w * fv.s, CH = C.h * fv.s;
   for (const [bl, oy, al] of S.clear ? [[30, 14, .35]] : [[54, 26, .55], [16, 6, .5], [4, 1.5, .45]]) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = `rgba(0,0,0,${al})`; fx.shadowBlur = bl; fx.shadowOffsetY = oy; fx.fillStyle = S.clear ? 'rgba(0,0,0,.01)' : '#18191c'; fx.fill(); fx.restore(); }
-  if (r) {
-    fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
-    if (S.clear && r.E) { if (!lit) checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
-    else fx.drawImage(r.A, X, Y, CW, CH);
-    if (lit && !uvOn) {
-      const L = litLayers(r); fx.save(); fx.globalCompositeOperation = 'soft-light'; fx.drawImage(L.soft, X, Y, CW, CH); fx.globalCompositeOperation = 'screen'; fx.drawImage(L.scr, X, Y, CW, CH);
-      const gl = C.lam === 'gloss' ? .16 : C.lam === 'matte' ? .05 : Math.min(.18, (S.cc || 0) * .13 + (S.metal ? .07 : 0) + (S.clear ? .13 : 0));
-      if (gl > 0) { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); [[0, 0], [.3, gl], [.4, 0], [.62, 0], [.69, gl * .5], [.76, 0]].forEach(([t, a]) => g.addColorStop(t, `rgba(255,255,255,${a})`)); fx.fillStyle = g; fx.fillRect(X, Y, CW, CH); }
-      const lf = fx.createLinearGradient(X, Y, X + CW * .55, Y + CH); lf.addColorStop(0, 'rgba(255,255,255,.07)'); lf.addColorStop(1, 'rgba(0,0,0,.16)'); fx.globalCompositeOperation = 'source-over'; fx.fillStyle = lf; fx.fillRect(X, Y, CW, CH); fx.restore();
-    }
-    if (!uvOn && r.X && (S.glow || P[side].some(e => e.glow > 0))) { fx.save(); fx.globalCompositeOperation = 'screen'; fx.globalAlpha = .9; fx.drawImage(r.X, X, Y, CW, CH); fx.restore(); }
-    if (uvOn) { fx.fillStyle = 'rgba(14,6,30,.88)'; fx.fillRect(X, Y, CW, CH); if (r.X) { fx.globalCompositeOperation = 'lighter'; fx.drawImage(r.X, X, Y, CW, CH); fx.globalCompositeOperation = 'source-over'; } }
-    if (fv.grid) { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } }
-    fx.restore();
-    if (lit) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); const lw = Math.max(1, Math.min(6, C.thick * fv.s * .3));
-      if (S.glow) { fx.shadowColor = S.glow; fx.shadowBlur = 14; fx.strokeStyle = S.glow; fx.lineWidth = lw * 1.2; fx.stroke(); }
-      else { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); g.addColorStop(0, `rgba(255,255,255,${S.clear ? .7 : .5})`); g.addColorStop(.5, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(0,0,0,.5)'); fx.strokeStyle = g; fx.lineWidth = lw; fx.stroke(); }
-      fx.restore(); }
-  }
+  if (r) ui.paintCard(fx, r, X, Y, CW, CH, () => { fx.beginPath(); cardPathAt(fx, X, Y, fv.s); }, { lit, uv: uvOn, s: fv.s, after: fv.grid ? () => { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } } : null });
   if (fv.safe) { fx.save(); fx.strokeStyle = 'rgba(255,220,90,.75)'; fx.setLineDash([5, 4]); fx.lineWidth = 1; fx.beginPath(); rr(fx, X + 3 * fv.s, Y + 3 * fv.s, CW - 6 * fv.s, CH - 6 * fv.s, Math.max(0, C.r - 3) * fv.s); fx.stroke(); fx.setLineDash([]); fx.strokeStyle = 'rgba(255,220,90,.4)'; fx.beginPath(); fx.moveTo(X + CW / 2, Y); fx.lineTo(X + CW / 2, Y + CH); fx.moveTo(X, Y + CH / 2); fx.lineTo(X + CW, Y + CH / 2); fx.stroke(); fx.restore(); }
   const hv = hoverId && !selIds.includes(hoverId) ? P[side].find(e => e.id === hoverId) : null; if (hv) outline(hv, 'rgba(255,255,255,.55)', false);
   const sels = selEls().filter(e => sideOf(e.id) === side); for (const el of sels) outline(el, '#ff5a3c', sels.length === 1);

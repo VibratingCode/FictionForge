@@ -783,13 +783,17 @@ function renderSide(side, tier, opts) {
     for (const el of els) { if (el.finish === 'window') { drawEl(t, el, kh, { ch: 'T', color: '#fff' }); continue; } const cvg = coverage(el); if (!cvg) continue; t.save(); t.globalAlpha = cvg * (el.opacity ?? 1) * (tintLayer(el) ? .4 : 1); drawEl(t, el, kh, { ch: 'T', color: '#000' }); t.restore(); }
     t.restore(); out.T = Tc;
   }
-  /* UV emission */
+  /* glow (always on) and UV emission (only under UV light) */
+  const glowInto = (x) => {
+    for (const el of els) { if (!(el.glow > 0)) continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.glowColor || '#6ab0ff', uv: true }); x.restore(); }
+    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
+  };
+  if (elGlow || S.glow) { const Gc = cv(side, tier, 'G', hw, hh), gx = prep(Gc, '#000'); clipCard(gx, kh); glowInto(gx); gx.restore(); out.G = Gc; }
   if (need.X) {
     const Xc = cv(side, tier, 'X', hw, hh), x = prep(Xc, '#000'); clipCard(x, kh);
     if (fl && !elGlow) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
     for (const el of els) { if (el.finish !== 'uv') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.uvColor, uv: true }); x.restore(); }
-    for (const el of els) { if (!(el.glow > 0)) continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.glowColor || '#6ab0ff', uv: true }); x.restore(); }
-    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
+    glowInto(x);
     if (C.uvFibers > 0) { const R = rng(C.seed * 4111 + (side === 'back' ? 9 : 2)), cols = ['#ff3b6b', '#38d6ff', '#ffe14d', '#7dff6a', '#ff7af0']; x.lineCap = 'round'; for (let i = 0; i < C.uvFibers; i++) { const px = R() * C.w, py = R() * C.h, an = R() * Math.PI * 2, L = .9 + R() * 2.6, b = (R() - .5) * 2; x.strokeStyle = cols[R() * cols.length | 0]; x.lineWidth = (.06 + R() * .05) * kh; const dx = Math.cos(an) * L / 2, dy = Math.sin(an) * L / 2; x.beginPath(); x.moveTo((px - dx) * kh, (py - dy) * kh); x.quadraticCurveTo((px + b * dy) * kh, (py - b * dx) * kh, (px + dx) * kh, (py + dy) * kh); x.stroke(); } }
     x.restore(); out.X = Xc;
   }
@@ -823,13 +827,13 @@ function subTex(c, ch, k) {
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
   } else if (S.tex === 'leather') {
     const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
-    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 55); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .55) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1.5 + R() * 5.5) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 90); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .45) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1 + R() * 3) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
     if (ch === 'A') {
       c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
       c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
-      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .5; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
-      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .22, .5);
-    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .55, .8); }
+      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .32; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
+      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .09, .5);
+    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .24, .8); }
     else { c.save(); c.globalCompositeOperation = 'screen'; c.globalAlpha = .4; c.fillStyle = patt(L.I); c.fillRect(0, 0, W, Hh); c.restore(); }
   } else if (S.tex === 'brushed') {
     if (ch === 'A' || ch === 'R') { const n = Math.round(C.h / .035); c.save(); for (let i = 0; i < n; i++) { const y = (i * .035 + R() * .03) * k, v = R(); c.fillStyle = v < .5 ? `rgba(0,0,0,${.04 + R() * .07})` : `rgba(255,255,255,${.04 + R() * .08})`; const x0 = R() * W * .3; c.fillRect(-x0, y, W * (.7 + R() * .6) + x0, Math.max(1, .022 * k)); } c.restore(); }

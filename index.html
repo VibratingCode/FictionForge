@@ -1024,13 +1024,17 @@ function renderSide(side, tier, opts) {
     for (const el of els) { if (el.finish === 'window') { drawEl(t, el, kh, { ch: 'T', color: '#fff' }); continue; } const cvg = coverage(el); if (!cvg) continue; t.save(); t.globalAlpha = cvg * (el.opacity ?? 1) * (tintLayer(el) ? .4 : 1); drawEl(t, el, kh, { ch: 'T', color: '#000' }); t.restore(); }
     t.restore(); out.T = Tc;
   }
-  /* UV emission */
+  /* glow (always on) and UV emission (only under UV light) */
+  const glowInto = (x) => {
+    for (const el of els) { if (!(el.glow > 0)) continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.glowColor || '#6ab0ff', uv: true }); x.restore(); }
+    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
+  };
+  if (elGlow || S.glow) { const Gc = cv(side, tier, 'G', hw, hh), gx = prep(Gc, '#000'); clipCard(gx, kh); glowInto(gx); gx.restore(); out.G = Gc; }
   if (need.X) {
     const Xc = cv(side, tier, 'X', hw, hh), x = prep(Xc, '#000'); clipCard(x, kh);
     if (fl && !elGlow) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
     for (const el of els) { if (el.finish !== 'uv') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.uvColor, uv: true }); x.restore(); }
-    for (const el of els) { if (!(el.glow > 0)) continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.glowColor || '#6ab0ff', uv: true }); x.restore(); }
-    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
+    glowInto(x);
     if (C.uvFibers > 0) { const R = rng(C.seed * 4111 + (side === 'back' ? 9 : 2)), cols = ['#ff3b6b', '#38d6ff', '#ffe14d', '#7dff6a', '#ff7af0']; x.lineCap = 'round'; for (let i = 0; i < C.uvFibers; i++) { const px = R() * C.w, py = R() * C.h, an = R() * Math.PI * 2, L = .9 + R() * 2.6, b = (R() - .5) * 2; x.strokeStyle = cols[R() * cols.length | 0]; x.lineWidth = (.06 + R() * .05) * kh; const dx = Math.cos(an) * L / 2, dy = Math.sin(an) * L / 2; x.beginPath(); x.moveTo((px - dx) * kh, (py - dy) * kh); x.quadraticCurveTo((px + b * dy) * kh, (py - b * dx) * kh, (px + dx) * kh, (py + dy) * kh); x.stroke(); } }
     x.restore(); out.X = Xc;
   }
@@ -1064,13 +1068,13 @@ function subTex(c, ch, k) {
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
   } else if (S.tex === 'leather') {
     const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
-    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 55); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .55) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1.5 + R() * 5.5) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 90); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .45) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1 + R() * 3) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
     if (ch === 'A') {
       c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
       c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
-      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .5; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
-      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .22, .5);
-    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .55, .8); }
+      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .32; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
+      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .09, .5);
+    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .24, .8); }
     else { c.save(); c.globalCompositeOperation = 'screen'; c.globalAlpha = .4; c.fillStyle = patt(L.I); c.fillRect(0, 0, W, Hh); c.restore(); }
   } else if (S.tex === 'brushed') {
     if (ch === 'A' || ch === 'R') { const n = Math.round(C.h / .035); c.save(); for (let i = 0; i < n; i++) { const y = (i * .035 + R() * .03) * k, v = R(); c.fillStyle = v < .5 ? `rgba(0,0,0,${.04 + R() * .07})` : `rgba(255,255,255,${.04 + R() * .08})`; const x0 = R() * W * .3; c.fillRect(-x0, y, W * (.7 + R() * .6) + x0, Math.max(1, .022 * k)); } c.restore(); }
@@ -1200,113 +1204,116 @@ function hiPass() {
 }
 Forge.invalidate = invalidate; Forge.last = last;
 
-/* ================= high-detail procedural substrate textures (seamless noise, 4K-ready) ================= */
+/* ================= high-detail procedural substrate textures (seamless noise, 4K-ready) =================
+   Rules: every tile is periodic in u and v (no seams), nothing paints highlights or glare into the
+   albedo (lighting belongs to the renderer), and detail stays quiet enough to sit under a design. */
 const TEXN = (() => {
   const cache = new Map();
   const lattice = (seed, P) => { const R = rng(seed), g = new Float32Array(P * P); for (let i = 0; i < g.length; i++) g[i] = R(); return g; };
   const sm = t => t * t * (3 - 2 * t);
   const sample = (g, P, x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), x0 = ((xi % P) + P) % P, y0 = ((yi % P) + P) % P, x1 = (x0 + 1) % P, y1 = (y0 + 1) % P; const a = g[y0 * P + x0], b = g[y0 * P + x1], c = g[y1 * P + x0], d = g[y1 * P + x1]; return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy; };
-  /* seamless fBm over the unit square: base lattice cells across, octaves doubling */
+  /* seamless fBm over the unit square: `base` lattice cells across, octaves doubling (all periodic in 1) */
   const fbmF = (seed, base, oct, gain = .5) => { const L = []; for (let o = 0; o < oct; o++) L.push([lattice(seed + o * 101, base << o), base << o]); return (u, v) => { let s = 0, a = 1, n = 0; for (const [g, P] of L) { s += sample(g, P, u * P, v * P) * a; n += a; a *= gain; } return s / n; }; };
-  /* build (once) a size×size canvas from f(u,v) -> [r,g,b] or gray number */
+  /* build (once) a size×size canvas from f(u,v) -> [r,g,b] or a gray number */
   const tile = (key, size, f) => { if (cache.has(key)) return cache.get(key); const cv = document.createElement('canvas'); cv.width = cv.height = size; const x = cv.getContext('2d'), im = x.createImageData(size, size), d = im.data;
     for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) { const v = f(i / size, j / size), p = (j * size + i) * 4; if (typeof v === 'number') { const q = Math.max(0, Math.min(255, v * 255)); d[p] = d[p + 1] = d[p + 2] = q; } else { d[p] = v[0]; d[p + 1] = v[1]; d[p + 2] = v[2]; } d[p + 3] = 255; }
     x.putImageData(im, 0, 0); cache.set(key, cv); return cv; };
-  const hsl = (h, s, l) => { const f = n => { const k = (n + h * 12) % 12; return 255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
+  const hsl = (h, s, l) => { h = ((h % 1) + 1) % 1; const f = n => { const k = (n + h * 12) % 12; return 255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
+  const TAU = Math.PI * 2;
   return {
+    /* soft large-scale variation */
     clouds: () => { const f = fbmF(11, 4, 6, .55); return tile('clouds', 512, (u, v) => f(u, v)); },
+    /* fine isotropic grain */
     fine: () => { const f = fbmF(23, 32, 4, .6); return tile('fine', 512, (u, v) => .5 + (f(u, v) - .5) * 1.8); },
-    marble: () => { const w1 = fbmF(31, 3, 6, .55), w2 = fbmF(37, 3, 6, .55), b = fbmF(41, 2, 7, .52); return tile('marble', 1024, (u, v) => { const q = b(u + (w1(u, v) - .5) * .55, v + (w2(u, v) - .5) * .55), r = 1 - Math.abs(Math.sin(q * Math.PI * 4)); return 1 - (Math.pow(r, 16) * .75 + Math.pow(r, 4) * .12); }); },
-    slate: () => { const a = fbmF(51, 3, 6, .55), b = fbmF(57, 16, 4, .6); return tile('slate', 1024, (u, v) => { const s = a(u, v * .25 + a(u * .5, v) * .3); return .35 + s * .45 + (b(u, v) - .5) * .35 + .12 * Math.pow(Math.abs(Math.sin((v * 9 + s * 3) * Math.PI)), 12); }); },
-    nacre: () => { const a = fbmF(61, 3, 5, .55), b = fbmF(67, 6, 4, .55); return tile('nacre', 512, (u, v) => { const t = a(u, v) * 2.2 + b(u, v) * .8; return hsl((t + .55) % 1, .55, .74); }); },
-    diffraction: () => { const a = fbmF(71, 2, 4, .5); return tile('diffraction', 512, (u, v) => { const t = u * 2 + v + a(u, v) * .6; return hsl(((t % 1) + 1) % 1, .9, .6); }); },
-    bands: () => { const a = fbmF(81, 2, 5, .55); return tile('bands', 512, (u, v) => .5 + .5 * Math.sin((v * 46 + a(u, v) * 9) * Math.PI)); },
-    heat: () => { const a = fbmF(91, 2, 4, .5); return tile('heat', 512, (u, v) => { const t = u * .7 + v * .3 + (a(u, v) - .5) * .4; return hsl((.6 + t * .55) % 1, .7, .55); }); },
-    twill: () => tile('twill', 128, (u, v) => { const t = ((u + v) * 8) % 1, warp = Math.sin(t * Math.PI), weft = .5 + .5 * Math.sin(((u - v) * 32) * Math.PI * 2), fuzz = ((Math.sin(u * 912.1 + v * 77.3) * 43758.5453) % 1 + 1) % 1; return .18 + warp * .62 + weft * .1 + fuzz * .1; }),
+    /* marble: contour veins of a gently warped field, soft core with a faint halo (no hard black cracks) */
+    marble: () => { const t1 = fbmF(31, 2, 6, .52), t2 = fbmF(37, 3, 5, .5), t3 = fbmF(43, 4, 5, .55);
+      return tile('marble3', 1024, (u, v) => {   // two turbulent vein systems (integer slopes keep it seamless), cool grey
+        const q1 = u * 2 + v + (t1(u, v) - .5) * 1.7, q2 = u - v * 2 + (t2(u, v) - .5) * 1.5, r1 = 1 - Math.abs(Math.sin(q1 * Math.PI)), r2 = 1 - Math.abs(Math.sin(q2 * Math.PI));
+        const d = Math.min(1, Math.pow(r1, 14) * .55 + Math.pow(r1, 4) * .15 + Math.pow(r2, 24) * .28 + Math.pow(r2, 7) * .06 + (t3(u, v) - .5) * .05), g = 1 - d;
+        return [g * 255, (g + d * .025) * 255, (g + d * .07) * 255]; }); },
+    /* slate: cloudy charcoal with faint horizontal cleavage layers */
+    slate: () => { const a = fbmF(51, 3, 5, .55), c = fbmF(53, 2, 4, .5), f = fbmF(57, 24, 3, .55);
+      return tile('slate2', 1024, (u, v) => { const lay = Math.sin(TAU * (v * 7 + (c(u, v) - .5) * 1.4)); return .55 + (a(u, v) - .5) * .5 + lay * .045 + (f(u, v) - .5) * .12; }); },
+    /* pearl: smooth pastel drift */
+    nacre: () => { const a = fbmF(61, 2, 4, .5), b = fbmF(67, 3, 3, .5); return tile('nacre2', 512, (u, v) => hsl(.55 + a(u, v) * 1.3 + b(u, v) * .35, .42, .8)); },
+    /* holographic foil: diffraction sweep */
+    diffraction: () => { const a = fbmF(71, 2, 4, .5); return tile('diffraction', 512, (u, v) => hsl(u * 2 + v + a(u, v) * .6, .7, .62)); },
+    /* anodised titanium: deep blue drifting toward violet and teal, very low frequency */
+    anod: () => { const a = fbmF(91, 2, 4, .5), b = fbmF(97, 5, 3, .5); return tile('anod2', 512, (u, v) => hsl(.645 + (a(u, v) - .5) * .26 + (b(u, v) - .5) * .04, .5, .46)); },
+    /* woven twill */
+    twill: () => tile('twill', 128, (u, v) => { const t = ((u + v) * 8) % 1, warp = Math.sin(t * Math.PI), weft = .5 + .5 * Math.sin(((u - v) * 32) * TAU), fuzz = ((Math.sin(u * 912.1 + v * 77.3) * 43758.5453) % 1 + 1) % 1; return .3 + warp * .5 + weft * .1 + fuzz * .1; }),
   };
 })();
 
 const _subTex0 = subTex;
 subTex = function (c, ch, k) {
-  const C = P.card, S = sub(), W = C.w * k, Hh = C.h * k, R = rng(C.seed * 29 + (ch === 'A' ? 1 : ch === 'H' ? 2 : 3)), tex = S.tex2 || S.tex;
+  const C = P.card, S = sub(), W = C.w * k, Hh = C.h * k, tex = S.tex2 || S.tex;
+  /* repeating pattern of a tile `mm` millimetres across, optionally rotated and stretched */
   const pt = (cv, mm, rot = 0, sx = 1, sy = 1) => { const s = mm * k / cv.width, p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * sx * Math.cos(rot), s * sx * Math.sin(rot), -s * sy * Math.sin(rot), s * sy * Math.cos(rot), 0, 0])); return p; };
-  const layer = (fill, op, a) => { c.save(); c.globalCompositeOperation = op; c.globalAlpha = a; c.fillStyle = fill; c.fillRect(0, 0, W, Hh); c.restore(); };
-  const scratches = (n, col, a, len) => { c.save(); c.strokeStyle = col; c.lineCap = 'round'; for (let i = 0; i < n; i++) { c.globalAlpha = a * (.3 + R() * .7); c.lineWidth = Math.max(.6, k * (.008 + R() * .02)); const x = R() * W, y = R() * Hh, an = R() * Math.PI, l = (len * (.3 + R())) * k; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(an) * l * .5 + (R() - .5) * k, y + Math.sin(an) * l * .5 + (R() - .5) * k, x + Math.cos(an) * l, y + Math.sin(an) * l); c.stroke(); } c.restore(); };
+  const layer = (fill, op, a) => { c.save(); c.imageSmoothingQuality = 'high'; c.globalCompositeOperation = op; c.globalAlpha = a; c.fillStyle = fill; c.fillRect(0, 0, W, Hh); c.restore(); };
   switch (tex) {
-    case 'marble2': {   // domain-warped veins over soft clouds
+    case 'marble2': {   // soft grey veins over faint clouds, a second finer vein set for depth
       const M = TEXN.marble(), Cl = TEXN.clouds();
-      if (ch === 'A') { layer(pt(Cl, 70, .3), 'multiply', .1); layer(pt(M, 110, .55), 'multiply', .7); layer(pt(M, 170, -.4, 1, 1.3), 'multiply', .25); layer(pt(Cl, 28, 1.1), 'screen', .08); }
-      else if (ch === 'H') { layer(pt(M, 110, .55), 'multiply', .2); layer(pt(TEXN.fine(), 6), 'source-over', .12); }
-      else layer(pt(M, 110, .55), 'multiply', .12);
+      if (ch === 'A') { layer(pt(Cl, 80, .3), 'multiply', .07); layer(pt(M, 125, .35), 'multiply', .72); layer(pt(M, 58, -1.1, 1, 1.3), 'multiply', .14); layer(pt(Cl, 30, 1.1), 'soft-light', .12); }
       return;
     }
     case 'slate': {
       const Sl = TEXN.slate();
-      if (ch === 'A') { layer(pt(Sl, 60, .08), 'multiply', .7); layer(pt(TEXN.clouds(), 45, 1.3), 'soft-light', .5); layer(pt(TEXN.fine(), 7), 'multiply', .25); }
-      else if (ch === 'H') { layer(pt(Sl, 60, .08), 'source-over', .85); layer(pt(TEXN.fine(), 7), 'multiply', .4); }
-      else layer(pt(TEXN.fine(), 7), 'screen', .3);
+      if (ch === 'A') { layer(pt(Sl, 70, .04), 'multiply', .42); layer(pt(TEXN.clouds(), 55, 1.3), 'soft-light', .22); }
+      else if (ch === 'H') { layer(pt(Sl, 70, .04), 'source-over', .2); layer(pt(TEXN.fine(), 8), 'soft-light', .1); }
       return;
     }
     case 'twill': {
       const Tw = TEXN.twill();
-      if (ch === 'A') { layer(pt(Tw, 1.8), 'multiply', .72); layer(pt(TEXN.clouds(), 50), 'soft-light', .35); layer(pt(TEXN.fine(), 4), 'multiply', .15); }
-      else if (ch === 'H') layer(pt(Tw, 1.8), 'source-over', .95);
-      else layer(pt(Tw, 1.5), 'screen', .25);
+      if (ch === 'A') { layer(pt(Tw, 1.8), 'multiply', .3); layer(pt(TEXN.clouds(), 60), 'soft-light', .12); }
+      else if (ch === 'H') layer(pt(Tw, 1.8), 'source-over', .55);
+      else layer(pt(Tw, 1.8), 'screen', .12);
       return;
     }
-    case 'nacre': {
-      if (ch === 'A') { layer(pt(TEXN.nacre(), 55, .4), 'multiply', .17); layer(pt(TEXN.nacre(), 23, -.7), 'multiply', .07); layer(pt(TEXN.clouds(), 40), 'soft-light', .3); layer(pt(TEXN.clouds(), 14, .9), 'screen', .1); }
-      else if (ch === 'H') layer(pt(TEXN.fine(), 3), 'source-over', .08);
+    case 'nacre': {   // white with a gentle pastel drift, no blotches
+      if (ch === 'A') { const N = TEXN.nacre(); layer(pt(N, 150, .4), 'multiply', .1); layer(pt(N, 150, .4), 'soft-light', .3); layer(pt(TEXN.clouds(), 60), 'soft-light', .08); }
       return;
     }
-    case 'diffraction': {
-      if (ch === 'A') { layer(pt(TEXN.diffraction(), 26, .35), 'soft-light', .9); layer(pt(TEXN.diffraction(), 9, -.5), 'screen', .16); }
-      else if (ch === 'H') layer(pt(TEXN.fine(), 2.5), 'source-over', .1);
-      else scratches(160, '#fff', .2, 3);
+    case 'diffraction': {   // silver foil with a faint rainbow grain; the live holo effect does the rest
+      if (ch === 'A') { layer(pt(TEXN.diffraction(), 170, .5), 'soft-light', .22); layer(pt(TEXN.fine(), 4), 'soft-light', .06); }
       return;
     }
-    case 'peel': {   // plastics and enamel: faint orange-peel and cloudiness
-      if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .2), 'soft-light', .18); layer(pt(TEXN.fine(), 5), 'soft-light', .1); }
-      else if (ch === 'H') { layer(pt(TEXN.fine(), 2.2), 'source-over', .22); layer(pt(TEXN.fine(), .9, .6), 'multiply', .15); }
-      else layer(pt(TEXN.clouds(), 30), 'screen', .1);
+    case 'peel': {   // plastics and enamel: faint cloudiness and a fine orange-peel surface
+      if (ch === 'A') layer(pt(TEXN.clouds(), 70, .2), 'soft-light', .1);
+      else if (ch === 'H') { layer(pt(TEXN.fine(), 2.2), 'source-over', .1); layer(pt(TEXN.fine(), .9, .6), 'multiply', .06); }
       return;
     }
-    case 'ivory': {
-      if (ch === 'A') { layer(pt(TEXN.bands(), 70, .12, 1, 1), 'multiply', .035); layer(pt(TEXN.clouds(), 50, .7), 'soft-light', .3); layer(pt(TEXN.fine(), 6), 'soft-light', .12); }
-      else if (ch === 'H') layer(pt(TEXN.bands(), 70, .12), 'source-over', .02);
+    case 'ivory': {   // warm cream, soft depth and a faint straight grain
+      if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .7), 'soft-light', .2); layer(pt(TEXN.fine(), 5, 0, 10, .6), 'multiply', .035); }
       return;
     }
-    case 'glass': {   // clear sheets: micro-scratches and faint polish haze
-      if (ch === 'H') { layer(pt(TEXN.fine(), 1.4), 'source-over', .06); scratches(220, '#000', .35, 4); }
-      else if (ch !== 'A') { scratches(260, '#fff', .3, 4); layer(pt(TEXN.clouds(), 40), 'screen', .06); }
-      return;
-    }
+    case 'glass': return;   // clean, polished sheet: no scratches
     case 'frost': {
-      if (ch === 'H') { layer(pt(TEXN.fine(), 1.1), 'source-over', .55); layer(pt(TEXN.fine(), .45, .7), 'multiply', .35); layer(pt(TEXN.clouds(), 30), 'soft-light', .3); }
-      else if (ch !== 'A') layer(pt(TEXN.fine(), 1.1), 'screen', .4);
+      if (ch === 'H') { layer(pt(TEXN.fine(), 1.1), 'source-over', .45); layer(pt(TEXN.fine(), .45, .7), 'multiply', .25); }
+      else if (ch === 'R') layer(pt(TEXN.fine(), 1.1), 'screen', .25);
       return;
     }
   }
   _subTex0(c, ch, k);
-  /* enrich the original families */
+  /* refine the original families */
   if (tex === 'brushed') {
-    if (ch === 'A') { layer(pt(TEXN.clouds(), 55, .2), 'soft-light', .35); if (S.heat) layer(pt(TEXN.heat(), 70, .3), 'soft-light', .55); scratches(Math.round(C.w * C.h / 22), 'rgba(255,255,255,1)', .12, 5); scratches(Math.round(C.w * C.h / 45), 'rgba(0,0,0,1)', .1, 4); }
-    else if (ch === 'H') scratches(Math.round(C.w * C.h / 30), '#000', .25, 5);
-    else { scratches(Math.round(C.w * C.h / 25), '#fff', .3, 5); layer(pt(TEXN.clouds(), 40), 'soft-light', .3); }
+    if (ch === 'A' || ch === 'R') layer(pt(TEXN.fine(), 6, 0, 16, .35), 'soft-light', ch === 'A' ? .26 : .18);   // long brushing streaks
+    if (ch === 'A' && (C.sub === 'iron' || C.sub === 'bronze')) layer(pt(TEXN.clouds(), 70, .2), 'soft-light', .2);   // forged / patinated variation
+    if (ch === 'A' && S.anod) layer(pt(TEXN.anod(), 120, .35), 'color', .86);   // anodised colour, brushing kept in the luminance
   } else if (tex === 'wood') {
-    if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .05, 3, .6), 'soft-light', .45); c.save(); c.fillStyle = 'rgba(30,16,8,1)'; for (let i = 0, n = Math.round(C.w * C.h * 1.6); i < n; i++) { c.globalAlpha = .12 + R() * .2; const x = R() * W, y = R() * Hh; c.fillRect(x, y, k * (.15 + R() * .5), Math.max(.6, k * .03)); } c.restore(); }
-    else if (ch === 'H') { c.save(); c.fillStyle = '#000'; for (let i = 0, n = Math.round(C.w * C.h * 1.2); i < n; i++) { c.globalAlpha = .25 + R() * .3; c.fillRect(R() * W, R() * Hh, k * (.15 + R() * .4), Math.max(.6, k * .03)); } c.restore(); }
+    const R = rng(C.seed * 29 + (ch === 'A' ? 1 : 2));
+    if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .05, 3, .6), 'soft-light', .35); c.save(); c.fillStyle = 'rgba(30,16,8,1)'; for (let i = 0, n = Math.round(C.w * C.h * 1.6); i < n; i++) { c.globalAlpha = .1 + R() * .16; const x = R() * W, y = R() * Hh; c.fillRect(x, y, k * (.15 + R() * .5), Math.max(.6, k * .03)); } c.restore(); }
+    else if (ch === 'H') { c.save(); c.fillStyle = '#000'; for (let i = 0, n = Math.round(C.w * C.h * 1.2); i < n; i++) { c.globalAlpha = .18 + R() * .25; c.fillRect(R() * W, R() * Hh, k * (.15 + R() * .4), Math.max(.6, k * .03)); } c.restore(); }
   } else if (tex === 'paper') {
-    if (ch === 'A') layer(pt(TEXN.clouds(), 24, .4), 'soft-light', .3);
-    else if (ch === 'H') layer(pt(TEXN.fine(), 3), 'soft-light', .5);
+    if (ch === 'A') layer(pt(TEXN.clouds(), 24, .4), 'soft-light', .25);
   } else if (tex === 'carbon') {
-    if (ch === 'A') layer(pt(TEXN.clouds(), 50), 'soft-light', .25);
+    if (ch === 'A') layer(pt(TEXN.clouds(), 60), 'soft-light', .12);
   }
-  if (S.metal && !S.clear && ch !== 'A' && tex !== 'brushed') scratches(Math.round(C.w * C.h / 30), '#fff', .25, 4);
 };
 /* which substrates use which family */
 Object.assign(SUBS.pvc, { tex2: 'peel' }); Object.assign(SUBS.poly, { tex2: 'peel' }); Object.assign(SUBS.enamel, { tex2: 'peel' }); Object.assign(SUBS.pearl, { tex2: 'nacre' }); Object.assign(SUBS.ivory, { tex2: 'ivory' }); Object.assign(SUBS.holopvc, { tex2: 'diffraction' });
-Object.assign(SUBS.marble, { tex2: 'marble2' }); Object.assign(SUBS.stone, { tex2: 'slate' }); Object.assign(SUBS.felt, { tex2: 'twill' }); Object.assign(SUBS.titanium, { heat: true });
+Object.assign(SUBS.marble, { tex2: 'marble2' }); Object.assign(SUBS.stone, { tex2: 'slate' }); Object.assign(SUBS.felt, { tex2: 'twill' });
+Object.assign(SUBS.titanium, { anod: true, color: '#66739c', irid: .35 });
 for (const k of ['clearpvc', 'smoked', 'tinted', 'aurora', 'acr_green', 'acr_orange', 'acr_pink', 'acr_blue', 'acr_yellow']) if (SUBS[k] && !SUBS[k].tex) SUBS[k].tex2 = 'glass';
 
 /* ---------- QR code (model 2, byte mode, versions 1–10) ---------- */
@@ -3929,23 +3936,44 @@ const _litT = document.createElement('canvas');
 function litLayers(r) {   // soft-light relief + metal map, and a screen map of highlights and holographic rainbow
   if (r._lit) return r._lit;
   const W = Math.min(1100, r.A.width), H = Math.max(2, Math.round(W * r.A.height / r.A.width)); _litT.width = W; _litT.height = H; const x = _litT.getContext('2d', { willReadFrequently: true });
-  const read = cv => { if (!cv) return null; x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
-  const h = read(r.H), m = read(r.M), o = read(r.O), sd = new ImageData(W, H), hd = new ImageData(W, H), gain = 1.7 * Math.min(2.5, P.card.relief || 1.5);
+  const read = cv => { if (!cv) return null; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
+  const h = read(r.H), m = read(r.M), o = read(r.O), sd = new ImageData(W, H), hd = new ImageData(W, H), gain = 1.5 * Math.min(2.5, P.card.relief || 1.5);
   const hue2 = (hh) => { const f = n => { const k = (n + hh * 12) % 12; return 255 * (.62 - .53 * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
   for (let y = 0; y < H; y++) { const ya = Math.max(0, y - 1), yb = Math.min(H - 1, y + 1); for (let xx = 0; xx < W; xx++) {
     const i = (y * W + xx) * 4; let v = 128;
     if (h) v += (h[(ya * W + Math.max(0, xx - 1)) * 4] - h[(yb * W + Math.min(W - 1, xx + 1)) * 4]) * gain;
-    const met = m ? m[i] / 255 : 0, band = .5 + .5 * Math.sin((xx / W * .9 + y / H * .55) * Math.PI * 3.1 + 1.1);
-    if (met > .02) v += (band - .5) * 160 * met;
+    const met = m ? m[i] / 255 : 0, t = xx / W * .62 + y / H * .38, env = .12 + .88 * Math.exp(-(((t - .3) / .34) ** 2));   // one broad, soft reflection
+    if (met > .02) v += (env - .55) * 84 * met;
     sd.data[i] = sd.data[i + 1] = sd.data[i + 2] = v < 0 ? 0 : v > 255 ? 255 : v; sd.data[i + 3] = 255;
     let a = 0, cr = 255, cg = 255, cb = 255;
-    if (met > .02 && band > .8) a = (band - .8) / .2 * met * .6;
-    if (o && o[i] > 8) { const k = o[i] / 255 * .72; if (k > a) { [cr, cg, cb] = hue2(((xx / W) * 1.7 + (y / H) * 1.2 + o[i + 1] / 255 * .5) % 1); a = k; } }
+    if (met > .02 && env > .7) a = (env - .7) / .3 * met * .15;
+    if (o && o[i] > 8) { const k = o[i] / 255 * .32; if (k > a) { [cr, cg, cb] = hue2(((xx / W) * 1.1 + (y / H) * .8 + o[i + 1] / 255 * .5) % 1); a = k; } }
     hd.data[i] = cr; hd.data[i + 1] = cg; hd.data[i + 2] = cb; hd.data[i + 3] = a * 255;
   } }
   const soft = document.createElement('canvas'), scr = document.createElement('canvas'); soft.width = scr.width = W; soft.height = scr.height = H; soft.getContext('2d').putImageData(sd, 0, 0); scr.getContext('2d').putImageData(hd, 0, 0);
   return (r._lit = { soft, scr });
 }
+/* the lit card face, shared by the flat view and the substrate sheet: substrate, relief and sheen, glow, rim */
+ui.paintCard = function (g, r, X, Y, CW, CH, path, o = {}) {
+  const C = P.card, S = sub(), lit = o.lit !== false, uv = !!o.uv, s = o.s || CW / C.w;
+  g.save(); path(); g.clip(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  if (S.clear && r.E) { if (!lit) checker(g, X, Y, CW, CH); g.fillStyle = S.disp || 'rgba(30,30,30,.5)'; g.fillRect(X, Y, CW, CH); g.drawImage(r.E, X, Y, CW, CH); }
+  else g.drawImage(r.A, X, Y, CW, CH);
+  if (lit && !uv) {
+    const L = litLayers(r); g.save(); g.globalCompositeOperation = 'soft-light'; g.drawImage(L.soft, X, Y, CW, CH); g.globalCompositeOperation = 'screen'; g.drawImage(L.scr, X, Y, CW, CH);
+    const gl = C.lam === 'gloss' ? .07 : C.lam === 'matte' ? .02 : Math.min(.07, (S.cc || 0) * .05 + (S.metal ? .02 : 0) + (S.clear ? .05 : 0));
+    if (gl > 0) { const q = g.createLinearGradient(X, Y, X + CW * .7, Y + CH); q.addColorStop(0, `rgba(255,255,255,${gl})`); q.addColorStop(.45, `rgba(255,255,255,${gl * .35})`); q.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = q; g.fillRect(X, Y, CW, CH); }
+    const lf = g.createLinearGradient(X, Y, X + CW * .55, Y + CH); lf.addColorStop(0, 'rgba(255,255,255,.05)'); lf.addColorStop(1, 'rgba(0,0,0,.12)'); g.globalCompositeOperation = 'source-over'; g.fillStyle = lf; g.fillRect(X, Y, CW, CH); g.restore();
+  }
+  if (!uv && r.G) { g.save(); g.globalCompositeOperation = 'screen'; g.globalAlpha = .9; g.drawImage(r.G, X, Y, CW, CH); g.restore(); }
+  if (uv) { g.fillStyle = 'rgba(14,6,30,.88)'; g.fillRect(X, Y, CW, CH); if (r.X) { g.globalCompositeOperation = 'lighter'; g.drawImage(r.X, X, Y, CW, CH); g.globalCompositeOperation = 'source-over'; } }
+  if (o.after) o.after();
+  g.restore();
+  if (lit) { g.save(); path(); const lw = Math.max(1, Math.min(6, C.thick * s * .3));
+    if (S.glow) { g.shadowColor = S.glow; g.shadowBlur = 14; g.strokeStyle = S.glow; g.lineWidth = lw * 1.2; g.stroke(); }
+    else { const q = g.createLinearGradient(X, Y, X + CW, Y + CH); q.addColorStop(0, `rgba(255,255,255,${S.clear ? .55 : .38})`); q.addColorStop(.5, 'rgba(255,255,255,.05)'); q.addColorStop(1, 'rgba(0,0,0,.45)'); g.strokeStyle = q; g.lineWidth = lw; g.stroke(); }
+    g.restore(); }
+};
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
   fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
@@ -3957,25 +3985,7 @@ ui.drawFlat = function () {
   const lit = fv.lit !== false;
   const X = fv.ox, Y = fv.oy, CW = C.w * fv.s, CH = C.h * fv.s;
   for (const [bl, oy, al] of S.clear ? [[30, 14, .35]] : [[54, 26, .55], [16, 6, .5], [4, 1.5, .45]]) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = `rgba(0,0,0,${al})`; fx.shadowBlur = bl; fx.shadowOffsetY = oy; fx.fillStyle = S.clear ? 'rgba(0,0,0,.01)' : '#18191c'; fx.fill(); fx.restore(); }
-  if (r) {
-    fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
-    if (S.clear && r.E) { if (!lit) checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
-    else fx.drawImage(r.A, X, Y, CW, CH);
-    if (lit && !uvOn) {
-      const L = litLayers(r); fx.save(); fx.globalCompositeOperation = 'soft-light'; fx.drawImage(L.soft, X, Y, CW, CH); fx.globalCompositeOperation = 'screen'; fx.drawImage(L.scr, X, Y, CW, CH);
-      const gl = C.lam === 'gloss' ? .16 : C.lam === 'matte' ? .05 : Math.min(.18, (S.cc || 0) * .13 + (S.metal ? .07 : 0) + (S.clear ? .13 : 0));
-      if (gl > 0) { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); [[0, 0], [.3, gl], [.4, 0], [.62, 0], [.69, gl * .5], [.76, 0]].forEach(([t, a]) => g.addColorStop(t, `rgba(255,255,255,${a})`)); fx.fillStyle = g; fx.fillRect(X, Y, CW, CH); }
-      const lf = fx.createLinearGradient(X, Y, X + CW * .55, Y + CH); lf.addColorStop(0, 'rgba(255,255,255,.07)'); lf.addColorStop(1, 'rgba(0,0,0,.16)'); fx.globalCompositeOperation = 'source-over'; fx.fillStyle = lf; fx.fillRect(X, Y, CW, CH); fx.restore();
-    }
-    if (!uvOn && r.X && (S.glow || P[side].some(e => e.glow > 0))) { fx.save(); fx.globalCompositeOperation = 'screen'; fx.globalAlpha = .9; fx.drawImage(r.X, X, Y, CW, CH); fx.restore(); }
-    if (uvOn) { fx.fillStyle = 'rgba(14,6,30,.88)'; fx.fillRect(X, Y, CW, CH); if (r.X) { fx.globalCompositeOperation = 'lighter'; fx.drawImage(r.X, X, Y, CW, CH); fx.globalCompositeOperation = 'source-over'; } }
-    if (fv.grid) { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } }
-    fx.restore();
-    if (lit) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); const lw = Math.max(1, Math.min(6, C.thick * fv.s * .3));
-      if (S.glow) { fx.shadowColor = S.glow; fx.shadowBlur = 14; fx.strokeStyle = S.glow; fx.lineWidth = lw * 1.2; fx.stroke(); }
-      else { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); g.addColorStop(0, `rgba(255,255,255,${S.clear ? .7 : .5})`); g.addColorStop(.5, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(0,0,0,.5)'); fx.strokeStyle = g; fx.lineWidth = lw; fx.stroke(); }
-      fx.restore(); }
-  }
+  if (r) ui.paintCard(fx, r, X, Y, CW, CH, () => { fx.beginPath(); cardPathAt(fx, X, Y, fv.s); }, { lit, uv: uvOn, s: fv.s, after: fv.grid ? () => { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } } : null });
   if (fv.safe) { fx.save(); fx.strokeStyle = 'rgba(255,220,90,.75)'; fx.setLineDash([5, 4]); fx.lineWidth = 1; fx.beginPath(); rr(fx, X + 3 * fv.s, Y + 3 * fv.s, CW - 6 * fv.s, CH - 6 * fv.s, Math.max(0, C.r - 3) * fv.s); fx.stroke(); fx.setLineDash([]); fx.strokeStyle = 'rgba(255,220,90,.4)'; fx.beginPath(); fx.moveTo(X + CW / 2, Y); fx.lineTo(X + CW / 2, Y + CH); fx.moveTo(X, Y + CH / 2); fx.lineTo(X + CW, Y + CH / 2); fx.stroke(); fx.restore(); }
   const hv = hoverId && !selIds.includes(hoverId) ? P[side].find(e => e.id === hoverId) : null; if (hv) outline(hv, 'rgba(255,255,255,.55)', false);
   const sels = selEls().filter(e => sideOf(e.id) === side); for (const el of sels) outline(el, '#ff5a3c', sels.length === 1);
@@ -4474,7 +4484,7 @@ void main(){
   const sigOf = (m) => [m.map, m.bumpMap, m.roughnessMap, m.metalnessMap, m.transmissionMap, m.emissiveMap].map(t => t ? 1 : 0).join('');
   function setMaps(r) {
     const S = F.sub(), m = r.side === 'front' ? matF : matB, hm = r.side === 'front' ? holoMatF : holoMatB, s0 = sigOf(m);
-    m.map = tex(r.A, true); m.bumpMap = tex(r.H, false); m.roughnessMap = tex(r.R, false); m.metalnessMap = tex(r.M || null, false); m.transmissionMap = tex(r.T || null, false); m.emissiveMap = tex(r.X || null, true);
+    m.map = tex(r.A, true); m.bumpMap = tex(r.H, false); m.roughnessMap = tex(r.R, false); m.metalnessMap = tex(r.M || null, false); m.transmissionMap = tex(r.T || null, false); m.userData.mapX = tex(r.X || null, true); m.userData.mapG = tex(r.G || null, true); m.emissiveMap = m.userData.mapX;   // the loop swaps in the glow-only layer outside UV light
     m.roughness = 1; m.metalness = r.M ? 1 : S.metal; m.transmission = r.T ? 1 : 0;
     if (sigOf(m) !== s0) m.needsUpdate = true;
     hm.uniforms.uMask.value = r.O ? tex(r.O, false) : null;
@@ -4677,7 +4687,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     uvFlood.target.position.copy(center); uvFlood.intensity = uvT * (torchOn ? .35 : 2.2);
     torchU.uTorchOn.value = torchOn ? uvT : 0; torch.intensity = torchOn ? uvT * 7 : 0;
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
-    const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? gb : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? gb : 0);
+    const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); for (const m of [matF, matB]) { const G = m.userData.mapG, want = (uvT > .01 || !G) ? (m.userData.mapX || null) : G; if (m.emissiveMap !== want) { const had = !!m.emissiveMap; m.emissiveMap = want; if (had !== !!want) m.needsUpdate = true; } m.emissiveIntensity = Math.max(uvT * 2.6, m.emissiveMap ? gb : 0); }
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
     bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;

@@ -225,7 +225,7 @@ void main(){
   const sigOf = (m) => [m.map, m.bumpMap, m.roughnessMap, m.metalnessMap, m.transmissionMap, m.emissiveMap].map(t => t ? 1 : 0).join('');
   function setMaps(r) {
     const S = F.sub(), m = r.side === 'front' ? matF : matB, hm = r.side === 'front' ? holoMatF : holoMatB, s0 = sigOf(m);
-    m.map = tex(r.A, true); m.bumpMap = tex(r.H, false); m.roughnessMap = tex(r.R, false); m.metalnessMap = tex(r.M || null, false); m.transmissionMap = tex(r.T || null, false); m.emissiveMap = tex(r.X || null, true);
+    m.map = tex(r.A, true); m.bumpMap = tex(r.H, false); m.roughnessMap = tex(r.R, false); m.metalnessMap = tex(r.M || null, false); m.transmissionMap = tex(r.T || null, false); m.userData.mapX = tex(r.X || null, true); m.userData.mapG = tex(r.G || null, true); m.emissiveMap = m.userData.mapX;   // the loop swaps in the glow-only layer outside UV light
     m.roughness = 1; m.metalness = r.M ? 1 : S.metal; m.transmission = r.T ? 1 : 0;
     if (sigOf(m) !== s0) m.needsUpdate = true;
     hm.uniforms.uMask.value = r.O ? tex(r.O, false) : null;
@@ -428,7 +428,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     uvFlood.target.position.copy(center); uvFlood.intensity = uvT * (torchOn ? .35 : 2.2);
     torchU.uTorchOn.value = torchOn ? uvT : 0; torch.intensity = torchOn ? uvT * 7 : 0;
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
-    const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? gb : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? gb : 0);
+    const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); for (const m of [matF, matB]) { const G = m.userData.mapG, want = (uvT > .01 || !G) ? (m.userData.mapX || null) : G; if (m.emissiveMap !== want) { const had = !!m.emissiveMap; m.emissiveMap = want; if (had !== !!want) m.needsUpdate = true; } m.emissiveIntensity = Math.max(uvT * 2.6, m.emissiveMap ? gb : 0); }
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
     bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;
