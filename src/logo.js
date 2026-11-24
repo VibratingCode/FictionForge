@@ -163,26 +163,37 @@ function glyphMask(icon, pw, ph, flip) {   // white icon centred in pw×ph
 function tintedCopy(src, dst, fill) { dst.width = src.width; dst.height = src.height; const x = dst.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = fill; x.fillRect(0, 0, dst.width, dst.height); x.globalCompositeOperation = 'source-over'; return dst; }
 
 function paintMask(c, el, ov, k, maskFn) {
-  const ow = el.outlineW > 0 ? el.outlineW : 0, gl = el.glow > 0 ? el.glow : 0, line = el.style === 'line', lw = line ? Math.max(.15, el.lineW || .6) : 0;
-  const pm = ow + lw + gl * 1.8, pw = Math.max(8, Math.ceil((el.w + pm * 2) * k)), ph = Math.max(8, Math.ceil((el.h + pm * 2) * k)), pad = Math.round(pm * k), iw = Math.max(4, pw - pad * 2), ih = Math.max(4, ph - pad * 2);
+  const ow = el.outlineW > 0 ? el.outlineW : 0, gl = el.glow > 0 ? el.glow : 0, line = el.style === 'line', lw = line ? Math.max(.15, el.lineW || .6) : 0, sh = ov.ch === 'A' && el.shadow > 0 ? el.shadow : 0;
+  const pm = ow + lw + Math.max(gl * 1.8, sh * 2.2), pw = Math.max(8, Math.ceil((el.w + pm * 2) * k)), ph = Math.max(8, Math.ceil((el.h + pm * 2) * k)), pad = Math.round(pm * k), iw = Math.max(4, pw - pad * 2), ih = Math.max(4, ph - pad * 2);
   const M = maskFn(iw, ih), O = _gly.O; O.width = pw; O.height = ph; const o = O.getContext('2d');
   const ring = (src, r, fill) => { const T = tintedCopy(src, _gly.T, fill); const n = Math.max(12, Math.min(40, Math.round(r * 3))); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; o.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); } o.drawImage(T, pad, pad); };
   if (ov.ch === 'X' && ov.uv && gl) {   // emissive layer: the halo and the mark itself, in the glow colour
     o.filter = `blur(${Math.max(1, gl * k * .7)}px)`; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad); o.filter = 'none'; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad);
     c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2); return;
   }
+  if (sh) { o.save(); o.filter = `blur(${Math.max(1, sh * k * .7)}px)`; o.globalAlpha = el.shadowOp ?? .45; o.drawImage(tintedCopy(M, _gly.T, el.shadowColor || '#000'), pad + sh * k * .35, pad + sh * k * .8); o.restore(); }
   if (gl && ov.ch === 'A') { o.save(); o.filter = `blur(${Math.max(1, gl * k * .8)}px)`; const T = tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'); o.globalAlpha = .9; o.drawImage(T, pad, pad); o.drawImage(T, pad, pad); o.restore(); }
   let fill = fillOf(ov, el.color);
-  if (el.grad && ov.ch === 'A') { const a = (el.gangle || 0) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.max(pw, ph) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); fill = gr; }
+  const look = PAINT_LOOKS[el.paint];
+  if ((el.grad || look) && ov.ch === 'A') { const a = (el.gangle ?? 90) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.min(iw, ih) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); if (look) look.forEach(([cl, t]) => gr.addColorStop(t, cl)); else { gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); } fill = gr; }
   if (line) {   // outline-only: dilate, then punch the original shape out
     const L = _gly.L || (_gly.L = document.createElement('canvas')); L.width = pw; L.height = ph; const l = L.getContext('2d'), T = tintedCopy(M, _gly.T, '#fff'), r = lw * k, n = Math.max(12, Math.min(40, Math.round(r * 3)));
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; l.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); }
     l.globalCompositeOperation = 'destination-out'; l.drawImage(M, pad, pad); l.globalCompositeOperation = 'source-in'; l.fillStyle = fill; l.fillRect(0, 0, pw, ph); l.globalCompositeOperation = 'source-over'; o.drawImage(L, 0, 0);
-  } else { if (ow > 0) ring(M, ow * k, fillOf(ov, el.outline)); o.drawImage(tintedCopy(M, _gly.T, fill), pad, pad); }
+  } else {
+    if (ow > 0) ring(M, ow * k, fillOf(ov, el.outline));
+    const Fc = _gly.F || (_gly.F = document.createElement('canvas')); tintedCopy(M, Fc, fill);
+    if (el.bevel > 0 && ov.ch === 'A') {   // struck-medal bevel: lit upper-left rim, shaded lower-right rim
+      const f = Fc.getContext('2d'), d = Math.max(1, Math.min(iw, ih) * .022), B = _gly.B || (_gly.B = document.createElement('canvas'));
+      for (const [dx, col, al] of [[d, '#ffffff', .75], [-d, '#000000', .6]]) { B.width = iw; B.height = ih; const b = B.getContext('2d'); b.drawImage(M, 0, 0); b.globalCompositeOperation = 'destination-out'; b.drawImage(M, dx, dx); b.globalCompositeOperation = 'source-in'; b.fillStyle = col; b.fillRect(0, 0, iw, ih); f.save(); f.globalCompositeOperation = 'source-atop'; f.globalAlpha = Math.min(1, el.bevel * al); f.filter = `blur(${d * .45}px)`; f.drawImage(B, 0, 0); f.restore(); }
+    }
+    o.drawImage(Fc, pad, pad);
+  }
   c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2);
 }
-const PAINT_DEF = { color: '#1b1d22', color2: '#7a5af0', grad: false, gangle: 90, style: 'solid', lineW: .6, outline: '#ffffff', outlineW: 0, glow: 0, glowColor: '#6ab0ff', flipX: false };
-const PAINT_P = [['color', 'Colour', 'color'], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['style', 'Style', 'select', [['solid', 'Solid'], ['line', 'Outline only']]], ['lineW', 'Line weight (mm)', 'range', { min: .15, max: 3, step: .05 }, e => e.style === 'line'], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }, e => e.style !== 'line'], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0 && e.style !== 'line'], ['glow', 'Glow (mm)', 'range', { min: 0, max: 8, step: .1 }], ['glowColor', 'Glow colour', 'color', null, e => e.glow > 0], ['flipX', 'Mirror', 'check']];
+const PAINT_LOOKS = { gold: [['#fff3c4', 0], ['#e9c35e', .28], ['#a8761c', .52], ['#f6d980', .72], ['#7a520e', 1]], silver: [['#ffffff', 0], ['#cfd3da', .3], ['#7c828c', .54], ['#eef0f3', .74], ['#585d66', 1]], bronze: [['#f6c99a', 0], ['#b8763c', .32], ['#6a3a16', .58], ['#dca068', .78], ['#4a2410', 1]], chrome: [['#ffffff', 0], ['#a9b4c6', .44], ['#1d2431', .5], ['#7e8ea6', .7], ['#eef4ff', 1]], obsidian: [['#5a606c', 0], ['#17191e', .45], ['#30343e', .75], ['#08090b', 1]], aurora: [['#ff5ad8', 0], ['#7a5aff', .45], ['#2fd8ff', 1]], ember: [['#fff3a8', 0], ['#ff9a2a', .32], ['#e0301a', .72], ['#5a0a0a', 1]], ice: [['#ffffff', 0], ['#c4ecff', .38], ['#4aa8e0', .78], ['#1f4a8a', 1]] };
+const PAINT_DEF = { paint: 'flat', bevel: 0, shadow: 0, shadowColor: '#000000', shadowOp: .45, color: '#1b1d22', color2: '#7a5af0', grad: false, gangle: 90, style: 'solid', lineW: .6, outline: '#ffffff', outlineW: 0, glow: 0, glowColor: '#6ab0ff', flipX: false };
+const PAINT_P = [['paint', 'Look', 'select', [['flat', 'Colour / gradient'], ['gold', 'Gold'], ['silver', 'Silver'], ['bronze', 'Bronze'], ['chrome', 'Chrome'], ['obsidian', 'Obsidian'], ['aurora', 'Aurora'], ['ember', 'Ember'], ['ice', 'Ice']]], ['bevel', 'Bevel', 'range', { min: 0, max: 1, step: .01 }], ['shadow', 'Drop shadow (mm)', 'range', { min: 0, max: 6, step: .1 }], ['shadowOp', 'Shadow strength', 'range', { min: 0, max: 1, step: .01 }, e => e.shadow > 0], ['color', 'Colour', 'color', null, e => !PAINT_LOOKS[e.paint]], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['style', 'Style', 'select', [['solid', 'Solid'], ['line', 'Outline only']]], ['lineW', 'Line weight (mm)', 'range', { min: .15, max: 3, step: .05 }, e => e.style === 'line'], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }, e => e.style !== 'line'], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0 && e.style !== 'line'], ['glow', 'Glow (mm)', 'range', { min: 0, max: 8, step: .1 }], ['glowColor', 'Glow colour', 'color', null, e => e.glow > 0], ['flipX', 'Mirror', 'check']];
 def('glyph', 'Faction icon', { w: 32, h: 32, icon: 'wolf', ...PAINT_DEF }, [['icon', 'Icon', 'select', ICON_OPTS], ...PAINT_P],
   function (c, el, ov, k) { paintMask(c, el, ov, k, (iw, ih) => glyphMask(el.icon, iw, ih, el.flipX)); }, 'M12 3l3 6 6 1-4 4 1 7-6-3-6 3 1-7-4-4 6-1z');
 

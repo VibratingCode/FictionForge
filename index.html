@@ -356,7 +356,9 @@ const SUBS = {
   bronze: { label: 'Antique bronze', color: '#9a6a3a', rough: .38, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .2, laser: '#2a1808' },
   iron: { label: 'Forged iron', color: '#55585e', rough: .58, metal: 1, clear: 0, thick: 3.5, tex: 'brushed', aniso: .15, laser: '#c9ccd1' },
   enamel: { label: 'Glossy enamel', color: '#1d3f6e', rough: .12, metal: 0, clear: 0, thick: 2.5, cc: 1, ccr: .02, laser: '#e9edf2' },
-  leather: { label: 'Tooled leather', color: '#6b3f22', rough: .74, metal: 0, clear: 0, thick: 2.2, tex: 'paper', laser: '#2a160a', edge: '#4a2a14' },
+  leather: { label: 'Leather · saddle brown', color: '#6a3a1e', rough: .56, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .3, ccr: .32, laser: '#2a140a', edge: '#2e170a' },
+  leather_black: { label: 'Leather · black', color: '#211d1c', rough: .5, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .4, ccr: .28, laser: '#9a8a7a', edge: '#121010' },
+  leather_tan: { label: 'Leather · tan', color: '#b27a46', rough: .6, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .22, ccr: .36, laser: '#4a2a12', edge: '#6a4220' },
   felt: { label: 'Embroidered twill (patch)', color: '#2a3a2a', rough: .95, metal: 0, clear: 0, thick: 1.6, tex: 'paper', laser: '#151d15', edge: '#1d281d' },
   stone: { label: 'Carved slate', color: '#4a4e54', rough: .8, metal: 0, clear: 0, thick: 5, tex: 'marble', laser: '#c9ccd1' },
   acr_green: { label: 'Fluorescent acrylic · green', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#39ff7a', attenD: 1.4, laser: '#d4ffe0', disp: 'rgba(40,220,100,.5)', glow: '#3dff74' },
@@ -371,7 +373,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 3072, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -964,7 +966,7 @@ function metalFor(f) { const S = sub(); if (f === 'foil' || f === 'holo') return
 
 function renderSide(side, tier, opts) {
   const C = P.card, S = sub(), Wm = C.w, Hm = C.h;
-  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1024, C.res) : C.res);
+  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1536, C.res) : C.res);
   const pw = Math.round(res), ph = Math.max(2, Math.round(res * Hm / Wm)), k = pw / Wm;
   const hw = Math.max(512, Math.round(res / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
@@ -975,9 +977,9 @@ function renderSide(side, tier, opts) {
 
   /* albedo */
   const A = cv(side, tier, 'A', pw, ph), a = prep(A); clipCard(a, k);
-  a.fillStyle = clear ? '#ffffff' : baseColor(); a.fillRect(0, 0, pw, ph); subTex(a, 'A', k);
+  const art = !!(opts && opts.art); if (!art) { a.fillStyle = clear ? '#ffffff' : baseColor(); a.fillRect(0, 0, pw, ph); subTex(a, 'A', k); }
   let tgt = a, E = null;
-  if (clear) { E = cv(side, tier, 'E', pw, ph); tgt = prep(E); clipCard(tgt, k); }
+  if (clear && !art) { E = cv(side, tier, 'E', pw, ph); tgt = prep(E); clipCard(tgt, k); }
   const owin = wins.filter(w => w._mirror);
   if (!clear) for (const w of owin) drawEl(a, w, k, { ch: 'A', color: '#ffffff' });
   for (const el of els) {
@@ -1042,11 +1044,33 @@ function renderSide(side, tier, opts) {
 Forge.renderSide = renderSide;
 
 /* ---------- substrate textures ---------- */
+let _leather = null;
+function leatherTiles() {   // seamless pebbled grain: domes with dark crevices, plus an inverted copy
+  if (_leather) return _leather;
+  const N = 512, H = document.createElement('canvas'); H.width = H.height = N; const x = H.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.globalCompositeOperation = 'lighten';
+  const R = rng(4242), G = 30, cs = N / G;
+  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+    const cx = (i + .5 + (R() - .5) * .9) * cs, cy = (j + .5 + (R() - .5) * .9) * cs, r = cs * (1.05 + R() * .4), b = 185 + R() * 70 | 0;
+    for (const ox of [-N, 0, N]) for (const oy of [-N, 0, N]) { const X = cx + ox, Y = cy + oy; if (X < -r || X > N + r || Y < -r || Y > N + r) continue; const g = x.createRadialGradient(X - r * .18, Y - r * .22, 0, X, Y, r); const q = v => `rgb(${b * v | 0},${b * v | 0},${b * v | 0})`; g.addColorStop(0, q(1)); g.addColorStop(.42, q(.93)); g.addColorStop(.72, q(.5)); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(X, Y, r, 0, Math.PI * 2); x.fill(); }
+  }
+  const I = document.createElement('canvas'); I.width = I.height = N; const y = I.getContext('2d'); y.drawImage(H, 0, 0); y.globalCompositeOperation = 'difference'; y.fillStyle = '#fff'; y.fillRect(0, 0, N, N);
+  return (_leather = { H, I, N });
+}
 function subTex(c, ch, k) {
   const C = P.card, S = sub(), W = C.w * k, Hh = C.h * k, R = rng(C.seed * 13 + (ch === 'A' ? 1 : ch === 'H' ? 2 : 3));
   if (S.tex === 'paper') {
     if (ch === 'A') { c.save(); c.globalAlpha = .1; c.globalCompositeOperation = 'multiply'; c.fillStyle = pat(c, 'mottle', 22 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, baseColor(), R, 'A'); }
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
+  } else if (S.tex === 'leather') {
+    const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; for (let i = 0; i < 9; i++) { c.lineWidth = w * (.4 + R()) * k; c.beginPath(); const x0 = R() * W, y0 = R() * Hh; c.moveTo(x0, y0); c.bezierCurveTo(x0 + (R() - .5) * W * .4, y0 + (R() - .5) * Hh * .3, x0 + (R() - .5) * W * .5, y0 + (R() - .5) * Hh * .5, x0 + (R() - .5) * W * .6, y0 + (R() - .5) * Hh * .6); c.stroke(); } c.restore(); };
+    if (ch === 'A') {
+      c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
+      c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
+      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .5; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
+      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .22, .5);
+    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .55, .8); }
+    else { c.save(); c.globalCompositeOperation = 'screen'; c.globalAlpha = .4; c.fillStyle = patt(L.I); c.fillRect(0, 0, W, Hh); c.restore(); }
   } else if (S.tex === 'brushed') {
     if (ch === 'A' || ch === 'R') { const n = Math.round(C.h / .035); c.save(); for (let i = 0; i < n; i++) { const y = (i * .035 + R() * .03) * k, v = R(); c.fillStyle = v < .5 ? `rgba(0,0,0,${.04 + R() * .07})` : `rgba(255,255,255,${.04 + R() * .08})`; const x0 = R() * W * .3; c.fillRect(-x0, y, W * (.7 + R() * .6) + x0, Math.max(1, .022 * k)); } c.restore(); }
   } else if (S.tex === 'carbon') {
@@ -1544,26 +1568,37 @@ function glyphMask(icon, pw, ph, flip) {   // white icon centred in pw×ph
 function tintedCopy(src, dst, fill) { dst.width = src.width; dst.height = src.height; const x = dst.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = fill; x.fillRect(0, 0, dst.width, dst.height); x.globalCompositeOperation = 'source-over'; return dst; }
 
 function paintMask(c, el, ov, k, maskFn) {
-  const ow = el.outlineW > 0 ? el.outlineW : 0, gl = el.glow > 0 ? el.glow : 0, line = el.style === 'line', lw = line ? Math.max(.15, el.lineW || .6) : 0;
-  const pm = ow + lw + gl * 1.8, pw = Math.max(8, Math.ceil((el.w + pm * 2) * k)), ph = Math.max(8, Math.ceil((el.h + pm * 2) * k)), pad = Math.round(pm * k), iw = Math.max(4, pw - pad * 2), ih = Math.max(4, ph - pad * 2);
+  const ow = el.outlineW > 0 ? el.outlineW : 0, gl = el.glow > 0 ? el.glow : 0, line = el.style === 'line', lw = line ? Math.max(.15, el.lineW || .6) : 0, sh = ov.ch === 'A' && el.shadow > 0 ? el.shadow : 0;
+  const pm = ow + lw + Math.max(gl * 1.8, sh * 2.2), pw = Math.max(8, Math.ceil((el.w + pm * 2) * k)), ph = Math.max(8, Math.ceil((el.h + pm * 2) * k)), pad = Math.round(pm * k), iw = Math.max(4, pw - pad * 2), ih = Math.max(4, ph - pad * 2);
   const M = maskFn(iw, ih), O = _gly.O; O.width = pw; O.height = ph; const o = O.getContext('2d');
   const ring = (src, r, fill) => { const T = tintedCopy(src, _gly.T, fill); const n = Math.max(12, Math.min(40, Math.round(r * 3))); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; o.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); } o.drawImage(T, pad, pad); };
   if (ov.ch === 'X' && ov.uv && gl) {   // emissive layer: the halo and the mark itself, in the glow colour
     o.filter = `blur(${Math.max(1, gl * k * .7)}px)`; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad); o.filter = 'none'; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad);
     c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2); return;
   }
+  if (sh) { o.save(); o.filter = `blur(${Math.max(1, sh * k * .7)}px)`; o.globalAlpha = el.shadowOp ?? .45; o.drawImage(tintedCopy(M, _gly.T, el.shadowColor || '#000'), pad + sh * k * .35, pad + sh * k * .8); o.restore(); }
   if (gl && ov.ch === 'A') { o.save(); o.filter = `blur(${Math.max(1, gl * k * .8)}px)`; const T = tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'); o.globalAlpha = .9; o.drawImage(T, pad, pad); o.drawImage(T, pad, pad); o.restore(); }
   let fill = fillOf(ov, el.color);
-  if (el.grad && ov.ch === 'A') { const a = (el.gangle || 0) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.max(pw, ph) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); fill = gr; }
+  const look = PAINT_LOOKS[el.paint];
+  if ((el.grad || look) && ov.ch === 'A') { const a = (el.gangle ?? 90) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.min(iw, ih) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); if (look) look.forEach(([cl, t]) => gr.addColorStop(t, cl)); else { gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); } fill = gr; }
   if (line) {   // outline-only: dilate, then punch the original shape out
     const L = _gly.L || (_gly.L = document.createElement('canvas')); L.width = pw; L.height = ph; const l = L.getContext('2d'), T = tintedCopy(M, _gly.T, '#fff'), r = lw * k, n = Math.max(12, Math.min(40, Math.round(r * 3)));
     for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; l.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); }
     l.globalCompositeOperation = 'destination-out'; l.drawImage(M, pad, pad); l.globalCompositeOperation = 'source-in'; l.fillStyle = fill; l.fillRect(0, 0, pw, ph); l.globalCompositeOperation = 'source-over'; o.drawImage(L, 0, 0);
-  } else { if (ow > 0) ring(M, ow * k, fillOf(ov, el.outline)); o.drawImage(tintedCopy(M, _gly.T, fill), pad, pad); }
+  } else {
+    if (ow > 0) ring(M, ow * k, fillOf(ov, el.outline));
+    const Fc = _gly.F || (_gly.F = document.createElement('canvas')); tintedCopy(M, Fc, fill);
+    if (el.bevel > 0 && ov.ch === 'A') {   // struck-medal bevel: lit upper-left rim, shaded lower-right rim
+      const f = Fc.getContext('2d'), d = Math.max(1, Math.min(iw, ih) * .022), B = _gly.B || (_gly.B = document.createElement('canvas'));
+      for (const [dx, col, al] of [[d, '#ffffff', .75], [-d, '#000000', .6]]) { B.width = iw; B.height = ih; const b = B.getContext('2d'); b.drawImage(M, 0, 0); b.globalCompositeOperation = 'destination-out'; b.drawImage(M, dx, dx); b.globalCompositeOperation = 'source-in'; b.fillStyle = col; b.fillRect(0, 0, iw, ih); f.save(); f.globalCompositeOperation = 'source-atop'; f.globalAlpha = Math.min(1, el.bevel * al); f.filter = `blur(${d * .45}px)`; f.drawImage(B, 0, 0); f.restore(); }
+    }
+    o.drawImage(Fc, pad, pad);
+  }
   c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2);
 }
-const PAINT_DEF = { color: '#1b1d22', color2: '#7a5af0', grad: false, gangle: 90, style: 'solid', lineW: .6, outline: '#ffffff', outlineW: 0, glow: 0, glowColor: '#6ab0ff', flipX: false };
-const PAINT_P = [['color', 'Colour', 'color'], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['style', 'Style', 'select', [['solid', 'Solid'], ['line', 'Outline only']]], ['lineW', 'Line weight (mm)', 'range', { min: .15, max: 3, step: .05 }, e => e.style === 'line'], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }, e => e.style !== 'line'], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0 && e.style !== 'line'], ['glow', 'Glow (mm)', 'range', { min: 0, max: 8, step: .1 }], ['glowColor', 'Glow colour', 'color', null, e => e.glow > 0], ['flipX', 'Mirror', 'check']];
+const PAINT_LOOKS = { gold: [['#fff3c4', 0], ['#e9c35e', .28], ['#a8761c', .52], ['#f6d980', .72], ['#7a520e', 1]], silver: [['#ffffff', 0], ['#cfd3da', .3], ['#7c828c', .54], ['#eef0f3', .74], ['#585d66', 1]], bronze: [['#f6c99a', 0], ['#b8763c', .32], ['#6a3a16', .58], ['#dca068', .78], ['#4a2410', 1]], chrome: [['#ffffff', 0], ['#a9b4c6', .44], ['#1d2431', .5], ['#7e8ea6', .7], ['#eef4ff', 1]], obsidian: [['#5a606c', 0], ['#17191e', .45], ['#30343e', .75], ['#08090b', 1]], aurora: [['#ff5ad8', 0], ['#7a5aff', .45], ['#2fd8ff', 1]], ember: [['#fff3a8', 0], ['#ff9a2a', .32], ['#e0301a', .72], ['#5a0a0a', 1]], ice: [['#ffffff', 0], ['#c4ecff', .38], ['#4aa8e0', .78], ['#1f4a8a', 1]] };
+const PAINT_DEF = { paint: 'flat', bevel: 0, shadow: 0, shadowColor: '#000000', shadowOp: .45, color: '#1b1d22', color2: '#7a5af0', grad: false, gangle: 90, style: 'solid', lineW: .6, outline: '#ffffff', outlineW: 0, glow: 0, glowColor: '#6ab0ff', flipX: false };
+const PAINT_P = [['paint', 'Look', 'select', [['flat', 'Colour / gradient'], ['gold', 'Gold'], ['silver', 'Silver'], ['bronze', 'Bronze'], ['chrome', 'Chrome'], ['obsidian', 'Obsidian'], ['aurora', 'Aurora'], ['ember', 'Ember'], ['ice', 'Ice']]], ['bevel', 'Bevel', 'range', { min: 0, max: 1, step: .01 }], ['shadow', 'Drop shadow (mm)', 'range', { min: 0, max: 6, step: .1 }], ['shadowOp', 'Shadow strength', 'range', { min: 0, max: 1, step: .01 }, e => e.shadow > 0], ['color', 'Colour', 'color', null, e => !PAINT_LOOKS[e.paint]], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['style', 'Style', 'select', [['solid', 'Solid'], ['line', 'Outline only']]], ['lineW', 'Line weight (mm)', 'range', { min: .15, max: 3, step: .05 }, e => e.style === 'line'], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }, e => e.style !== 'line'], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0 && e.style !== 'line'], ['glow', 'Glow (mm)', 'range', { min: 0, max: 8, step: .1 }], ['glowColor', 'Glow colour', 'color', null, e => e.glow > 0], ['flipX', 'Mirror', 'check']];
 def('glyph', 'Faction icon', { w: 32, h: 32, icon: 'wolf', ...PAINT_DEF }, [['icon', 'Icon', 'select', ICON_OPTS], ...PAINT_P],
   function (c, el, ov, k) { paintMask(c, el, ov, k, (iw, ih) => glyphMask(el.icon, iw, ih, el.flipX)); }, 'M12 3l3 6 6 1-4 4 1 7-6-3-6 3 1-7-4-4 6-1z');
 
@@ -1654,6 +1689,20 @@ def('halftone', 'Halftone field', { w: 60, h: 40, cell: 1.1, scale: 16, contrast
     c.fillStyle = fillOf(ov, el.color); const cs = Math.max(.2, el.cell), nx = Math.ceil(el.w / cs), ny = Math.ceil(el.h / cs);
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const px = i * cs, py = j * cs, v = (noise(px / el.scale, py / el.scale) * .7 + noise(px / el.scale * 2.3 + 9, py / el.scale * 2.3) * .3 - el.threshold) * el.contrast; if (v <= .04) continue; const d = Math.min(1, v) * cs * .92, X = -el.w / 2 + px + cs / 2, Y = -el.h / 2 + py + cs / 2; if (el.dot === 'round') { c.beginPath(); c.arc(X, Y, d / 2, 0, Math.PI * 2); c.fill(); } else c.fillRect(X - d / 2, Y - d / 2, d, d); }
   }, 'M4 4h3v3H4zM10 4h2v2h-2zM16 4h1v1h-1zM4 10h2v2H4zM10 10h3v3h-3zM4 16h1v1H4z');
+def('rim', 'Shape border', { w: 60, h: 60, inset: 2.2, lw: .9, color: '#d6b25e', double: true, gap: 1.3, dash: 0, studs: 0 },
+  [['inset', 'Inset (mm)', 'range', { min: 0, max: 15, step: .1 }], ['lw', 'Line (mm)', 'range', { min: .1, max: 4, step: .05 }], ['double', 'Double line', 'check'], ['gap', 'Gap (mm)', 'range', { min: .2, max: 6, step: .1 }, e => e.double], ['dash', 'Dash / stitch (mm)', 'range', { min: 0, max: 4, step: .05 }], ['studs', 'Studs', 'range', { min: 0, max: 48, step: 1 }], ['color', 'Colour', 'color']],
+  function (c, el, ov, k) {
+    const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, el.w, el.h) : null;
+    const outline = (ins) => { if (!pts) return null; const kx = 1 - 2 * ins / el.w, ky = 1 - 2 * ins / el.h; return pts.map(([x, y]) => [(x - el.w / 2) * kx, (y - el.h / 2) * ky]); };
+    const path = (ins) => { c.beginPath(); const p = outline(ins); if (p) { p.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); } else rr(c, -el.w / 2 + ins, -el.h / 2 + ins, el.w - 2 * ins, el.h - 2 * ins, Math.max(.1, (C.r || 2) - ins)); };
+    c.strokeStyle = c.fillStyle = fillOf(ov, el.color); c.lineJoin = 'round'; c.lineCap = 'round'; c.setLineDash(el.dash > 0 ? [el.dash, el.dash * .7] : []);
+    c.lineWidth = el.lw; path(el.inset + el.lw / 2); c.stroke();
+    if (el.double) { c.lineWidth = el.lw * .45; path(el.inset + el.lw + el.gap); c.stroke(); }
+    c.setLineDash([]);
+    if (el.studs > 0) { const p = outline(el.inset + el.lw / 2) || (() => { const q = [], w = el.w / 2 - el.inset - el.lw / 2, h = el.h / 2 - el.inset - el.lw / 2; for (const [x, y] of [[-w, -h], [w, -h], [w, h], [-w, h]]) q.push([x, y]); return q; })();
+      const seg = p.map((a, i) => { const b = p[(i + 1) % p.length]; return Math.hypot(b[0] - a[0], b[1] - a[1]); }), tot = seg.reduce((a, b) => a + b, 0), step = tot / el.studs;
+      for (let n = 0; n < el.studs; n++) { let d = n * step, i = 0; while (d > seg[i]) { d -= seg[i]; i++; } const a = p[i], b = p[(i + 1) % p.length], t = d / seg[i]; c.beginPath(); c.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, el.lw * .95, 0, Math.PI * 2); c.fill(); } }
+  }, 'M4 4h16v16H4zM7 7h10v10H7z');
 
 /* ================= ID Forge — templates ================= */
 function makeEl(type, props) {
@@ -3110,8 +3159,8 @@ Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateCompone
 })();
 
 /* ================= faction-logo presets, emblem templates and acrylic badges ================= */
-const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Geometric marks', 'Emblems', 'Neon emblems', 'Flags', 'Emblem parts', 'Sigils', 'Backdrops'];
-const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Holograms', 'Decoration', 'Text styles'];
+const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Geometric marks', 'Emblems', 'Neon emblems', 'Flags', 'Banners & text', 'Emblem parts', 'Sigils', 'Backdrops'];
+const LOGO_SHARED = [];
 (() => {
   const add = (cat, name, make) => COMPONENTS.push({ cat, name, mode: 'logo', make });
   /* every icon as a drop-in */
@@ -3145,13 +3194,14 @@ const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Ho
   const emblem = (name, o) => add(EMB, name, C => {
     const s = S(C), cx = C.w / 2, cy = C.h / 2 - (o.motto ? s * .05 : 0), out = [];
     if (o.rays) out.push({ type: 'shape', name: 'Rays', x: cx, y: cy, w: s * .98, h: s * .98, kind: 'burst', points: 28, inner: .66, fill: o.rays });
-    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: cy + s * .02, w: s * .98, h: s * .98, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
-    if (o.back) out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim));
+    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: Math.max(s * .47, cy + s * .02), w: s * .94, h: s * .94, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
+    const shaped = C.shape && C.shape !== 'rect';
+    if (o.back) { if (shaped) out.push({ type: 'rect', name: 'Field', x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, fill: o.fill, fill2: o.fill2 || o.fill, grad: !!o.fill2, angle: 90, locked: true }, { type: 'rim', name: 'Border', x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, color: o.rim || '#d6b25e', inset: s * .035, lw: s * .022, double: true, gap: s * .02, locked: true }); else out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim)); }
     if (o.laurel) out.push({ type: 'seal', name: 'Laurel', x: cx, y: cy, w: s * (o.name ? .74 : .86), h: s * (o.name ? .74 : .86), style: 'laurel', text: '', color: o.laurel, finish: 'foil', foil: o.laurel });
     if (o.ring) out.push({ type: 'ellipse', name: 'Ring', x: cx, y: cy, w: s * .62, h: s * .62, fillOn: false, stroke: o.ring, strokeW: s * .018 });
     if (o.behind) out.push({ type: 'glyph', name: 'Behind', x: cx, y: cy, w: s * .7, h: s * .7, icon: o.behind, color: o.behindC || '#8a8f98', opacity: .9 });
-    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil } : {}) });
-    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: cy - s * .42, w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
+    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, bevel: .5, shadow: s * .012, shadowOp: .5, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil, paint: 'gold', bevel: .8 } : {}) });
+    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: Math.max(s * .07, cy - s * .42), w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
     if (o.motto) out.push({ type: 'shape', name: 'Ribbon', x: cx, y: cy + s * .44, w: s * .84, h: s * .13, kind: 'ribbon', fill: o.ribbon || '#7a1c24' }, { type: 'text', name: 'Motto', x: cx, y: cy + s * .435, w: s * .54, h: s * .065, text: o.motto, font: o.font || 'Cinzel', weight: 700, size: s * .042, align: 'center', color: '#f3efe4', spacing: .1 });
     return out;
   });
@@ -3260,6 +3310,28 @@ const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Ho
   L('lg_worldtree', 'World tree · enamel medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'enamel', tint: '#120a26', tintOn: true, edgeFin: 'silver' }, scene: { env: 'prism', backdrop: 'velvet', pose: 'hover', bloom: .6 }, front: [E('tree', { name: 'Tree of life', x: 30, y: 30, w: 52, h: 52, seed: 11, depth: 6, spread: 1, leafSize: .7, color: '#7a3ae6', color2: '#2fd8ff', grad: true, gangle: 90, glow: .5, glowColor: '#8a6aff' }), E('mark', { name: 'Gem', x: 30, y: 36.6, w: 3.6, h: 3.6, kind: 'spike', n: 4, inner: .2, curve: .4, variant: 'cross', color: '#e8fbff', glow: 1.2, glowColor: '#2fd8ff' })], back: [] }; });
   L('lg_flag', 'Glacier Assembly · flag', () => { const c = fm('em_flag'); return { card: { ...c, sub: 'felt', tint: '#3f8fb0', tintOn: true }, scene: { env: 'softbox', backdrop: 'linen', pose: 'stand' }, front: [E('glyph', { name: 'Horizon line', x: 45, y: 30, w: 46, h: 46, icon: 'lhorizon', color: '#f4f2ec' })], back: [E('glyph', { name: 'Horizon line', x: 45, y: 30, w: 46, h: 46, icon: 'lhorizon', color: '#f4f2ec', flipX: true })] }; });
   L('lg_tide', 'Tidecall · blue acrylic disc', () => { const c = fm('em_round'); return { card: { ...c, sub: 'acr_blue', thick: 3, glowInt: 1.1 }, scene: { env: 'gallery', backdrop: 'walnut', pose: 'desk', bloom: .6 }, front: [E('mark', { name: 'Tidecall mark', x: 30, y: 27, w: 30, h: 30, kind: 'crescent', inner: .3, hole: 'ring', color: '#ffffff', finish: 'laser' }), E('text', { name: 'Label', x: 30, y: 48, w: 40, h: 4, text: 'TIDECALL', font: 'Orbitron', weight: 700, size: 2.8, align: 'center', color: '#ffffff', spacing: .6, finish: 'laser' })], back: [] }; });
+})();
+
+(() => {
+  const add = (cat, name, make, extra = {}) => COMPONENTS.push({ cat, name, mode: 'logo', make, ...extra }), S = C => Math.min(C.w, C.h);
+  /* borders that follow the emblem's own outline */
+  [['Shape border · gold double', { color: '#d6b25e', double: true, finish: 'foil', foil: '#d6b25e' }], ['Shape border · silver single', { color: '#c8ccd3', double: false, finish: 'foil', foil: '#c8ccd3' }], ['Shape border · stitched', { color: '#e8dcc0', double: false, dash: 1.2, lw: .5 }], ['Shape border · studded', { color: '#8a8f98', double: false, studs: 24, lw: 1 }], ['Shape border · black inline', { color: '#1b1d22', double: true }]].forEach(([n, o]) => add('Emblem parts', n, C => [{ type: 'rim', name: n, x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, inset: S(C) * .035, lw: S(C) * .018, gap: S(C) * .018, ...o, ...(o.lw ? { lw: o.lw * S(C) / 60 } : {}) }]));
+  /* banners & text */
+  const B = 'Banners & text', T = (C, o) => ({ type: 'text', x: C.w / 2, align: 'center', font: 'Cinzel', weight: 700, color: '#1b1d22', ...o });
+  add(B, 'Arched name · top', C => [T(C, { name: 'Faction name', y: C.h * .16, w: S(C) * .84, h: S(C) * .12, text: 'ORDER OF THE EMBER', size: S(C) * .06, arc: 70, spacing: .08 })]);
+  add(B, 'Arched name · bottom', C => [T(C, { name: 'Motto arc', y: C.h * .86, w: S(C) * .84, h: S(C) * .12, text: 'FORTIS ET FIDELIS', size: S(C) * .05, arc: -70, spacing: .12 })]);
+  [['crimson', '#7a1c24', '#f3efe4'], ['navy', '#16304f', '#f3efe4'], ['emerald', '#1f5a3a', '#f3efe4'], ['black & gold', '#141418', '#d6b25e']].forEach(([n, f, tc]) => add(B, `Motto ribbon · ${n}`, C => [{ type: 'shape', name: 'Ribbon', x: C.w / 2, y: C.h * .84, w: S(C) * .9, h: S(C) * .15, kind: 'ribbon', fill: f, shadow: 0 }, T(C, { name: 'Motto', y: C.h * .835, w: S(C) * .58, h: S(C) * .07, text: 'NO STEP BACK', size: S(C) * .045, color: tc, spacing: .12 })]));
+  add(B, 'Scroll banner · parchment', C => [{ type: 'shape', name: 'Scroll', x: C.w / 2, y: C.h * .84, w: S(C) * .92, h: S(C) * .16, kind: 'ribbon', fill: '#efe3c4', stroke: '#7a5a1c', strokeW: S(C) * .008 }, T(C, { name: 'Motto', y: C.h * .835, w: S(C) * .6, h: S(C) * .07, text: 'Per Aspera', size: S(C) * .05, color: '#4a3410', font: 'Cormorant Garamond', italic: true })]);
+  add(B, 'Spaced tech label', C => [T(C, { name: 'Label', y: C.h * .86, w: C.w * .86, h: S(C) * .07, text: 'VANGUARD', size: S(C) * .05, font: 'Orbitron', weight: 600, spacing: .7 })]);
+  add(B, 'Stencil title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .14, text: 'IRON LEGION', size: S(C) * .11, font: 'Bebas Neue', weight: 400, spacing: .08 })]);
+  add(B, 'Blackletter title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .13, text: 'Grimhold', size: S(C) * .1, font: 'UnifrakturMaguntia', weight: 400 })]);
+  add(B, 'Gilded title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .12, text: 'AURUM PACT', size: S(C) * .085, grad: true, color: '#f6d980', color2: '#8a5a10', gangle: 90, stroke: '#3a2408', strokeW: S(C) * .004, spacing: .1 })]);
+  add(B, 'Neon title', C => [T(C, { name: 'Title', y: C.h * .86, w: C.w * .9, h: S(C) * .1, text: 'NIGHTWIRE', size: S(C) * .07, font: 'Orbitron', color: '#7af0ff', stroke: '#0a4a6a', strokeW: S(C) * .006, spacing: .3 })]);
+  add(B, 'Founded line', C => { const s = S(C), y = C.h * .9; return [T(C, { name: 'Founded', y, w: s * .4, h: s * .06, text: 'EST · MMXXVI', size: s * .036, font: 'Cinzel', spacing: .3 }), { type: 'line', name: 'Rule L', x: C.w / 2 - s * .3, y, w: s * .14, h: 1, color: '#1b1d22', lw: s * .005 }, { type: 'line', name: 'Rule R', x: C.w / 2 + s * .3, y, w: s * .14, h: 1, color: '#1b1d22', lw: s * .005 }]; });
+  /* full compositions replace the side (with undo); backdrops slide in underneath */
+  for (const c of COMPONENTS) { if (['Emblems', 'Neon emblems', 'Flags'].includes(c.cat)) c.layout = true; if (c.cat === 'Backdrops') c.under = true; }
+  const order = ['Security', 'Holograms', 'Seals & stamps', 'Office stamps', 'Travel stamps', 'Postal & date', 'Genre stamps', 'Stickers & labels', 'Ribbons & insignia', 'Identity', 'Decoration', 'Text styles', ...LAYOUT_CATS, ...LOGO_CATS];
+  COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
 
 /* ================= UI ================= */
@@ -3589,7 +3661,7 @@ async function renderPresetGrid() {
     g.innerHTML = (list.length ? list.map(r => `<div class="pcard user" role="button" tabindex="0" data-u="${esc(r.id)}" title="Add ${esc(r.name)} to the ${side}"><span class="pth">${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : ''}</span><span>${esc(r.name)}</span><button class="pdel" data-del="${esc(r.id)}" aria-label="Delete preset ${esc(r.name)}" title="Delete">×</button></div>`).join('') : '') + `<div class="empty" style="grid-column:1/-1">${list.length ? '' : '<b>No presets of your own yet.</b><br>'}Select one or more elements, then choose <b>Save as preset</b> in the inspector.</div>`;
     return;
   }
-  const C = P.card, isLay = LAYOUT_CATS.includes(presetCat), base = cardBase(), key = (c) => c.name + '|' + C.w + 'x' + C.h + (c.layout ? '|' + base : ''), list = COMPONENTS.filter(c => c.cat === presetCat), g = $('#presetGrid');
+  const C = P.card, isLay = COMPONENTS.some(c => c.cat === presetCat && c.layout), base = cardBase(), key = (c) => c.name + '|' + C.w + 'x' + C.h + (c.layout ? '|' + base : ''), list = COMPONENTS.filter(c => c.cat === presetCat), g = $('#presetGrid');
   g.innerHTML = (isLay ? `<label class="layrep"><input type="checkbox" id="layRep" ${layReplace ? 'checked' : ''}> Replace what’s on the ${side} <span>(keeps full-card backgrounds)</span></label>` : '') + list.map((c, i) => `<button class="pcard" data-i="${COMPONENTS.indexOf(c)}" title="Add ${esc(c.name)} to the ${side}"><span class="pth" data-pi="${COMPONENTS.indexOf(c)}"></span><span>${esc(c.name)}</span></button>`).join('');
   const slots = $$('[data-pi]', g); let i = 0;
   const step = () => { if (i >= slots.length) return; const s = slots[i++]; if (!s.isConnected) return; const comp = COMPONENTS[+s.dataset.pi]; let cnv = presetThumbs.get(key(comp)); if (!cnv) { try { cnv = comp.layout ? thumbEls(instantiateComponent(comp, C), 220, 132, { w: C.w, h: C.h, r: C.r, fill: base }) : thumbEls(instantiateComponent(comp, C), 220, 132); } catch (e) { cnv = document.createElement('canvas'); } presetThumbs.set(key(comp), cnv); } const cl = document.createElement('canvas'); cl.width = cnv.width || 1; cl.height = cnv.height || 1; if (cnv.width) cl.getContext('2d').drawImage(cnv, 0, 0); s.appendChild(cl); requestAnimationFrame(step); };
@@ -3602,7 +3674,7 @@ function insertComponent(i) {
     const full = e => Math.abs(e.w - C.w) < 1 && Math.abs(e.h - C.h) < 1, ownBg = els.some(full), keep = P[side].filter(e => !ownBg && full(e) && !e.rot);
     P[side].length = 0; P[side].push(...keep);
   }
-  for (const e of els) P[side].push(e);
+  if (comp.under) P[side].unshift(...els); else for (const e of els) P[side].push(e);
   if (comp.layout) setSel([]); else setSel(els.map(e => e.id));
   renderLayers(); renderInspector(); if (!comp.layout) showTab('el'); elChanged(false, ['front', 'back']);
   toast(comp.layout ? `Applied the “${comp.name}” layout to the ${side}${layReplace ? ' · Ctrl+Z to undo' : ''}` : `Added ${comp.name.toLowerCase()} to the ${side}`);
@@ -3716,6 +3788,7 @@ function showTab(t) { $$('#tabs button').forEach(b => b.classList.toggle('on', b
 const flat = $('#flat'), fx = flat.getContext('2d'), fv = { s: 1, ox: 0, oy: 0, d: 1, w: 0, h: 0, zoom: 1, px: 0, py: 0, grid: false, safe: false, snap: true };
 let drag = null, hoverId = null, guides = [], spaceDown = false;
 const HANDLES = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
+function cardPathAt(c, X, Y, s) { const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, C.w, C.h) : null; if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(X + x * s, Y + y * s) : c.moveTo(X + x * s, Y + y * s)); c.closePath(); } else rr(c, X, Y, C.w * s, C.h * s, C.r * s); }
 function flatLayout() {
   const r = flat.getBoundingClientRect(); if (!r.width || !r.height) return; const d = Math.min(2, devicePixelRatio || 1);
   if (flat.width !== Math.round(r.width * d) || flat.height !== Math.round(r.height * d)) { flat.width = Math.round(r.width * d); flat.height = Math.round(r.height * d); }
@@ -3728,14 +3801,19 @@ function zoomAt(f, px, py) { const C = P.card, nz = clamp(fv.zoom * f, .35, 14);
 function checker(x, X, Y, W, Hh) { const s = 8; for (let j = 0; j * s < Hh; j++) for (let i = 0; i * s < W; i++) { x.fillStyle = (i + j) % 2 ? '#2b2d31' : '#1c1e21'; x.fillRect(X + i * s, Y + j * s, s, s); } }
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
-  fx.setTransform(fv.d, 0, 0, fv.d, 0, 0); fx.fillStyle = '#111215'; fx.fillRect(0, 0, fv.w, fv.h);
-  fx.fillStyle = 'rgba(255,255,255,.05)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1);
+  fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
+  if (appMode === 'logo') {   // studio presentation: lit sweep, soft pool of light, vignette
+    const cx = fv.ox + C.w * fv.s / 2, cy = fv.oy + C.h * fv.s / 2, R = Math.max(fv.w, fv.h), g = fx.createRadialGradient(cx, cy - C.h * fv.s * .15, 0, cx, cy, R * .75);
+    g.addColorStop(0, '#363c4c'); g.addColorStop(.35, '#1c2029'); g.addColorStop(1, '#07080b'); fx.fillStyle = g; fx.fillRect(0, 0, fv.w, fv.h);
+    const fl = fx.createRadialGradient(cx, cy + C.h * fv.s * .58, 0, cx, cy + C.h * fv.s * .58, C.w * fv.s * .7); fl.addColorStop(0, 'rgba(0,0,0,.55)'); fl.addColorStop(1, 'rgba(0,0,0,0)'); fx.fillStyle = fl; fx.fillRect(0, 0, fv.w, fv.h);
+  } else { fx.fillStyle = '#111215'; fx.fillRect(0, 0, fv.w, fv.h); fx.fillStyle = 'rgba(255,255,255,.05)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1); }
   const X = fv.ox, Y = fv.oy, CW = C.w * fv.s, CH = C.h * fv.s;
-  fx.save(); fx.beginPath(); rr(fx, X, Y, CW, CH, C.r * fv.s); fx.shadowColor = 'rgba(0,0,0,.6)'; fx.shadowBlur = 28; fx.shadowOffsetY = 10; fx.fillStyle = '#18191c'; fx.fill(); fx.restore();
+  fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = 'rgba(0,0,0,.6)'; fx.shadowBlur = 28; fx.shadowOffsetY = 10; fx.fillStyle = '#18191c'; fx.fill(); fx.restore();
   if (r) {
-    fx.save(); fx.beginPath(); rr(fx, X, Y, CW, CH, C.r * fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
+    fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
     if (S.clear && r.E) { checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
     else fx.drawImage(r.A, X, Y, CW, CH);
+    if (!uvOn && r.X && (S.glow || P[side].some(e => e.glow > 0))) { fx.save(); fx.globalCompositeOperation = 'screen'; fx.globalAlpha = .9; fx.drawImage(r.X, X, Y, CW, CH); fx.restore(); }
     if (uvOn) { fx.fillStyle = 'rgba(14,6,30,.88)'; fx.fillRect(X, Y, CW, CH); if (r.X) { fx.globalCompositeOperation = 'lighter'; fx.drawImage(r.X, X, Y, CW, CH); fx.globalCompositeOperation = 'source-over'; } }
     if (fv.grid) { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } }
     fx.restore();
@@ -3883,6 +3961,7 @@ function openExport() {
    <div class="opt"><b>Beauty shot</b><small>The current 3D view at high resolution, with every light and lens effect.</small><div class="ctl"><select id="xShot" class="btn" aria-label="Resolution"><option value="2">2× screen</option><option value="3840" selected>3840 wide</option><option value="7680">7680 wide</option></select><button class="btn acc" data-x="shot"${no3d}>PNG</button></div></div>
    <div class="opt"><b>Front + back shot</b><small>Two renders side by side, the card flipped between them.</small><div class="ctl"><button class="btn" data-x="pair"${no3d}>PNG</button></div></div>
    <div class="opt"><b>Turntable film</b><small>A slow orbit with light raking across foil and holograms.</small><div class="ctl"><select id="xSec" class="btn" aria-label="Length"><option value="6">6 s</option><option value="10">10 s</option></select><button class="btn" data-x="film"${no3d}>Record</button></div></div>
+   ${appMode === 'logo' ? '<div class="opt"><b>Logo artwork</b><small>Just the design on a transparent background at 4096 px, with no material behind it. Ready for the web, print or a game.</small><div class="ctl"><button class="btn" data-x="logoart">Transparent PNG</button></div></div>' : ''}
    <div class="opt"><b>Flat artwork</b><small>Each side at full texture resolution, transparent outside the card.</small><div class="ctl"><button class="btn" data-x="ffront">Front</button><button class="btn" data-x="fback">Back</button></div></div>
    <div class="opt"><b>Print proof sheet</b><small>Front and back flat, with crop marks.</small><div class="ctl"><button class="btn" data-x="proof">PNG</button></div></div>
    <div class="opt"><b>Project file</b><small>The whole design, images included, as JSON to reopen anywhere.</small><div class="ctl"><button class="btn" data-x="save">Export</button><button class="btn" data-x="open">Import…</button><button class="btn" data-x="copy">Copy</button></div></div>
@@ -3892,6 +3971,7 @@ function openExport() {
     if (a === 'shot' && view) await busy(async () => saveFile(`${slug()}-shot.png`, await view.snapshot(+$('#xShot').value)));
     if (a === 'pair' && view) await busy(async () => saveFile(`${slug()}-front-back.png`, await view.snapshotPair(2)));
     if (a === 'film' && view) { if (typeof MediaRecorder === 'undefined') return toast('Recording isn’t supported in this browser.'); btn.disabled = true; try { const r = await view.record(+$('#xSec').value, p => prog(p)); await saveFile(`${slug()}-turntable.${r.ext}`, r.blob); } catch (e) { toast('Recording failed: ' + e.message); } prog(null); btn.disabled = false; }
+    if (a === 'logoart') await busy(async () => { const r = renderSide('front', 'art', { res: 4096, art: true, albedoOnly: true }); await saveFile(`${slug()}-logo.png`, await toBlob(r.A)); invalidate(); });
     if (a === 'ffront' || a === 'fback') await busy(async () => { const sd = a === 'ffront' ? 'front' : 'back'; await saveFile(`${slug()}-${sd}.png`, await toBlob(flatSide(sd))); invalidate(); });
     if (a === 'proof') await busy(async () => { await saveFile(`${slug()}-proof.png`, await proofSheet()); invalidate(); });
     if (a === 'save') await saveFile(`${slug()}.idforge.json`, JSON.stringify({ app: 'ID Forge', v: 2, ...P }));
@@ -4348,9 +4428,9 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     finish.uniforms.uVig.value = s.vignette; finish.uniforms.uGrain.value = s.grain; finish.uniforms.uCA.value = s.ca;
     if (geoSig) setCard();
     dust.visible = !!s.dust; if (s.pose === 'lanyard') buildLanyard(); lanyardG.visible = s.pose === 'lanyard';
-    const pr = s.quality === 'draft' ? 1 : s.quality === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2) : Math.min(window.devicePixelRatio || 1, 1.5);
+    const pr = s.quality === 'draft' ? 1 : s.quality === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2.5) : Math.min(window.devicePixelRatio || 1, 2);
     if (Math.abs(renderer.getPixelRatio() - pr) > .01) { renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); }
-    key.shadow.mapSize.setScalar(s.quality === 'draft' ? 1024 : 2048);
+    key.shadow.mapSize.setScalar(s.quality === 'draft' ? 1024 : s.quality === 'ultra' ? 4096 : 3072);
   }
   function resize() {
     const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;

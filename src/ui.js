@@ -325,7 +325,7 @@ async function renderPresetGrid() {
     g.innerHTML = (list.length ? list.map(r => `<div class="pcard user" role="button" tabindex="0" data-u="${esc(r.id)}" title="Add ${esc(r.name)} to the ${side}"><span class="pth">${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : ''}</span><span>${esc(r.name)}</span><button class="pdel" data-del="${esc(r.id)}" aria-label="Delete preset ${esc(r.name)}" title="Delete">×</button></div>`).join('') : '') + `<div class="empty" style="grid-column:1/-1">${list.length ? '' : '<b>No presets of your own yet.</b><br>'}Select one or more elements, then choose <b>Save as preset</b> in the inspector.</div>`;
     return;
   }
-  const C = P.card, isLay = LAYOUT_CATS.includes(presetCat), base = cardBase(), key = (c) => c.name + '|' + C.w + 'x' + C.h + (c.layout ? '|' + base : ''), list = COMPONENTS.filter(c => c.cat === presetCat), g = $('#presetGrid');
+  const C = P.card, isLay = COMPONENTS.some(c => c.cat === presetCat && c.layout), base = cardBase(), key = (c) => c.name + '|' + C.w + 'x' + C.h + (c.layout ? '|' + base : ''), list = COMPONENTS.filter(c => c.cat === presetCat), g = $('#presetGrid');
   g.innerHTML = (isLay ? `<label class="layrep"><input type="checkbox" id="layRep" ${layReplace ? 'checked' : ''}> Replace what’s on the ${side} <span>(keeps full-card backgrounds)</span></label>` : '') + list.map((c, i) => `<button class="pcard" data-i="${COMPONENTS.indexOf(c)}" title="Add ${esc(c.name)} to the ${side}"><span class="pth" data-pi="${COMPONENTS.indexOf(c)}"></span><span>${esc(c.name)}</span></button>`).join('');
   const slots = $$('[data-pi]', g); let i = 0;
   const step = () => { if (i >= slots.length) return; const s = slots[i++]; if (!s.isConnected) return; const comp = COMPONENTS[+s.dataset.pi]; let cnv = presetThumbs.get(key(comp)); if (!cnv) { try { cnv = comp.layout ? thumbEls(instantiateComponent(comp, C), 220, 132, { w: C.w, h: C.h, r: C.r, fill: base }) : thumbEls(instantiateComponent(comp, C), 220, 132); } catch (e) { cnv = document.createElement('canvas'); } presetThumbs.set(key(comp), cnv); } const cl = document.createElement('canvas'); cl.width = cnv.width || 1; cl.height = cnv.height || 1; if (cnv.width) cl.getContext('2d').drawImage(cnv, 0, 0); s.appendChild(cl); requestAnimationFrame(step); };
@@ -338,7 +338,7 @@ function insertComponent(i) {
     const full = e => Math.abs(e.w - C.w) < 1 && Math.abs(e.h - C.h) < 1, ownBg = els.some(full), keep = P[side].filter(e => !ownBg && full(e) && !e.rot);
     P[side].length = 0; P[side].push(...keep);
   }
-  for (const e of els) P[side].push(e);
+  if (comp.under) P[side].unshift(...els); else for (const e of els) P[side].push(e);
   if (comp.layout) setSel([]); else setSel(els.map(e => e.id));
   renderLayers(); renderInspector(); if (!comp.layout) showTab('el'); elChanged(false, ['front', 'back']);
   toast(comp.layout ? `Applied the “${comp.name}” layout to the ${side}${layReplace ? ' · Ctrl+Z to undo' : ''}` : `Added ${comp.name.toLowerCase()} to the ${side}`);
@@ -452,6 +452,7 @@ function showTab(t) { $$('#tabs button').forEach(b => b.classList.toggle('on', b
 const flat = $('#flat'), fx = flat.getContext('2d'), fv = { s: 1, ox: 0, oy: 0, d: 1, w: 0, h: 0, zoom: 1, px: 0, py: 0, grid: false, safe: false, snap: true };
 let drag = null, hoverId = null, guides = [], spaceDown = false;
 const HANDLES = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
+function cardPathAt(c, X, Y, s) { const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, C.w, C.h) : null; if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(X + x * s, Y + y * s) : c.moveTo(X + x * s, Y + y * s)); c.closePath(); } else rr(c, X, Y, C.w * s, C.h * s, C.r * s); }
 function flatLayout() {
   const r = flat.getBoundingClientRect(); if (!r.width || !r.height) return; const d = Math.min(2, devicePixelRatio || 1);
   if (flat.width !== Math.round(r.width * d) || flat.height !== Math.round(r.height * d)) { flat.width = Math.round(r.width * d); flat.height = Math.round(r.height * d); }
@@ -464,14 +465,19 @@ function zoomAt(f, px, py) { const C = P.card, nz = clamp(fv.zoom * f, .35, 14);
 function checker(x, X, Y, W, Hh) { const s = 8; for (let j = 0; j * s < Hh; j++) for (let i = 0; i * s < W; i++) { x.fillStyle = (i + j) % 2 ? '#2b2d31' : '#1c1e21'; x.fillRect(X + i * s, Y + j * s, s, s); } }
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
-  fx.setTransform(fv.d, 0, 0, fv.d, 0, 0); fx.fillStyle = '#111215'; fx.fillRect(0, 0, fv.w, fv.h);
-  fx.fillStyle = 'rgba(255,255,255,.05)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1);
+  fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
+  if (appMode === 'logo') {   // studio presentation: lit sweep, soft pool of light, vignette
+    const cx = fv.ox + C.w * fv.s / 2, cy = fv.oy + C.h * fv.s / 2, R = Math.max(fv.w, fv.h), g = fx.createRadialGradient(cx, cy - C.h * fv.s * .15, 0, cx, cy, R * .75);
+    g.addColorStop(0, '#363c4c'); g.addColorStop(.35, '#1c2029'); g.addColorStop(1, '#07080b'); fx.fillStyle = g; fx.fillRect(0, 0, fv.w, fv.h);
+    const fl = fx.createRadialGradient(cx, cy + C.h * fv.s * .58, 0, cx, cy + C.h * fv.s * .58, C.w * fv.s * .7); fl.addColorStop(0, 'rgba(0,0,0,.55)'); fl.addColorStop(1, 'rgba(0,0,0,0)'); fx.fillStyle = fl; fx.fillRect(0, 0, fv.w, fv.h);
+  } else { fx.fillStyle = '#111215'; fx.fillRect(0, 0, fv.w, fv.h); fx.fillStyle = 'rgba(255,255,255,.05)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1); }
   const X = fv.ox, Y = fv.oy, CW = C.w * fv.s, CH = C.h * fv.s;
-  fx.save(); fx.beginPath(); rr(fx, X, Y, CW, CH, C.r * fv.s); fx.shadowColor = 'rgba(0,0,0,.6)'; fx.shadowBlur = 28; fx.shadowOffsetY = 10; fx.fillStyle = '#18191c'; fx.fill(); fx.restore();
+  fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = 'rgba(0,0,0,.6)'; fx.shadowBlur = 28; fx.shadowOffsetY = 10; fx.fillStyle = '#18191c'; fx.fill(); fx.restore();
   if (r) {
-    fx.save(); fx.beginPath(); rr(fx, X, Y, CW, CH, C.r * fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
+    fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
     if (S.clear && r.E) { checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
     else fx.drawImage(r.A, X, Y, CW, CH);
+    if (!uvOn && r.X && (S.glow || P[side].some(e => e.glow > 0))) { fx.save(); fx.globalCompositeOperation = 'screen'; fx.globalAlpha = .9; fx.drawImage(r.X, X, Y, CW, CH); fx.restore(); }
     if (uvOn) { fx.fillStyle = 'rgba(14,6,30,.88)'; fx.fillRect(X, Y, CW, CH); if (r.X) { fx.globalCompositeOperation = 'lighter'; fx.drawImage(r.X, X, Y, CW, CH); fx.globalCompositeOperation = 'source-over'; } }
     if (fv.grid) { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } }
     fx.restore();
@@ -619,6 +625,7 @@ function openExport() {
    <div class="opt"><b>Beauty shot</b><small>The current 3D view at high resolution, with every light and lens effect.</small><div class="ctl"><select id="xShot" class="btn" aria-label="Resolution"><option value="2">2× screen</option><option value="3840" selected>3840 wide</option><option value="7680">7680 wide</option></select><button class="btn acc" data-x="shot"${no3d}>PNG</button></div></div>
    <div class="opt"><b>Front + back shot</b><small>Two renders side by side, the card flipped between them.</small><div class="ctl"><button class="btn" data-x="pair"${no3d}>PNG</button></div></div>
    <div class="opt"><b>Turntable film</b><small>A slow orbit with light raking across foil and holograms.</small><div class="ctl"><select id="xSec" class="btn" aria-label="Length"><option value="6">6 s</option><option value="10">10 s</option></select><button class="btn" data-x="film"${no3d}>Record</button></div></div>
+   ${appMode === 'logo' ? '<div class="opt"><b>Logo artwork</b><small>Just the design on a transparent background at 4096 px, with no material behind it. Ready for the web, print or a game.</small><div class="ctl"><button class="btn" data-x="logoart">Transparent PNG</button></div></div>' : ''}
    <div class="opt"><b>Flat artwork</b><small>Each side at full texture resolution, transparent outside the card.</small><div class="ctl"><button class="btn" data-x="ffront">Front</button><button class="btn" data-x="fback">Back</button></div></div>
    <div class="opt"><b>Print proof sheet</b><small>Front and back flat, with crop marks.</small><div class="ctl"><button class="btn" data-x="proof">PNG</button></div></div>
    <div class="opt"><b>Project file</b><small>The whole design, images included, as JSON to reopen anywhere.</small><div class="ctl"><button class="btn" data-x="save">Export</button><button class="btn" data-x="open">Import…</button><button class="btn" data-x="copy">Copy</button></div></div>
@@ -628,6 +635,7 @@ function openExport() {
     if (a === 'shot' && view) await busy(async () => saveFile(`${slug()}-shot.png`, await view.snapshot(+$('#xShot').value)));
     if (a === 'pair' && view) await busy(async () => saveFile(`${slug()}-front-back.png`, await view.snapshotPair(2)));
     if (a === 'film' && view) { if (typeof MediaRecorder === 'undefined') return toast('Recording isn’t supported in this browser.'); btn.disabled = true; try { const r = await view.record(+$('#xSec').value, p => prog(p)); await saveFile(`${slug()}-turntable.${r.ext}`, r.blob); } catch (e) { toast('Recording failed: ' + e.message); } prog(null); btn.disabled = false; }
+    if (a === 'logoart') await busy(async () => { const r = renderSide('front', 'art', { res: 4096, art: true, albedoOnly: true }); await saveFile(`${slug()}-logo.png`, await toBlob(r.A)); invalidate(); });
     if (a === 'ffront' || a === 'fback') await busy(async () => { const sd = a === 'ffront' ? 'front' : 'back'; await saveFile(`${slug()}-${sd}.png`, await toBlob(flatSide(sd))); invalidate(); });
     if (a === 'proof') await busy(async () => { await saveFile(`${slug()}-proof.png`, await proofSheet()); invalidate(); });
     if (a === 'save') await saveFile(`${slug()}.idforge.json`, JSON.stringify({ app: 'ID Forge', v: 2, ...P }));

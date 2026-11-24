@@ -337,9 +337,9 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     finish.uniforms.uVig.value = s.vignette; finish.uniforms.uGrain.value = s.grain; finish.uniforms.uCA.value = s.ca;
     if (geoSig) setCard();
     dust.visible = !!s.dust; if (s.pose === 'lanyard') buildLanyard(); lanyardG.visible = s.pose === 'lanyard';
-    const pr = s.quality === 'draft' ? 1 : s.quality === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2) : Math.min(window.devicePixelRatio || 1, 1.5);
+    const pr = s.quality === 'draft' ? 1 : s.quality === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2.5) : Math.min(window.devicePixelRatio || 1, 2);
     if (Math.abs(renderer.getPixelRatio() - pr) > .01) { renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); }
-    key.shadow.mapSize.setScalar(s.quality === 'draft' ? 1024 : 2048);
+    key.shadow.mapSize.setScalar(s.quality === 'draft' ? 1024 : s.quality === 'ultra' ? 4096 : 3072);
   }
   function resize() {
     const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;

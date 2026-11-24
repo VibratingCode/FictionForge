@@ -116,7 +116,9 @@ const SUBS = {
   bronze: { label: 'Antique bronze', color: '#9a6a3a', rough: .38, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .2, laser: '#2a1808' },
   iron: { label: 'Forged iron', color: '#55585e', rough: .58, metal: 1, clear: 0, thick: 3.5, tex: 'brushed', aniso: .15, laser: '#c9ccd1' },
   enamel: { label: 'Glossy enamel', color: '#1d3f6e', rough: .12, metal: 0, clear: 0, thick: 2.5, cc: 1, ccr: .02, laser: '#e9edf2' },
-  leather: { label: 'Tooled leather', color: '#6b3f22', rough: .74, metal: 0, clear: 0, thick: 2.2, tex: 'paper', laser: '#2a160a', edge: '#4a2a14' },
+  leather: { label: 'Leather · saddle brown', color: '#6a3a1e', rough: .56, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .3, ccr: .32, laser: '#2a140a', edge: '#2e170a' },
+  leather_black: { label: 'Leather · black', color: '#211d1c', rough: .5, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .4, ccr: .28, laser: '#9a8a7a', edge: '#121010' },
+  leather_tan: { label: 'Leather · tan', color: '#b27a46', rough: .6, metal: 0, clear: 0, thick: 2.2, tex: 'leather', cc: .22, ccr: .36, laser: '#4a2a12', edge: '#6a4220' },
   felt: { label: 'Embroidered twill (patch)', color: '#2a3a2a', rough: .95, metal: 0, clear: 0, thick: 1.6, tex: 'paper', laser: '#151d15', edge: '#1d281d' },
   stone: { label: 'Carved slate', color: '#4a4e54', rough: .8, metal: 0, clear: 0, thick: 5, tex: 'marble', laser: '#c9ccd1' },
   acr_green: { label: 'Fluorescent acrylic · green', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#39ff7a', attenD: 1.4, laser: '#d4ffe0', disp: 'rgba(40,220,100,.5)', glow: '#3dff74' },
@@ -131,7 +133,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 3072, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -724,7 +726,7 @@ function metalFor(f) { const S = sub(); if (f === 'foil' || f === 'holo') return
 
 function renderSide(side, tier, opts) {
   const C = P.card, S = sub(), Wm = C.w, Hm = C.h;
-  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1024, C.res) : C.res);
+  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1536, C.res) : C.res);
   const pw = Math.round(res), ph = Math.max(2, Math.round(res * Hm / Wm)), k = pw / Wm;
   const hw = Math.max(512, Math.round(res / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
@@ -735,9 +737,9 @@ function renderSide(side, tier, opts) {
 
   /* albedo */
   const A = cv(side, tier, 'A', pw, ph), a = prep(A); clipCard(a, k);
-  a.fillStyle = clear ? '#ffffff' : baseColor(); a.fillRect(0, 0, pw, ph); subTex(a, 'A', k);
+  const art = !!(opts && opts.art); if (!art) { a.fillStyle = clear ? '#ffffff' : baseColor(); a.fillRect(0, 0, pw, ph); subTex(a, 'A', k); }
   let tgt = a, E = null;
-  if (clear) { E = cv(side, tier, 'E', pw, ph); tgt = prep(E); clipCard(tgt, k); }
+  if (clear && !art) { E = cv(side, tier, 'E', pw, ph); tgt = prep(E); clipCard(tgt, k); }
   const owin = wins.filter(w => w._mirror);
   if (!clear) for (const w of owin) drawEl(a, w, k, { ch: 'A', color: '#ffffff' });
   for (const el of els) {
@@ -802,11 +804,33 @@ function renderSide(side, tier, opts) {
 Forge.renderSide = renderSide;
 
 /* ---------- substrate textures ---------- */
+let _leather = null;
+function leatherTiles() {   // seamless pebbled grain: domes with dark crevices, plus an inverted copy
+  if (_leather) return _leather;
+  const N = 512, H = document.createElement('canvas'); H.width = H.height = N; const x = H.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, N, N); x.globalCompositeOperation = 'lighten';
+  const R = rng(4242), G = 30, cs = N / G;
+  for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+    const cx = (i + .5 + (R() - .5) * .9) * cs, cy = (j + .5 + (R() - .5) * .9) * cs, r = cs * (1.05 + R() * .4), b = 185 + R() * 70 | 0;
+    for (const ox of [-N, 0, N]) for (const oy of [-N, 0, N]) { const X = cx + ox, Y = cy + oy; if (X < -r || X > N + r || Y < -r || Y > N + r) continue; const g = x.createRadialGradient(X - r * .18, Y - r * .22, 0, X, Y, r); const q = v => `rgb(${b * v | 0},${b * v | 0},${b * v | 0})`; g.addColorStop(0, q(1)); g.addColorStop(.42, q(.93)); g.addColorStop(.72, q(.5)); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.beginPath(); x.arc(X, Y, r, 0, Math.PI * 2); x.fill(); }
+  }
+  const I = document.createElement('canvas'); I.width = I.height = N; const y = I.getContext('2d'); y.drawImage(H, 0, 0); y.globalCompositeOperation = 'difference'; y.fillStyle = '#fff'; y.fillRect(0, 0, N, N);
+  return (_leather = { H, I, N });
+}
 function subTex(c, ch, k) {
   const C = P.card, S = sub(), W = C.w * k, Hh = C.h * k, R = rng(C.seed * 13 + (ch === 'A' ? 1 : ch === 'H' ? 2 : 3));
   if (S.tex === 'paper') {
     if (ch === 'A') { c.save(); c.globalAlpha = .1; c.globalCompositeOperation = 'multiply'; c.fillStyle = pat(c, 'mottle', 22 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, baseColor(), R, 'A'); }
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
+  } else if (S.tex === 'leather') {
+    const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; for (let i = 0; i < 9; i++) { c.lineWidth = w * (.4 + R()) * k; c.beginPath(); const x0 = R() * W, y0 = R() * Hh; c.moveTo(x0, y0); c.bezierCurveTo(x0 + (R() - .5) * W * .4, y0 + (R() - .5) * Hh * .3, x0 + (R() - .5) * W * .5, y0 + (R() - .5) * Hh * .5, x0 + (R() - .5) * W * .6, y0 + (R() - .5) * Hh * .6); c.stroke(); } c.restore(); };
+    if (ch === 'A') {
+      c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
+      c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
+      const g = c.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * .25, W / 2, Hh / 2, Math.max(W, Hh) * .72); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(70,40,24,1)'); c.globalAlpha = .5; c.fillStyle = g; c.fillRect(0, 0, W, Hh);
+      c.globalCompositeOperation = 'screen'; c.globalAlpha = .07; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.restore(); creases('rgba(18,9,4,1)', .22, .5);
+    } else if (ch === 'H') { c.save(); c.globalAlpha = .9; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .45; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh); c.restore(); creases('#000', .55, .8); }
+    else { c.save(); c.globalCompositeOperation = 'screen'; c.globalAlpha = .4; c.fillStyle = patt(L.I); c.fillRect(0, 0, W, Hh); c.restore(); }
   } else if (S.tex === 'brushed') {
     if (ch === 'A' || ch === 'R') { const n = Math.round(C.h / .035); c.save(); for (let i = 0; i < n; i++) { const y = (i * .035 + R() * .03) * k, v = R(); c.fillStyle = v < .5 ? `rgba(0,0,0,${.04 + R() * .07})` : `rgba(255,255,255,${.04 + R() * .08})`; const x0 = R() * W * .3; c.fillRect(-x0, y, W * (.7 + R() * .6) + x0, Math.max(1, .022 * k)); } c.restore(); }
   } else if (S.tex === 'carbon') {

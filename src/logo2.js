@@ -60,3 +60,17 @@ def('halftone', 'Halftone field', { w: 60, h: 40, cell: 1.1, scale: 16, contrast
     c.fillStyle = fillOf(ov, el.color); const cs = Math.max(.2, el.cell), nx = Math.ceil(el.w / cs), ny = Math.ceil(el.h / cs);
     for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const px = i * cs, py = j * cs, v = (noise(px / el.scale, py / el.scale) * .7 + noise(px / el.scale * 2.3 + 9, py / el.scale * 2.3) * .3 - el.threshold) * el.contrast; if (v <= .04) continue; const d = Math.min(1, v) * cs * .92, X = -el.w / 2 + px + cs / 2, Y = -el.h / 2 + py + cs / 2; if (el.dot === 'round') { c.beginPath(); c.arc(X, Y, d / 2, 0, Math.PI * 2); c.fill(); } else c.fillRect(X - d / 2, Y - d / 2, d, d); }
   }, 'M4 4h3v3H4zM10 4h2v2h-2zM16 4h1v1h-1zM4 10h2v2H4zM10 10h3v3h-3zM4 16h1v1H4z');
+def('rim', 'Shape border', { w: 60, h: 60, inset: 2.2, lw: .9, color: '#d6b25e', double: true, gap: 1.3, dash: 0, studs: 0 },
+  [['inset', 'Inset (mm)', 'range', { min: 0, max: 15, step: .1 }], ['lw', 'Line (mm)', 'range', { min: .1, max: 4, step: .05 }], ['double', 'Double line', 'check'], ['gap', 'Gap (mm)', 'range', { min: .2, max: 6, step: .1 }, e => e.double], ['dash', 'Dash / stitch (mm)', 'range', { min: 0, max: 4, step: .05 }], ['studs', 'Studs', 'range', { min: 0, max: 48, step: 1 }], ['color', 'Colour', 'color']],
+  function (c, el, ov, k) {
+    const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, el.w, el.h) : null;
+    const outline = (ins) => { if (!pts) return null; const kx = 1 - 2 * ins / el.w, ky = 1 - 2 * ins / el.h; return pts.map(([x, y]) => [(x - el.w / 2) * kx, (y - el.h / 2) * ky]); };
+    const path = (ins) => { c.beginPath(); const p = outline(ins); if (p) { p.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); } else rr(c, -el.w / 2 + ins, -el.h / 2 + ins, el.w - 2 * ins, el.h - 2 * ins, Math.max(.1, (C.r || 2) - ins)); };
+    c.strokeStyle = c.fillStyle = fillOf(ov, el.color); c.lineJoin = 'round'; c.lineCap = 'round'; c.setLineDash(el.dash > 0 ? [el.dash, el.dash * .7] : []);
+    c.lineWidth = el.lw; path(el.inset + el.lw / 2); c.stroke();
+    if (el.double) { c.lineWidth = el.lw * .45; path(el.inset + el.lw + el.gap); c.stroke(); }
+    c.setLineDash([]);
+    if (el.studs > 0) { const p = outline(el.inset + el.lw / 2) || (() => { const q = [], w = el.w / 2 - el.inset - el.lw / 2, h = el.h / 2 - el.inset - el.lw / 2; for (const [x, y] of [[-w, -h], [w, -h], [w, h], [-w, h]]) q.push([x, y]); return q; })();
+      const seg = p.map((a, i) => { const b = p[(i + 1) % p.length]; return Math.hypot(b[0] - a[0], b[1] - a[1]); }), tot = seg.reduce((a, b) => a + b, 0), step = tot / el.studs;
+      for (let n = 0; n < el.studs; n++) { let d = n * step, i = 0; while (d > seg[i]) { d -= seg[i]; i++; } const a = p[i], b = p[(i + 1) % p.length], t = d / seg[i]; c.beginPath(); c.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, el.lw * .95, 0, Math.PI * 2); c.fill(); } }
+  }, 'M4 4h16v16H4zM7 7h10v10H7z');

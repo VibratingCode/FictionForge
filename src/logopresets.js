@@ -1,6 +1,6 @@
 /* ================= faction-logo presets, emblem templates and acrylic badges ================= */
-const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Geometric marks', 'Emblems', 'Neon emblems', 'Flags', 'Emblem parts', 'Sigils', 'Backdrops'];
-const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Holograms', 'Decoration', 'Text styles'];
+const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Geometric marks', 'Emblems', 'Neon emblems', 'Flags', 'Banners & text', 'Emblem parts', 'Sigils', 'Backdrops'];
+const LOGO_SHARED = [];
 (() => {
   const add = (cat, name, make) => COMPONENTS.push({ cat, name, mode: 'logo', make });
   /* every icon as a drop-in */
@@ -34,13 +34,14 @@ const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Ho
   const emblem = (name, o) => add(EMB, name, C => {
     const s = S(C), cx = C.w / 2, cy = C.h / 2 - (o.motto ? s * .05 : 0), out = [];
     if (o.rays) out.push({ type: 'shape', name: 'Rays', x: cx, y: cy, w: s * .98, h: s * .98, kind: 'burst', points: 28, inner: .66, fill: o.rays });
-    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: cy + s * .02, w: s * .98, h: s * .98, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
-    if (o.back) out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim));
+    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: Math.max(s * .47, cy + s * .02), w: s * .94, h: s * .94, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
+    const shaped = C.shape && C.shape !== 'rect';
+    if (o.back) { if (shaped) out.push({ type: 'rect', name: 'Field', x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, fill: o.fill, fill2: o.fill2 || o.fill, grad: !!o.fill2, angle: 90, locked: true }, { type: 'rim', name: 'Border', x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, color: o.rim || '#d6b25e', inset: s * .035, lw: s * .022, double: true, gap: s * .02, locked: true }); else out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim)); }
     if (o.laurel) out.push({ type: 'seal', name: 'Laurel', x: cx, y: cy, w: s * (o.name ? .74 : .86), h: s * (o.name ? .74 : .86), style: 'laurel', text: '', color: o.laurel, finish: 'foil', foil: o.laurel });
     if (o.ring) out.push({ type: 'ellipse', name: 'Ring', x: cx, y: cy, w: s * .62, h: s * .62, fillOn: false, stroke: o.ring, strokeW: s * .018 });
     if (o.behind) out.push({ type: 'glyph', name: 'Behind', x: cx, y: cy, w: s * .7, h: s * .7, icon: o.behind, color: o.behindC || '#8a8f98', opacity: .9 });
-    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil } : {}) });
-    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: cy - s * .42, w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
+    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, bevel: .5, shadow: s * .012, shadowOp: .5, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil, paint: 'gold', bevel: .8 } : {}) });
+    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: Math.max(s * .07, cy - s * .42), w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
     if (o.motto) out.push({ type: 'shape', name: 'Ribbon', x: cx, y: cy + s * .44, w: s * .84, h: s * .13, kind: 'ribbon', fill: o.ribbon || '#7a1c24' }, { type: 'text', name: 'Motto', x: cx, y: cy + s * .435, w: s * .54, h: s * .065, text: o.motto, font: o.font || 'Cinzel', weight: 700, size: s * .042, align: 'center', color: '#f3efe4', spacing: .1 });
     return out;
   });
@@ -149,4 +150,26 @@ const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Ho
   L('lg_worldtree', 'World tree · enamel medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'enamel', tint: '#120a26', tintOn: true, edgeFin: 'silver' }, scene: { env: 'prism', backdrop: 'velvet', pose: 'hover', bloom: .6 }, front: [E('tree', { name: 'Tree of life', x: 30, y: 30, w: 52, h: 52, seed: 11, depth: 6, spread: 1, leafSize: .7, color: '#7a3ae6', color2: '#2fd8ff', grad: true, gangle: 90, glow: .5, glowColor: '#8a6aff' }), E('mark', { name: 'Gem', x: 30, y: 36.6, w: 3.6, h: 3.6, kind: 'spike', n: 4, inner: .2, curve: .4, variant: 'cross', color: '#e8fbff', glow: 1.2, glowColor: '#2fd8ff' })], back: [] }; });
   L('lg_flag', 'Glacier Assembly · flag', () => { const c = fm('em_flag'); return { card: { ...c, sub: 'felt', tint: '#3f8fb0', tintOn: true }, scene: { env: 'softbox', backdrop: 'linen', pose: 'stand' }, front: [E('glyph', { name: 'Horizon line', x: 45, y: 30, w: 46, h: 46, icon: 'lhorizon', color: '#f4f2ec' })], back: [E('glyph', { name: 'Horizon line', x: 45, y: 30, w: 46, h: 46, icon: 'lhorizon', color: '#f4f2ec', flipX: true })] }; });
   L('lg_tide', 'Tidecall · blue acrylic disc', () => { const c = fm('em_round'); return { card: { ...c, sub: 'acr_blue', thick: 3, glowInt: 1.1 }, scene: { env: 'gallery', backdrop: 'walnut', pose: 'desk', bloom: .6 }, front: [E('mark', { name: 'Tidecall mark', x: 30, y: 27, w: 30, h: 30, kind: 'crescent', inner: .3, hole: 'ring', color: '#ffffff', finish: 'laser' }), E('text', { name: 'Label', x: 30, y: 48, w: 40, h: 4, text: 'TIDECALL', font: 'Orbitron', weight: 700, size: 2.8, align: 'center', color: '#ffffff', spacing: .6, finish: 'laser' })], back: [] }; });
+})();
+
+(() => {
+  const add = (cat, name, make, extra = {}) => COMPONENTS.push({ cat, name, mode: 'logo', make, ...extra }), S = C => Math.min(C.w, C.h);
+  /* borders that follow the emblem's own outline */
+  [['Shape border · gold double', { color: '#d6b25e', double: true, finish: 'foil', foil: '#d6b25e' }], ['Shape border · silver single', { color: '#c8ccd3', double: false, finish: 'foil', foil: '#c8ccd3' }], ['Shape border · stitched', { color: '#e8dcc0', double: false, dash: 1.2, lw: .5 }], ['Shape border · studded', { color: '#8a8f98', double: false, studs: 24, lw: 1 }], ['Shape border · black inline', { color: '#1b1d22', double: true }]].forEach(([n, o]) => add('Emblem parts', n, C => [{ type: 'rim', name: n, x: C.w / 2, y: C.h / 2, w: C.w, h: C.h, inset: S(C) * .035, lw: S(C) * .018, gap: S(C) * .018, ...o, ...(o.lw ? { lw: o.lw * S(C) / 60 } : {}) }]));
+  /* banners & text */
+  const B = 'Banners & text', T = (C, o) => ({ type: 'text', x: C.w / 2, align: 'center', font: 'Cinzel', weight: 700, color: '#1b1d22', ...o });
+  add(B, 'Arched name · top', C => [T(C, { name: 'Faction name', y: C.h * .16, w: S(C) * .84, h: S(C) * .12, text: 'ORDER OF THE EMBER', size: S(C) * .06, arc: 70, spacing: .08 })]);
+  add(B, 'Arched name · bottom', C => [T(C, { name: 'Motto arc', y: C.h * .86, w: S(C) * .84, h: S(C) * .12, text: 'FORTIS ET FIDELIS', size: S(C) * .05, arc: -70, spacing: .12 })]);
+  [['crimson', '#7a1c24', '#f3efe4'], ['navy', '#16304f', '#f3efe4'], ['emerald', '#1f5a3a', '#f3efe4'], ['black & gold', '#141418', '#d6b25e']].forEach(([n, f, tc]) => add(B, `Motto ribbon · ${n}`, C => [{ type: 'shape', name: 'Ribbon', x: C.w / 2, y: C.h * .84, w: S(C) * .9, h: S(C) * .15, kind: 'ribbon', fill: f, shadow: 0 }, T(C, { name: 'Motto', y: C.h * .835, w: S(C) * .58, h: S(C) * .07, text: 'NO STEP BACK', size: S(C) * .045, color: tc, spacing: .12 })]));
+  add(B, 'Scroll banner · parchment', C => [{ type: 'shape', name: 'Scroll', x: C.w / 2, y: C.h * .84, w: S(C) * .92, h: S(C) * .16, kind: 'ribbon', fill: '#efe3c4', stroke: '#7a5a1c', strokeW: S(C) * .008 }, T(C, { name: 'Motto', y: C.h * .835, w: S(C) * .6, h: S(C) * .07, text: 'Per Aspera', size: S(C) * .05, color: '#4a3410', font: 'Cormorant Garamond', italic: true })]);
+  add(B, 'Spaced tech label', C => [T(C, { name: 'Label', y: C.h * .86, w: C.w * .86, h: S(C) * .07, text: 'VANGUARD', size: S(C) * .05, font: 'Orbitron', weight: 600, spacing: .7 })]);
+  add(B, 'Stencil title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .14, text: 'IRON LEGION', size: S(C) * .11, font: 'Bebas Neue', weight: 400, spacing: .08 })]);
+  add(B, 'Blackletter title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .13, text: 'Grimhold', size: S(C) * .1, font: 'UnifrakturMaguntia', weight: 400 })]);
+  add(B, 'Gilded title', C => [T(C, { name: 'Title', y: C.h * .14, w: C.w * .9, h: S(C) * .12, text: 'AURUM PACT', size: S(C) * .085, grad: true, color: '#f6d980', color2: '#8a5a10', gangle: 90, stroke: '#3a2408', strokeW: S(C) * .004, spacing: .1 })]);
+  add(B, 'Neon title', C => [T(C, { name: 'Title', y: C.h * .86, w: C.w * .9, h: S(C) * .1, text: 'NIGHTWIRE', size: S(C) * .07, font: 'Orbitron', color: '#7af0ff', stroke: '#0a4a6a', strokeW: S(C) * .006, spacing: .3 })]);
+  add(B, 'Founded line', C => { const s = S(C), y = C.h * .9; return [T(C, { name: 'Founded', y, w: s * .4, h: s * .06, text: 'EST · MMXXVI', size: s * .036, font: 'Cinzel', spacing: .3 }), { type: 'line', name: 'Rule L', x: C.w / 2 - s * .3, y, w: s * .14, h: 1, color: '#1b1d22', lw: s * .005 }, { type: 'line', name: 'Rule R', x: C.w / 2 + s * .3, y, w: s * .14, h: 1, color: '#1b1d22', lw: s * .005 }]; });
+  /* full compositions replace the side (with undo); backdrops slide in underneath */
+  for (const c of COMPONENTS) { if (['Emblems', 'Neon emblems', 'Flags'].includes(c.cat)) c.layout = true; if (c.cat === 'Backdrops') c.under = true; }
+  const order = ['Security', 'Holograms', 'Seals & stamps', 'Office stamps', 'Travel stamps', 'Postal & date', 'Genre stamps', 'Stickers & labels', 'Ribbons & insignia', 'Identity', 'Decoration', 'Text styles', ...LAYOUT_CATS, ...LOGO_CATS];
+  COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
