@@ -191,6 +191,7 @@ table.keys{width:100%;border-collapse:collapse}table.keys td{padding:6px 4px;bor
  <button class="status" id="status" title=""><b id="docName">Untitled card</b><small id="docState">Connecting storage…</small></button>
  <button class="btn" id="undo" title="Undo (Ctrl+Z)">Undo</button>
  <button class="btn" id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+ <div class="seg" id="modeSeg" role="group" aria-label="Designer"><button data-m="card" class="on">ID cards</button><button data-m="logo">Faction logos</button></div>
  <div class="seg" id="viewSeg" role="group" aria-label="View"><button data-v="3d" class="on">3D</button><button data-v="split">Split</button><button data-v="flat">Flat</button></div>
  <button class="btn" id="uvBtn" title="Blacklight (U)">UV light</button>
  <button class="btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -291,8 +292,39 @@ const FORMATS = {
   slip: { label: 'Paper slip · 92 × 60', w: 92, h: 60, r: .8 },
   tall: { label: 'Event badge · 70 × 110', w: 70, h: 110, r: 4 },
   square: { label: 'Square · 64 × 64', w: 64, h: 64, r: 6 },
+  em_round: { label: 'Emblem · round medallion 60', w: 60, h: 60, r: 0, shape: 'circle', thick: 3, logo: true },
+  em_coin: { label: 'Emblem · challenge coin 40', w: 40, h: 40, r: 0, shape: 'circle', thick: 3.2, logo: true },
+  em_heater: { label: 'Emblem · heater shield 56 × 66', w: 56, h: 66, r: 0, shape: 'heater', thick: 3, logo: true },
+  em_french: { label: 'Emblem · round-bottom shield 56 × 66', w: 56, h: 66, r: 0, shape: 'french', thick: 3, logo: true },
+  em_hex: { label: 'Emblem · hex badge 64', w: 64, h: 55.4, r: 0, shape: 'hex', thick: 3, logo: true },
+  em_oct: { label: 'Emblem · octagon plate 60', w: 60, h: 60, r: 0, shape: 'octagon', thick: 3, logo: true },
+  em_diamond: { label: 'Emblem · diamond 56 × 72', w: 56, h: 72, r: 0, shape: 'diamond', thick: 3, logo: true },
+  em_banner: { label: 'Emblem · hanging banner 50 × 80', w: 50, h: 80, r: 0, shape: 'banner', thick: 1.2, logo: true },
+  em_cog: { label: 'Emblem · cog plate 64', w: 64, h: 64, r: 0, shape: 'cog', thick: 3.5, logo: true },
+  em_burst: { label: 'Emblem · star burst 64', w: 64, h: 64, r: 0, shape: 'burst', thick: 3, logo: true },
+  em_square: { label: 'Emblem · square tile 60', w: 60, h: 60, r: 6, shape: 'rect', thick: 3, logo: true },
+  em_patch: { label: 'Emblem · oval patch 76 × 56', w: 76, h: 56, r: 0, shape: 'circle', thick: 1.6, logo: true },
   custom: { label: 'Custom size' }
 };
+const CARD_SHAPES = [['rect', 'Rounded rectangle'], ['circle', 'Circle / oval'], ['heater', 'Heater shield'], ['french', 'Round-bottom shield'], ['hex', 'Hexagon'], ['octagon', 'Octagon'], ['diamond', 'Diamond'], ['banner', 'Swallowtail banner'], ['cog', 'Cog'], ['burst', 'Star burst']];
+function cardOutline(shape, w, h) {   // outline points in mm, canvas orientation (origin top-left, y down)
+  const P = [], cx = w / 2, cy = h / 2, q = (a, b, c, n = 22) => { for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t; P.push([u * u * a[0] + 2 * u * t * b[0] + t * t * c[0], u * u * a[1] + 2 * u * t * b[1] + t * t * c[1]]); } };
+  const radial = (n, f) => { for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * Math.PI * 2, r = f(i); P.push([cx + Math.cos(a) * cx * r, cy + Math.sin(a) * cy * r]); } };
+  switch (shape) {
+    case 'circle': radial(128, () => 1); break;
+    case 'heater': P.push([0, 0], [w, 0], [w, h * .4]); q([w, h * .4], [w, h * .8], [cx, h]); q([cx, h], [0, h * .8], [0, h * .4]); break;
+    case 'french': P.push([0, 0], [w, 0], [w, h * .58]); for (let i = 1; i <= 40; i++) { const a = i / 40 * Math.PI; P.push([cx + Math.cos(a) * cx, h * .58 + Math.sin(a) * h * .42]); } break;
+    case 'hex': P.push([w * .25, 0], [w * .75, 0], [w, cy], [w * .75, h], [w * .25, h], [0, cy]); break;
+    case 'octagon': { const c = .2929; P.push([w * c, 0], [w * (1 - c), 0], [w, h * c], [w, h * (1 - c)], [w * (1 - c), h], [w * c, h], [0, h * (1 - c)], [0, h * c]); break; }
+    case 'diamond': P.push([cx, 0], [w, cy], [cx, h], [0, cy]); break;
+    case 'banner': P.push([0, 0], [w, 0], [w, h], [cx, h * .8], [0, h]); break;
+    case 'cog': for (let t = 0; t < 12; t++) { const b = -Math.PI / 2 + t * Math.PI / 6, d = Math.PI / 180; for (const [a, r] of [[b - 11 * d, .84], [b - 6 * d, 1], [b + 6 * d, 1], [b + 11 * d, .84]]) P.push([cx + Math.cos(a) * cx * r, cy + Math.sin(a) * cy * r]); } break;
+    case 'burst': radial(32, i => i % 2 ? .84 : 1); break;
+    default: return null;
+  }
+  return P;
+}
+Forge.cardOutline = cardOutline;
 const SUBS = {
   paper: { label: 'Plain paper (flexible)', color: '#f2ede1', rough: .93, metal: 0, clear: 0, thick: .18, tex: 'paper', flex: true, fluor: '#6d7dff', laser: '#4b2e19', edge: '#e8e1d0' },
   kraft: { label: 'Kraft card (flexible)', color: '#b48a5c', rough: .95, metal: 0, clear: 0, thick: .3, tex: 'paper', flex: true, fluor: null, laser: '#2c1a0e' },
@@ -318,6 +350,18 @@ const SUBS = {
   rosegold: { label: 'Rose-gold metal', color: '#eab7a3', rough: .22, metal: 1, clear: 0, thick: .8, tex: 'brushed', laser: '#5a2f22' },
   titanium: { label: 'Anodised titanium', color: '#7d8ea8', rough: .3, metal: 1, clear: 0, thick: .8, tex: 'brushed', irid: .6, laser: '#e6e9ee' },
   marble: { label: 'White marble', color: '#efedea', rough: .26, metal: 0, clear: 0, thick: 1, cc: .8, ccr: .05, tex: 'marble', laser: '#3b3a38' },
+  brass: { label: 'Polished brass', color: '#d4b45a', rough: .2, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .3, laser: '#4a3a10' },
+  bronze: { label: 'Antique bronze', color: '#9a6a3a', rough: .38, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .2, laser: '#2a1808' },
+  iron: { label: 'Forged iron', color: '#55585e', rough: .58, metal: 1, clear: 0, thick: 3.5, tex: 'brushed', aniso: .15, laser: '#c9ccd1' },
+  enamel: { label: 'Glossy enamel', color: '#1d3f6e', rough: .12, metal: 0, clear: 0, thick: 2.5, cc: 1, ccr: .02, laser: '#e9edf2' },
+  leather: { label: 'Tooled leather', color: '#6b3f22', rough: .74, metal: 0, clear: 0, thick: 2.2, tex: 'paper', laser: '#2a160a', edge: '#4a2a14' },
+  felt: { label: 'Embroidered twill (patch)', color: '#2a3a2a', rough: .95, metal: 0, clear: 0, thick: 1.6, tex: 'paper', laser: '#151d15', edge: '#1d281d' },
+  stone: { label: 'Carved slate', color: '#4a4e54', rough: .8, metal: 0, clear: 0, thick: 5, tex: 'marble', laser: '#c9ccd1' },
+  acr_green: { label: 'Fluorescent acrylic · green', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#39ff7a', attenD: 1.4, laser: '#d4ffe0', disp: 'rgba(40,220,100,.5)', glow: '#3dff74' },
+  acr_orange: { label: 'Fluorescent acrylic · orange', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#ff8a2a', attenD: 1.4, laser: '#ffe6cf', disp: 'rgba(255,130,40,.5)', glow: '#ff8a1f' },
+  acr_pink: { label: 'Fluorescent acrylic · pink', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#ff3aa0', attenD: 1.4, laser: '#ffd6ec', disp: 'rgba(255,60,160,.5)', glow: '#ff3d9e' },
+  acr_blue: { label: 'Fluorescent acrylic · blue', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#3ad8ff', attenD: 1.4, laser: '#d6f6ff', disp: 'rgba(50,200,255,.5)', glow: '#38dcff' },
+  acr_yellow: { label: 'Fluorescent acrylic · yellow', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#e8ff3a', attenD: 1.4, laser: '#f8ffd6', disp: 'rgba(225,255,50,.5)', glow: '#e9ff36' },
   ivory: { label: 'Ivory resin', color: '#efe6d1', rough: .42, metal: 0, clear: 0, thick: .8, cc: .35, ccr: .2, tex: 'frost', laser: '#4a3a28' }
 };
 const FINISHES = [['ink', 'Ink'], ['foil', 'Foil'], ['holo', 'Holo foil'], ['laser', 'Laser engrave'], ['uv', 'UV ink (invisible)'], ['gloss', 'Spot gloss'], ['blind', 'Blind emboss'], ['window', 'Clear window']];
@@ -325,7 +369,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -371,10 +415,12 @@ function rr(c, x, y, w, h, r) {
   c.arcTo(x + w, y + h, x + w - r, y + h, r); c.lineTo(x + r, y + h); c.arcTo(x, y + h, x, y + h - r, r);
   c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r); c.closePath();
 }
-const SLOT = { slot: { w: 12.7, h: 3.2, cy: 4.6 }, hole: { r: 2.5, cy: 5 } };
+const SLOT = { slot: { w: 12.7, h: 3.2, cy: 4.6 }, hole: { r: 2.5, cy: 5 }, corner: { r: 1.6, dx: 5, cy: 5 } };
 function cardPath(c, k) {
-  const C = P.card; c.beginPath(); rr(c, 0, 0, C.w * k, C.h * k, Math.min(C.r, C.w / 2, C.h / 2) * k);
-  if (C.slot === 'slot') { const s = SLOT.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
+  const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, C.w, C.h) : null; c.beginPath();
+  if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(x * k, y * k) : c.moveTo(x * k, y * k)); c.closePath(); } else rr(c, 0, 0, C.w * k, C.h * k, Math.min(C.r, C.w / 2, C.h / 2) * k);
+  if (C.slot === 'slot2' || C.slot === 'corners') { const s = SLOT.corner; for (const x of [s.dx, C.w - s.dx]) { c.moveTo((x + s.r) * k, s.cy * k); c.arc(x * k, s.cy * k, s.r * k, 0, Math.PI * 2); } }
+  if (C.slot === 'slot' || C.slot === 'slot2') { const s = SLOT.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
   else if (C.slot === 'hole') { const s = SLOT.hole; c.moveTo((C.w / 2 + s.r) * k, s.cy * k); c.arc(C.w / 2 * k, s.cy * k, s.r * k, 0, Math.PI * 2); }
 }
 Forge.SLOT = SLOT;
@@ -922,7 +968,7 @@ function renderSide(side, tier, opts) {
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
   const wins = els.filter(e => e.finish === 'window').concat(P[other].filter(e => e.visible !== false && e.finish === 'window').map(e => ({ ...e, x: Wm - e.x, rot: -(e.rot || 0), _mirror: true })));
   const clear = S.clear > 0, fl = fluorOf(), lamOn = C.holoLam !== 'none' && (side === 'front' || C.holoLamBack);
-  const need = { T: clear || wins.length > 0, X: !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
+  const need = { T: clear || wins.length > 0, X: !!S.glow || !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
   const out = { side, tier, pw, ph, need };
 
   /* albedo */
@@ -978,6 +1024,7 @@ function renderSide(side, tier, opts) {
     const Xc = cv(side, tier, 'X', hw, hh), x = prep(Xc, '#000'); clipCard(x, kh);
     if (fl) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
     for (const el of els) { if (el.finish !== 'uv') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.uvColor, uv: true }); x.restore(); }
+    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
     if (C.uvFibers > 0) { const R = rng(C.seed * 4111 + (side === 'back' ? 9 : 2)), cols = ['#ff3b6b', '#38d6ff', '#ffe14d', '#7dff6a', '#ff7af0']; x.lineCap = 'round'; for (let i = 0; i < C.uvFibers; i++) { const px = R() * C.w, py = R() * C.h, an = R() * Math.PI * 2, L = .9 + R() * 2.6, b = (R() - .5) * 2; x.strokeStyle = cols[R() * cols.length | 0]; x.lineWidth = (.06 + R() * .05) * kh; const dx = Math.cos(an) * L / 2, dy = Math.sin(an) * L / 2; x.beginPath(); x.moveTo((px - dx) * kh, (py - dy) * kh); x.quadraticCurveTo((px + b * dy) * kh, (py - b * dx) * kh, (px + dx) * kh, (py + dy) * kh); x.stroke(); } }
     x.restore(); out.X = Xc;
   }
@@ -1328,6 +1375,188 @@ const COLOR_KEYS = ['color', 'color2', 'color3', 'c1', 'c2', 'c3', 'fill', 'fill
 function rgb2hsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0, s = 0; if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; } return [h, s, l]; }
 function hsl2hex(h, s, l) { const f = (n) => { const k2 = (n + h * 12) % 12, a = s * Math.min(l, 1 - l); return l - a * Math.max(-1, Math.min(k2 - 3, 9 - k2, 1)); }; return rgb2hex(f(0) * 255, f(8) * 255, f(4) * 255); }
 function shiftColor(hex, dh, sm, dl) { if (typeof hex !== 'string' || hex[0] !== '#') return hex; const [h, s, l] = rgb2hsl(hex2rgb(hex)); return hsl2hex(((h + dh / 360) % 1 + 1) % 1, clamp(s * sm, 0, 1), clamp(l + dl, 0, 1)); }
+
+/* ================= faction icons (vector glyph library) + procedural sigils ================= */
+const ICONS = {};
+const ICON_CATS = ['Beasts', 'Weapons', 'Celestial', 'Arcane', 'Tech', 'Nature', 'Royal & civic', 'Industry'];
+(() => {
+  const I = (cat, id, label, f) => { ICONS[id] = { cat, label, f }; };
+  /* every icon draws white into a 100×100 box with the helper g */
+  I('Beasts', 'wolf', 'Wolf', g => { g.sym([[50, 30], [60, 26], [73, 6], [79, 30], [88, 44], [81, 57], [71, 68], [62, 83], [50, 93]]); g.cut(() => { g.mirror(() => g.poly([[55, 52], [68, 45], [65, 54]])); g.poly([[44, 78], [56, 78], [50, 85]]); g.mirror(() => g.poly([[62, 26], [70, 12], [72, 28]])); }); });
+  I('Beasts', 'eagle', 'Eagle', g => { g.ell(50, 54, 9, 17); g.circ(50, 30, 8); g.poly([[50, 31], [58, 35], [50, 39]]); g.mirror(() => { g.poly([[56, 40], [97, 21], [95, 30], [58, 48]]); g.poly([[57, 46], [98, 36], [95, 44], [58, 53]]); g.poly([[57, 52], [96, 52], [92, 59], [57, 58]]); g.poly([[56, 58], [90, 69], [85, 75], [55, 63]]); }); g.poly([[43, 67], [57, 67], [63, 87], [50, 80], [37, 87]]); g.cut(() => g.circ(47, 28, 1.8)); });
+  I('Beasts', 'raven', 'Raven', g => { g.poly([[16, 80], [30, 74], [40, 72], [52, 68], [62, 58], [68, 46], [70, 38], [85, 34], [71, 31], [65, 28], [55, 29], [46, 35], [36, 48], [26, 56], [20, 60], [30, 62], [18, 72]]); g.cut(() => g.circ(62, 34, 2.2)); g.line([[50, 70], [46, 86]], 2.5); g.line([[56, 66], [56, 86]], 2.5); });
+  I('Beasts', 'lion', 'Lion', g => { g.star(50, 50, 18, 46, 34); g.cut(() => g.ell(50, 52, 27, 31)); g.sym([[50, 26], [63, 29], [70, 43], [67, 61], [59, 74], [50, 79]]); g.cut(() => { g.mirror(() => g.poly([[55, 45], [64, 42], [62, 49]])); g.poly([[44, 58], [56, 58], [50, 65]]); g.line([[50, 65], [50, 70], [44, 73]], 2); g.line([[50, 70], [56, 73]], 2); }); });
+  I('Beasts', 'stag', 'Stag', g => { g.sym([[50, 46], [57, 46], [63, 53], [61, 67], [56, 82], [50, 89]]); g.mirror(() => { g.poly([[61, 50], [76, 44], [65, 57]]); g.line([[57, 46], [65, 30], [71, 12]], 4); g.line([[64, 33], [78, 29]], 3.5); g.line([[68, 22], [82, 16]], 3.5); g.line([[65, 30], [60, 17]], 3.5); }); g.cut(() => { g.mirror(() => g.circ(56, 60, 2.2)); g.ell(50, 84, 3.5, 2.5); }); });
+  I('Beasts', 'bearpaw', 'Bear paw', g => { g.ell(50, 66, 21, 17); [[26, 42, 7.5], [40, 31, 8], [60, 31, 8], [74, 42, 7.5]].forEach(([x, y, r]) => { g.circ(x, y, r); g.poly([[x - 3, y - r + 1], [x, y - r - 9], [x + 3, y - r + 1]]); }); });
+  I('Beasts', 'serpent', 'Serpent', g => { g.spath('M 26 88 C 4 72 62 66 52 48 C 44 34 24 34 34 20 C 42 10 60 12 66 18', 9); g.ell(70, 20, 9, 6, -.5); g.cut(() => g.circ(72, 17, 1.6)); g.line([[78, 22], [86, 24], [90, 20]], 1.6); g.line([[86, 24], [90, 28]], 1.6); });
+  I('Beasts', 'dragon', 'Dragon', g => { g.poly([[14, 74], [28, 54], [40, 40], [52, 30], [60, 22], [58, 6], [68, 18], [80, 24], [94, 32], [90, 39], [76, 41], [88, 49], [72, 51], [64, 61], [57, 76], [50, 94], [40, 81], [30, 85], [26, 74]]); for (let t = .12; t < .9; t += .19) { const px = 52 + (18 - 52) * t, py = 30 + (72 - 30) * t; g.poly([[px + 3.6, py - 4.4], [px - 9, py - 7], [px - 3.6, py + 4.4]]); } g.line([[60, 22], [48, 4]], 3.4); g.line([[66, 20], [64, 2]], 3); g.cut(() => { g.poly([[68, 27], [77, 30], [70, 33]]); g.poly([[94, 33], [76, 41], [88, 38]]); g.circ(86, 30, 1.2); }); });
+  I('Beasts', 'spider', 'Spider', g => { g.circ(50, 44, 9); g.ell(50, 64, 12, 15); g.mirror(() => { g.line([[56, 42], [72, 30], [84, 14]], 3.6); g.line([[58, 47], [78, 42], [93, 33]], 3.6); g.line([[58, 53], [78, 58], [90, 71]], 3.6); g.line([[56, 58], [70, 71], [78, 89]], 3.6); }); g.cut(() => g.mirror(() => g.circ(54, 42, 1.8))); });
+  I('Beasts', 'owl', 'Owl', g => { g.sym([[50, 22], [62, 22], [71, 10], [73, 30], [79, 48], [75, 70], [63, 86], [50, 90]]); g.cut(() => { g.mirror(() => g.circ(37, 44, 11)); g.poly([[46, 56], [54, 56], [50, 64]]); }); g.mirror(() => g.circ(37, 44, 5)); g.cut(() => g.mirror(() => g.circ(36, 43, 1.6))); g.cut(() => g.mirror(() => g.line([[40, 72], [44, 78]], 1.6))); });
+  I('Beasts', 'ram', 'Ram', g => { g.sym([[50, 38], [58, 38], [63, 52], [59, 72], [50, 87]]); g.mirror(() => g.spiral(73, 44, 3, 15, 1.35, 6)); g.cut(() => { g.mirror(() => g.circ(55, 52, 2)); g.mirror(() => g.circ(53, 80, 1.6)); }); });
+  I('Beasts', 'bull', 'Bull', g => { g.sym([[50, 36], [62, 36], [67, 50], [63, 68], [59, 80], [50, 85]]); g.mirror(() => { g.spath('M 62 40 Q 90 40 88 14', 7); g.poly([[66, 42], [80, 38], [70, 48]]); }); g.cut(() => { g.mirror(() => g.circ(57, 52, 2.2)); g.mirror(() => g.ell(55, 78, 2.4, 3.2)); }); });
+  I('Beasts', 'bat', 'Bat', g => { g.sym([[50, 40], [54, 32], [57, 42], [66, 38], [82, 30], [97, 40], [89, 46], [85, 58], [77, 54], [70, 63], [62, 57], [56, 67], [50, 71]]); g.cut(() => g.mirror(() => g.circ(53, 47, 1.4))); });
+  I('Beasts', 'scorpion', 'Scorpion', g => { g.ell(50, 66, 9, 13); g.spath('M 50 58 C 50 34 30 28 38 14', 6); g.poly([[36, 10], [44, 14], [34, 18]]); g.mirror(() => { g.line([[56, 62], [70, 52], [74, 40]], 3.5); g.ell(76, 34, 6, 8, .4); g.line([[57, 70], [72, 74]], 2.6); g.line([[57, 76], [70, 84]], 2.6); g.line([[55, 64], [70, 63]], 2.6); }); g.cut(() => g.mirror(() => g.line([[78, 26], [76, 34]], 2))); });
+
+  I('Weapons', 'sword', 'Sword', g => { g.poly([[50, 5], [55, 14], [55, 64], [45, 64], [45, 14]]); g.rect(29, 63, 42, 6, 2); g.rect(46, 69, 8, 17, 2); g.circ(50, 90, 5); g.cut(() => g.line([[50, 16], [50, 60]], 1.4)); });
+  I('Weapons', 'swords', 'Crossed swords', g => { for (const a of [-.72, .72]) g.rot(50, 50, a, () => { g.poly([[50, 4], [54, 12], [54, 62], [46, 62], [46, 12]]); g.rect(32, 61, 36, 5, 2); g.rect(46.5, 66, 7, 15, 2); g.circ(50, 85, 4.5); }); });
+  I('Weapons', 'axe', 'Axe', g => { g.rect(46.5, 8, 7, 86, 3); g.path('M 53 16 Q 88 10 90 44 Q 72 40 53 48 Z'); g.path('M 47 20 Q 30 22 30 36 Q 38 32 47 34 Z'); });
+  I('Weapons', 'axes', 'Crossed axes', g => { for (const [a, fl] of [[-.6, true], [.6, false]]) g.rot(50, 50, a, () => g.flip(fl, () => { g.rect(47, 8, 6, 86, 3); g.path('M 53 14 Q 84 10 86 40 Q 70 36 53 44 Z'); })); });
+  I('Weapons', 'hammer', 'War hammer', g => { g.rect(46.5, 30, 7, 64, 3); g.rect(24, 12, 52, 22, 3); g.cut(() => { g.rect(28, 16, 4, 14, 1); g.rect(68, 16, 4, 14, 1); }); g.poly([[46, 12], [54, 12], [50, 4]]); });
+  I('Weapons', 'spear', 'Spear', g => { g.line([[50, 96], [50, 26]], 5); g.poly([[50, 3], [59, 22], [50, 30], [41, 22]]); g.poly([[44, 34], [56, 34], [50, 44]]); g.cut(() => g.line([[50, 9], [50, 24]], 1.4)); });
+  I('Weapons', 'trident', 'Trident', g => { g.line([[50, 96], [50, 30]], 5); g.poly([[50, 4], [56, 18], [53, 18], [53, 34], [47, 34], [47, 18], [44, 18]]); g.mirror(() => { g.spath('M 50 40 Q 72 40 72 16', 4.5); g.poly([[72, 6], [77, 18], [67, 18]]); }); });
+  I('Weapons', 'bow', 'Bow & arrow', g => { g.arcS(18, 50, 44, -1.1, 1.1, 5); g.line([[38.8, 10.4], [38.8, 89.6]], 1.4); g.line([[16, 50], [86, 50]], 3.2); g.poly([[96, 50], [84, 43], [86, 50], [84, 57]]); g.poly([[22, 50], [12, 42], [10, 46], [16, 50], [10, 54], [12, 58]]); });
+  I('Weapons', 'dagger', 'Dagger', g => { g.poly([[50, 6], [56, 22], [55, 56], [45, 56], [44, 22]]); g.spath('M 30 52 Q 50 64 70 52', 5); g.rect(46, 60, 8, 22, 2); g.poly([[50, 82], [57, 90], [50, 96], [43, 90]]); });
+  I('Weapons', 'mace', 'Mace', g => { g.rect(46.5, 40, 7, 54, 3); g.star(50, 28, 10, 24, 15); g.circ(50, 28, 15); g.cut(() => g.circ(50, 28, 4)); });
+  I('Weapons', 'shield', 'Round shield', g => { g.circ(50, 50, 42); g.cut(() => g.circ(50, 50, 35)); g.circ(50, 50, 30); g.cut(() => { for (let i = 0; i < 8; i++) g.rot(50, 50, i * Math.PI / 4, () => g.line([[50, 22], [50, 38]], 2)); }); g.circ(50, 50, 9); for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; g.circ(50 + Math.cos(a) * 38.5, 50 + Math.sin(a) * 38.5, 1.8); } });
+  I('Weapons', 'arrows', 'Crossed arrows', g => { for (const a of [-.75, .75]) g.rot(50, 50, a, () => { g.line([[50, 92], [50, 16]], 3.2); g.poly([[50, 4], [57, 18], [43, 18]]); g.poly([[50, 80], [57, 90], [57, 97], [50, 88], [43, 97], [43, 90]]); }); });
+
+  I('Celestial', 'sun', 'Sun', g => { g.circ(50, 50, 18); for (let i = 0; i < 16; i++) g.rot(50, 50, i * Math.PI / 8, () => g.poly(i % 2 ? [[47, 26], [53, 26], [50, 14]] : [[46, 28], [54, 28], [50, 4]])); });
+  I('Celestial', 'sunrise', 'Rising sun', g => { g.path('M 22 72 A 28 28 0 0 1 78 72 Z'); for (let i = 0; i <= 8; i++) { const a = Math.PI + i * Math.PI / 8; g.poly([[50 + Math.cos(a - .07) * 33, 72 + Math.sin(a - .07) * 33], [50 + Math.cos(a) * 48, 72 + Math.sin(a) * 48], [50 + Math.cos(a + .07) * 33, 72 + Math.sin(a + .07) * 33]]); } g.rect(6, 76, 88, 4, 2); g.rect(18, 84, 64, 3, 1.5); });
+  I('Celestial', 'crescent', 'Crescent moon', g => { g.circ(50, 50, 38); g.cut(() => g.circ(66, 42, 32)); g.star(76, 66, 4, 7, 2.4); });
+  I('Celestial', 'eclipse', 'Eclipse', g => { for (let i = 0; i < 36; i++) g.rot(50, 50, i * Math.PI / 18, () => g.poly([[49, 22], [51, 22], [50, i % 2 ? 10 : 4]])); g.circ(50, 50, 28); g.cut(() => g.circ(50, 50, 24)); g.circ(53, 48, 22); });
+  I('Celestial', 'star', 'Star', g => { g.star(50, 53, 5, 46, 19); });
+  I('Celestial', 'compass', 'Compass star', g => { g.star(50, 50, 8, 47, 13); g.cut(() => g.circ(50, 50, 6)); g.circ(50, 50, 3); g.cut(() => { g.circ(50, 50, 30); }); g.star(50, 50, 4, 47, 9); g.cut(() => g.circ(50, 50, 4)); });
+  I('Celestial', 'comet', 'Comet', g => { g.circ(70, 30, 12); g.poly([[60, 22], [64, 40], [12, 92]]); g.line([[58, 18], [18, 50]], 2); g.line([[74, 44], [44, 86]], 2); });
+  I('Celestial', 'planet', 'Ringed planet', g => { g.circ(50, 50, 22); g.rot(50, 50, -.35, () => { g.cut(() => g.ringE(50, 50, 44, 11, 10)); g.ringE(50, 50, 44, 11, 4); }); });
+  I('Celestial', 'constellation', 'Constellation', g => { const p = [[16, 70], [32, 54], [48, 60], [62, 38], [80, 26], [86, 50], [70, 74]]; g.line(p, 1.6); g.line([[62, 38], [86, 50]], 1.6); p.forEach(([x, y], i) => g.star(x, y, 4, i % 3 ? 5 : 8, i % 3 ? 1.8 : 2.6)); });
+  I('Celestial', 'triplemoon', 'Triple moon', g => { g.circ(50, 50, 12); g.circ(22, 50, 14); g.cut(() => g.circ(16, 50, 12)); g.circ(78, 50, 14); g.cut(() => g.circ(84, 50, 12)); });
+  I('Celestial', 'galaxy', 'Spiral galaxy', g => { g.circ(50, 50, 8); for (const a of [0, Math.PI]) g.rot(50, 50, a, () => g.spiral(50, 50, 8, 44, .85, 5, true)); for (let i = 0; i < 9; i++) { const a = i * 2.4, r = 14 + i * 3.6; g.circ(50 + Math.cos(a) * r, 50 + Math.sin(a) * r, 1.2); } });
+
+  I('Arcane', 'eye', 'Eye', g => { g.path('M 4 50 Q 50 6 96 50 Q 50 94 4 50 Z'); g.cut(() => g.path('M 12 50 Q 50 16 88 50 Q 50 84 12 50 Z')); g.circ(50, 50, 17); g.cut(() => g.circ(50, 50, 7)); g.circ(50, 50, 4); });
+  I('Arcane', 'eyetri', 'Eye in triangle', g => { g.poly([[50, 6], [96, 88], [4, 88]]); g.cut(() => g.poly([[50, 18], [86, 82], [14, 82]])); g.path('M 26 62 Q 50 38 74 62 Q 50 86 26 62 Z'); g.cut(() => g.circ(50, 62, 8)); g.circ(50, 62, 4); });
+  I('Arcane', 'hand', 'Open hand', g => { g.rect(28, 46, 44, 42, 12); [[29, 18, 30], [40, 10, 38], [51, 12, 36], [62, 18, 30]].forEach(([x, y, h]) => g.rect(x, y, 10, h, 5)); g.rot(30, 66, -.7, () => g.rect(14, 54, 12, 26, 6)); g.cut(() => g.line([[38, 74], [62, 74]], 1.6)); });
+  I('Arcane', 'flame', 'Flame', g => { g.path('M 50 4 C 66 26 80 38 76 60 C 73 82 61 94 50 95 C 33 93 22 79 25 60 C 27 45 38 40 41 26 C 46 34 48 39 53 41 C 51 29 53 16 50 4 Z'); g.cut(() => g.path('M 50 50 C 58 60 64 66 62 76 C 60 86 54 89 50 89 C 43 88 38 83 39 75 C 40 68 46 64 46 56 Z')); });
+  I('Arcane', 'chalice', 'Chalice', g => { g.sym([[50, 18], [76, 18], [74, 34], [64, 47], [55, 52], [55, 72], [67, 84], [67, 91], [50, 91]]); g.cut(() => g.rect(26, 23, 48, 3, 1)); g.circ(50, 10, 5); });
+  I('Arcane', 'hourglass', 'Hourglass', g => { g.rect(20, 6, 60, 7, 2); g.rect(20, 87, 60, 7, 2); g.line([[24, 13], [24, 87]], 3); g.line([[76, 13], [76, 87]], 3); g.poly([[30, 15], [70, 15], [52, 50], [70, 85], [30, 85], [48, 50]]); g.cut(() => g.poly([[35, 18], [65, 18], [50, 46]])); g.cut(() => g.poly([[40, 82], [60, 82], [50, 66]]), true); });
+  I('Arcane', 'key', 'Key', g => { g.circS(28, 50, 15, 6); g.cut(() => g.circ(28, 50, 4)); g.rect(42, 46, 50, 8, 2); g.rect(72, 54, 7, 14, 1); g.rect(84, 54, 7, 10, 1); g.mirror(() => { }, false); });
+  I('Arcane', 'book', 'Open book', g => { g.path('M 50 24 Q 30 14 6 20 L 6 80 Q 30 74 50 84 Z'); g.path('M 50 24 Q 70 14 94 20 L 94 80 Q 70 74 50 84 Z'); g.cut(() => { g.line([[50, 24], [50, 84]], 2.4); for (let i = 0; i < 5; i++) { g.line([[14, 32 + i * 9], [42, 34 + i * 9]], 1.6); g.line([[58, 34 + i * 9], [86, 32 + i * 9]], 1.6); } }); });
+  I('Arcane', 'rose', 'Rose', g => { for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; g.circ(50 + Math.cos(a) * 12, 36 + Math.sin(a) * 12, 13); } g.circ(50, 36, 16); g.cut(() => { g.spiralLine(50, 36, 2, 15, 1.8, 2); for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + Math.PI / 5 + i * Math.PI * 2 / 5; g.line([[50 + Math.cos(a) * 15, 36 + Math.sin(a) * 15], [50 + Math.cos(a) * 25, 36 + Math.sin(a) * 25]], 1.8); } }); g.line([[50, 58], [50, 96]], 4); g.ell(36, 78, 10, 5, -.5); g.ell(64, 72, 10, 5, .5); });
+  I('Arcane', 'skull', 'Skull', g => { g.circ(50, 40, 32); g.rect(31, 50, 38, 30, 8); g.cut(() => { g.mirror(() => g.ell(37, 46, 9, 10)); g.poly([[50, 56], [56, 66], [44, 66]]); for (let i = 0; i < 5; i++) g.line([[37 + i * 6.5, 72], [37 + i * 6.5, 82]], 2.2); }); });
+  I('Arcane', 'skullbones', 'Skull & crossbones', g => { for (const a of [-.78, .78]) g.rot(50, 58, a, () => { g.line([[50, 18], [50, 98]], 7); g.mirror(() => { g.circ(54, 16, 5); g.circ(54, 99, 5); }); }); g.circ(50, 40, 25); g.rect(35, 48, 30, 22, 6); g.cut(() => { g.mirror(() => g.ell(40, 44, 7, 8)); g.poly([[50, 52], [55, 60], [45, 60]]); for (let i = 0; i < 4; i++) g.line([[41 + i * 6, 64], [41 + i * 6, 72]], 2); }); });
+  I('Arcane', 'potion', 'Potion flask', g => { g.circ(50, 64, 29); g.rect(42, 14, 16, 30, 2); g.rect(37, 8, 26, 8, 3); g.cut(() => { g.path('M 23 60 Q 36 54 50 60 Q 64 66 77 60 L 77 58 Q 64 62 50 56 Q 36 50 23 56 Z'); g.circ(40, 74, 3); g.circ(58, 80, 2); }); });
+  I('Arcane', 'crystal', 'Crystal', g => { g.poly([[50, 4], [74, 30], [64, 92], [36, 92], [26, 30]]); g.cut(() => { g.line([[26, 30], [74, 30]], 1.6); g.line([[50, 4], [42, 30], [50, 92]], 1.6); g.line([[50, 4], [58, 30], [50, 92]], 1.6); }); });
+  I('Arcane', 'candle', 'Candle', g => { g.rect(38, 40, 24, 50, 3); g.path('M 38 44 Q 44 52 44 60 Q 46 52 50 46 Q 56 50 58 44 Z'); g.rect(30, 88, 40, 6, 3); g.path('M 50 8 C 58 18 58 28 50 34 C 42 28 42 18 50 8 Z'); g.line([[50, 34], [50, 40]], 1.4); });
+  I('Arcane', 'ouroboros', 'Ouroboros', g => { g.circS(50, 52, 34, 9); g.cut(() => g.rect(56, 10, 18, 14)); g.ell(64, 18, 9, 7, .3); g.cut(() => g.circ(66, 16, 1.6)); g.poly([[52, 16], [58, 22], [50, 24]]); });
+
+  I('Tech', 'atom', 'Atom', g => { for (const a of [0, Math.PI / 3, -Math.PI / 3]) g.rot(50, 50, a, () => g.ringE(50, 50, 44, 15, 3.2)); g.circ(50, 50, 8); });
+  I('Tech', 'gear', 'Gear', g => { g.gear(50, 50, 44, 34, 14); g.cut(() => g.circ(50, 50, 22)); g.circ(50, 50, 14); g.cut(() => g.circ(50, 50, 6)); for (let i = 0; i < 4; i++) g.rot(50, 50, i * Math.PI / 2, () => g.rect(47, 22, 6, 14)); });
+  I('Tech', 'chip', 'Circuit chip', g => { g.rect(24, 24, 52, 52, 4); g.cut(() => g.rect(34, 34, 32, 32, 2)); g.rect(40, 40, 20, 20, 1); for (let i = 0; i < 5; i++) { const p = 30 + i * 10; g.line([[p, 24], [p, 10]], 2.6); g.line([[p, 76], [p, 90]], 2.6); g.line([[24, p], [10, p]], 2.6); g.line([[76, p], [90, p]], 2.6); } });
+  I('Tech', 'rocket', 'Rocket', g => { g.path('M 50 4 C 66 18 68 44 62 70 L 38 70 C 32 44 34 18 50 4 Z'); g.mirror(() => g.poly([[61, 52], [76, 70], [76, 82], [62, 72]])); g.cut(() => g.circ(50, 34, 7)); g.path('M 42 74 L 58 74 Q 56 88 50 96 Q 44 88 42 74 Z'); });
+  I('Tech', 'satellite', 'Satellite', g => { g.rot(50, 50, -.6, () => { g.rect(40, 38, 20, 24, 3); g.rect(6, 42, 30, 16, 1); g.rect(64, 42, 30, 16, 1); g.cut(() => { for (const x of [16, 26, 74, 84]) g.line([[x, 42], [x, 58]], 1.4); g.line([[6, 50], [36, 50]], 1.4); g.line([[64, 50], [94, 50]], 1.4); }); g.line([[50, 62], [50, 74]], 2.4); g.path('M 38 84 Q 50 72 62 84 Z'); }); });
+  I('Tech', 'bolt', 'Lightning bolt', g => { g.poly([[60, 3], [22, 55], [46, 55], [36, 97], [78, 40], [54, 40], [68, 3]]); });
+  I('Tech', 'robot', 'Robot head', g => { g.rect(20, 28, 60, 52, 10); g.line([[50, 28], [50, 14]], 3); g.circ(50, 11, 5); g.rect(12, 46, 8, 16, 2); g.rect(80, 46, 8, 16, 2); g.cut(() => { g.rect(30, 42, 14, 10, 2); g.rect(56, 42, 14, 10, 2); for (let i = 0; i < 5; i++) g.rect(32 + i * 7.6, 62, 4, 10, 1); }); });
+  I('Tech', 'hexcore', 'Hex core', g => { g.hex(50, 50, 46); g.cut(() => g.hex(50, 50, 39)); g.hex(50, 50, 30); g.cut(() => g.circ(50, 50, 14)); g.circ(50, 50, 7); });
+  I('Tech', 'dna', 'Double helix', g => { const a = [], b = []; for (let y = 6; y <= 94; y += 2) { a.push([50 + Math.sin(y / 14) * 22, y]); b.push([50 - Math.sin(y / 14) * 22, y]); } g.line(a, 4); g.line(b, 4); for (let y = 10; y < 92; y += 8) g.line([[50 + Math.sin(y / 14) * 22, y], [50 - Math.sin(y / 14) * 22, y]], 2); });
+  I('Tech', 'broadcast', 'Broadcast', g => { g.circ(50, 50, 7); for (let i = 1; i <= 3; i++) { g.arcS(50, 50, 8 + i * 11, -.6, .6, 4); g.arcS(50, 50, 8 + i * 11, Math.PI - .6, Math.PI + .6, 4); } g.poly([[44, 56], [56, 56], [62, 96], [38, 96]]); });
+  I('Tech', 'crosshair', 'Crosshair', g => { g.circS(50, 50, 32, 4.5); g.circS(50, 50, 14, 2.5); g.circ(50, 50, 3); [[50, 2, 50, 26], [50, 74, 50, 98], [2, 50, 26, 50], [74, 50, 98, 50]].forEach(([a, b, c, d]) => g.line([[a, b], [c, d]], 3.4)); });
+  I('Tech', 'trefoil', 'Trefoil hazard', g => { g.circ(50, 52, 8); for (let i = 0; i < 3; i++) g.rot(50, 52, i * Math.PI * 2 / 3, () => g.path('M 50 52 m -12 -6 A 13 13 0 0 1 62 46 L 74 26 A 36 36 0 0 0 26 26 Z')); g.cut(() => g.circS(50, 52, 12, 4)); });
+  I('Tech', 'drone', 'Drone', g => { g.rect(40, 40, 20, 20, 5); for (const [x, y] of [[20, 20], [80, 20], [20, 80], [80, 80]]) { g.line([[50, 50], [x, y]], 5); g.circS(x, y, 13, 3); g.circ(x, y, 3); } g.cut(() => g.circ(50, 50, 4)); });
+
+  I('Nature', 'oak', 'Oak tree', g => { [[50, 24, 18], [32, 34, 15], [68, 34, 15], [24, 50, 13], [76, 50, 13], [40, 48, 16], [60, 48, 16]].forEach(([x, y, r]) => g.circ(x, y, r)); g.poly([[45, 56], [55, 56], [58, 86], [42, 86]]); g.line([[42, 86], [30, 94]], 3); g.line([[58, 86], [70, 94]], 3); g.line([[50, 86], [50, 96]], 3); });
+  I('Nature', 'pine', 'Pine', g => { g.poly([[50, 4], [70, 30], [60, 30], [78, 54], [64, 54], [84, 80], [16, 80], [36, 54], [22, 54], [40, 30], [30, 30]]); g.rect(45, 80, 10, 14, 1); });
+  I('Nature', 'leaf', 'Leaf', g => { g.path('M 50 4 C 84 26 84 70 50 92 C 16 70 16 26 50 4 Z'); g.cut(() => { g.line([[50, 14], [50, 86]], 2.2); for (let i = 0; i < 5; i++) { const y = 26 + i * 11; g.line([[50, y + 6], [68, y - 4]], 1.6); g.line([[50, y + 6], [32, y - 4]], 1.6); } }); g.line([[50, 90], [50, 98]], 3); });
+  I('Nature', 'wheat', 'Wheat', g => { g.line([[50, 96], [50, 12]], 2.6); for (let i = 0; i < 6; i++) { const y = 16 + i * 11; g.ell(42, y + 4, 4, 8, -.5); g.ell(58, y + 4, 4, 8, .5); } g.ell(50, 10, 3.5, 7); });
+  I('Nature', 'mountain', 'Mountain', g => { g.poly([[2, 86], [36, 26], [52, 52], [66, 34], [98, 86]]); g.cut(() => { g.poly([[36, 26], [27, 42], [33, 40], [37, 46], [42, 38], [45, 40]]); g.poly([[66, 34], [59, 45], [64, 43], [67, 48], [71, 43], [74, 46]]); }); });
+  I('Nature', 'wave', 'Wave', g => { g.path('M 4 80 C 20 80 22 40 46 30 C 66 22 86 34 86 52 C 86 64 74 70 66 62 C 60 56 66 48 72 52 C 70 40 54 38 46 48 C 36 60 40 80 4 80 Z'); g.line([[4, 88], [96, 88]], 3); g.line([[14, 95], [86, 95]], 2.4); });
+  I('Nature', 'lotus', 'Lotus', g => { g.path('M 50 20 C 62 38 62 60 50 76 C 38 60 38 38 50 20 Z'); g.mirror(() => { g.path('M 52 76 C 58 56 70 44 86 40 C 86 60 74 72 52 76 Z'); g.path('M 52 78 C 66 72 84 72 96 76 C 84 86 66 86 52 78 Z'); }); });
+  I('Nature', 'mushroom', 'Mushroom', g => { g.path('M 8 54 C 8 24 30 10 50 10 C 70 10 92 24 92 54 Z'); g.path('M 40 54 L 60 54 Q 62 76 64 92 L 36 92 Q 38 76 40 54 Z'); g.cut(() => { g.circ(32, 34, 6); g.circ(56, 24, 5); g.circ(70, 42, 5); g.circ(46, 44, 3.5); }); });
+  I('Nature', 'feather', 'Feather', g => { g.path('M 80 6 C 52 16 26 42 22 82 C 40 70 60 58 72 40 C 66 40 62 40 58 38 C 68 34 76 26 80 6 Z'); g.cut(() => g.spath('M 80 6 C 60 30 40 54 22 82', 2)); g.line([[24, 80], [12, 96]], 2.6); });
+  I('Nature', 'snowflake', 'Snowflake', g => { for (let i = 0; i < 6; i++) g.rot(50, 50, i * Math.PI / 3, () => { g.line([[50, 50], [50, 6]], 4); g.line([[50, 22], [40, 12]], 3); g.line([[50, 22], [60, 12]], 3); g.line([[50, 36], [42, 28]], 3); g.line([[50, 36], [58, 28]], 3); }); g.hex(50, 50, 9); });
+
+  I('Royal & civic', 'crown', 'Crown', g => { g.poly([[12, 78], [10, 30], [30, 52], [50, 20], [70, 52], [90, 30], [88, 78]]); g.rect(12, 80, 76, 10, 2); g.circ(10, 26, 5); g.circ(50, 15, 6); g.circ(90, 26, 5); g.cut(() => { g.mirror(() => g.circ(32, 68, 4)); g.diamond(50, 66, 6, 8); }); });
+  I('Royal & civic', 'castle', 'Castle', g => { g.rect(14, 34, 22, 60); g.rect(64, 34, 22, 60); g.rect(30, 48, 40, 46); [14, 23.5, 33, 64, 73.5, 83].forEach(x => g.rect(x - (x > 50 ? 0 : 0), 24, 7, 11)); [30, 40, 50, 60].forEach(x => g.rect(x + 1, 40, 6, 9)); g.cut(() => { g.path('M 42 94 L 42 74 A 8 8 0 0 1 58 74 L 58 94 Z'); g.rect(22, 50, 6, 10, 3); g.rect(72, 50, 6, 10, 3); }); });
+  I('Royal & civic', 'tower', 'Watchtower', g => { g.poly([[32, 30], [68, 30], [64, 94], [36, 94]]); g.rect(26, 18, 48, 12); [26, 37, 48, 59, 70].forEach(x => g.rect(x, 8, 5, 10)); g.cut(() => { g.path('M 44 94 L 44 78 A 6 6 0 0 1 56 78 L 56 94 Z'); g.rect(46, 44, 8, 14, 4); }); });
+  I('Royal & civic', 'fleur', 'Fleur-de-lis', g => { g.path('M 50 4 C 62 18 64 38 54 58 L 46 58 C 36 38 38 18 50 4 Z'); g.mirror(() => g.path('M 54 58 C 60 40 78 30 90 38 C 96 44 92 56 82 56 C 86 50 82 44 76 46 C 68 48 64 56 62 64 Z')); g.rect(28, 58, 44, 8, 3); g.mirror(() => g.path('M 52 66 L 58 66 C 62 76 66 84 74 90 C 64 92 56 84 52 74 Z')); g.path('M 46 66 L 54 66 L 52 88 L 48 88 Z'); });
+  I('Royal & civic', 'scales', 'Scales', g => { g.rect(47, 14, 6, 74); g.rect(30, 88, 40, 6, 3); g.circ(50, 12, 5); g.line([[14, 22], [86, 22]], 4); g.mirror(() => { g.line([[84, 24], [72, 56]], 1.4); g.line([[84, 24], [96, 56]], 1.4); g.path('M 68 56 L 100 56 Q 84 74 68 56 Z'); }); });
+  I('Royal & civic', 'anchor', 'Anchor', g => { g.circS(50, 16, 8, 4.5); g.rect(46.5, 24, 7, 62); g.rect(28, 32, 44, 6, 3); g.arcS(50, 50, 38, Math.PI * .12, Math.PI * .88, 6); g.mirror(() => g.poly([[93, 50], [82, 66], [96, 64]])); });
+  I('Royal & civic', 'ship', 'Galleon', g => { g.path('M 8 66 L 92 66 Q 86 84 70 88 L 26 88 Q 14 84 8 66 Z'); [30, 52, 72].forEach((x, i) => { g.line([[x, 66], [x, 10 + i * 4]], 2.4); g.path(`M ${x - 12} ${22 + i * 4} Q ${x} ${18 + i * 4} ${x + 12} ${22 + i * 4} L ${x + 10} ${40 + i * 4} Q ${x} ${36 + i * 4} ${x - 10} ${40 + i * 4} Z`); g.path(`M ${x - 14} ${44 + i * 3} Q ${x} ${40 + i * 3} ${x + 14} ${44 + i * 3} L ${x + 12} ${60} Q ${x} ${56} ${x - 12} ${60} Z`); }); g.poly([[52, 10], [60, 13], [52, 16]]); g.cut(() => { for (let i = 0; i < 6; i++) g.circ(24 + i * 10, 74, 1.8); }); g.line([[2, 94], [98, 94]], 2.4); });
+  I('Royal & civic', 'column', 'Column', g => { g.rect(24, 8, 52, 8, 1); g.rect(30, 16, 40, 5, 1); g.rect(32, 21, 36, 62); g.rect(28, 83, 44, 5, 1); g.rect(22, 88, 56, 7, 1); g.cut(() => { for (let i = 0; i < 4; i++) g.line([[39 + i * 7.3, 24], [39 + i * 7.3, 80]], 2); }); });
+  I('Royal & civic', 'torch', 'Torch', g => { g.poly([[44, 52], [56, 52], [53, 96], [47, 96]]); g.path('M 34 42 L 66 42 L 62 54 L 38 54 Z'); g.path('M 50 4 C 64 18 70 28 64 38 C 60 42 56 40 54 36 C 58 28 52 22 50 16 C 48 24 42 30 46 38 C 42 40 38 40 36 36 C 32 26 40 16 50 4 Z'); });
+  I('Royal & civic', 'lighthouse', 'Lighthouse', g => { g.poly([[38, 34], [62, 34], [68, 90], [32, 90]]); g.rect(36, 22, 28, 12, 2); g.path('M 34 22 L 66 22 L 50 10 Z'); g.rect(24, 90, 52, 6, 2); g.cut(() => { g.poly([[37, 48], [63, 48], [64, 56], [36, 56]]); g.poly([[35, 66], [65, 66], [66, 74], [34, 74]]); g.rect(44, 25, 12, 6, 1); }); g.poly([[64, 26], [98, 14], [98, 38]]); g.poly([[36, 26], [2, 14], [2, 38]]); });
+  I('Royal & civic', 'wings', 'Wings', g => { g.mirror(() => { g.poly([[54, 40], [97, 22], [95, 31], [56, 48]]); g.poly([[54, 46], [99, 37], [96, 45], [56, 53]]); g.poly([[54, 52], [96, 54], [92, 61], [55, 58]]); g.poly([[54, 57], [88, 71], [82, 76], [53, 62]]); }); g.diamond(50, 50, 6, 12); });
+  I('Royal & civic', 'keys', 'Crossed keys', g => { for (const a of [-.75, .75]) g.rot(50, 50, a, () => { g.circS(50, 16, 10, 4.5); g.rect(47, 26, 6, 66); g.rect(53, 78, 10, 5, 1); g.rect(53, 86, 8, 5, 1); }); });
+
+  I('Industry', 'anvil', 'Anvil', g => { g.path('M 4 30 L 70 30 L 96 22 L 92 36 Q 76 44 70 50 L 66 62 L 76 70 L 76 80 L 24 80 L 24 70 L 34 62 L 30 46 Q 14 44 4 30 Z'); g.rect(18, 82, 64, 8, 2); });
+  I('Industry', 'pickaxe', 'Pickaxe', g => { g.rot(50, 50, -.6, () => { g.rect(46.5, 18, 7, 78, 3); g.path('M 6 30 Q 50 2 94 30 Q 50 16 6 30 Z'); g.rect(43, 16, 14, 10, 2); }); });
+  I('Industry', 'wrench', 'Wrench', g => { g.rot(50, 50, -.78, () => { g.rect(45, 30, 10, 54, 4); g.circ(50, 22, 16); g.cut(() => g.rect(44, 4, 12, 18)); g.circ(50, 88, 9); g.cut(() => g.circ(50, 88, 4)); }); });
+  I('Industry', 'tools', 'Hammer & wrench', g => { g.rot(50, 50, .78, () => { g.rect(46, 26, 8, 66, 3); g.rect(30, 10, 40, 18, 3); }); g.rot(50, 50, -.78, () => { g.rect(45, 30, 10, 54, 4); g.circ(50, 22, 15); g.cut(() => g.rect(44, 5, 12, 17)); }); });
+  I('Industry', 'factory', 'Factory', g => { g.path('M 6 94 L 6 50 L 30 36 L 30 50 L 54 36 L 54 50 L 78 36 L 78 94 Z'); g.rect(80, 14, 12, 80); g.cut(() => { for (let i = 0; i < 3; i++) g.rect(12 + i * 22, 64, 12, 10, 1); }); g.circ(86, 8, 4); g.circ(80, 4, 3); });
+  I('Industry', 'cogs', 'Twin cogs', g => { g.gear(36, 58, 30, 23, 10); g.cut(() => g.circ(36, 58, 9)); g.gear(70, 30, 22, 16, 8); g.cut(() => g.circ(70, 30, 6)); });
+})();
+const ICON_OPTS = ICON_CATS.flatMap(cat => Object.entries(ICONS).filter(([, v]) => v.cat === cat).map(([k, v]) => [k, `${cat} · ${v.label}`]));
+
+/* drawing helper: works in a 100×100 box on context x, filling with the current fillStyle */
+function glyphHelper(x) {
+  const g = {
+    poly(p) { x.beginPath(); p.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fill(); },
+    sym(half) { const p = half.concat(half.slice(1, -1).reverse().map(([a, b]) => [100 - a, b])); g.poly(p); },
+    circ(cx, cy, r) { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); },
+    circS(cx, cy, r, w = 3) { x.lineWidth = w; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke(); },
+    ell(cx, cy, rx, ry, rot = 0) { x.beginPath(); x.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2); x.fill(); },
+    ringE(cx, cy, rx, ry, w) { x.lineWidth = w; x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.stroke(); },
+    rect(a, b, w, h, r = 0) { x.beginPath(); if (r) rr(x, a, b, w, h, r); else x.rect(a, b, w, h); x.fill(); },
+    line(p, w = 3) { x.lineWidth = w; x.lineCap = 'round'; x.lineJoin = 'round'; x.beginPath(); p.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); },
+    arcS(cx, cy, r, a0, a1, w = 3) { x.lineWidth = w; x.lineCap = 'round'; x.beginPath(); x.arc(cx, cy, r, a0, a1); x.stroke(); },
+    path(d) { x.fill(new Path2D(d)); },
+    spath(d, w) { x.lineWidth = w; x.lineCap = 'round'; x.lineJoin = 'round'; x.stroke(new Path2D(d)); },
+    star(cx, cy, n, ro, ri, rot = -Math.PI / 2) { x.beginPath(); for (let i = 0; i < n * 2; i++) { const a = rot + i * Math.PI / n, r = i % 2 ? ri : ro; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); x.fill(); },
+    hex(cx, cy, r) { x.beginPath(); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); x.fill(); },
+    diamond(cx, cy, rx, ry) { g.poly([[cx, cy - ry], [cx + rx, cy], [cx, cy + ry], [cx - rx, cy]]); },
+    gear(cx, cy, ro, ri, n) { x.beginPath(); for (let i = 0; i < n; i++) { const b = i * Math.PI * 2 / n, d = Math.PI / n; for (const [a, r] of [[b - d * .55, ri], [b - d * .35, ro], [b + d * .35, ro], [b + d * .55, ri]]) x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.closePath(); x.fill(); },
+    spiral(cx, cy, r0, r1, turns, w, taper) { const n = 80; for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, a0 = t0 * turns * Math.PI * 2, a1 = t1 * turns * Math.PI * 2, q0 = r0 + (r1 - r0) * t0, q1 = r0 + (r1 - r0) * t1; x.lineWidth = taper ? w * (1 - t0 * .85) : w; x.lineCap = 'round'; x.beginPath(); x.moveTo(cx + Math.cos(a0) * q0, cy + Math.sin(a0) * q0); x.lineTo(cx + Math.cos(a1) * q1, cy + Math.sin(a1) * q1); x.stroke(); } },
+    spiralLine(cx, cy, r0, r1, turns, w) { x.lineWidth = w; x.beginPath(); for (let i = 0; i <= 120; i++) { const t = i / 120, a = t * turns * Math.PI * 2, r = r0 + (r1 - r0) * t; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.stroke(); },
+    mirror(f, on = true) { f(); if (!on) return; x.save(); x.translate(100, 0); x.scale(-1, 1); f(); x.restore(); },
+    flip(on, f) { if (!on) return f(); x.save(); x.translate(100, 0); x.scale(-1, 1); f(); x.restore(); },
+    rot(cx, cy, a, f) { x.save(); x.translate(cx, cy); x.rotate(a); x.translate(-cx, -cy); f(); x.restore(); },
+    cut(f) { x.save(); x.globalCompositeOperation = 'destination-out'; f(); x.restore(); },
+  };
+  return g;
+}
+const _gly = { M: document.createElement('canvas'), O: document.createElement('canvas'), T: document.createElement('canvas') };
+function glyphMask(icon, pw, ph, flip) {   // white icon centred in pw×ph
+  const M = _gly.M; M.width = pw; M.height = ph; const x = M.getContext('2d'), s = Math.min(pw, ph) / 100;
+  x.save(); x.translate((pw - 100 * s) / 2, (ph - 100 * s) / 2); x.scale(s, s); if (flip) { x.translate(100, 0); x.scale(-1, 1); }
+  x.fillStyle = '#fff'; x.strokeStyle = '#fff'; const ic = ICONS[icon] || ICONS.star; try { ic.f(glyphHelper(x)); } catch (e) { }
+  x.restore(); return M;
+}
+function tintedCopy(src, dst, fill) { dst.width = src.width; dst.height = src.height; const x = dst.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = fill; x.fillRect(0, 0, dst.width, dst.height); x.globalCompositeOperation = 'source-over'; return dst; }
+
+def('glyph', 'Faction icon', { w: 32, h: 32, icon: 'wolf', color: '#1b1d22', color2: '#b8892b', grad: false, gangle: 90, outline: '#ffffff', outlineW: 0, flipX: false },
+  [['icon', 'Icon', 'select', ICON_OPTS], ['color', 'Colour', 'color'], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0], ['flipX', 'Mirror', 'check']],
+  function (c, el, ov, k) {
+    const ow = el.outlineW > 0 ? el.outlineW : 0, pw = Math.max(8, Math.ceil((el.w + ow * 2) * k)), ph = Math.max(8, Math.ceil((el.h + ow * 2) * k)), pad = Math.ceil(ow * k);
+    const M = glyphMask(el.icon, pw - pad * 2, ph - pad * 2, el.flipX), O = _gly.O; O.width = pw; O.height = ph; const o = O.getContext('2d');
+    if (ow > 0) { const T = tintedCopy(M, _gly.T, fillOf(ov, el.outline)); for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; o.drawImage(T, pad + Math.cos(a) * pad, pad + Math.sin(a) * pad); } o.drawImage(T, pad, pad); }
+    let fill = fillOf(ov, el.color);
+    if (el.grad && ov.ch === 'A') { const a = (el.gangle || 0) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.max(pw, ph) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); fill = gr; }
+    o.drawImage(tintedCopy(M, _gly.T, fill), pad, pad);
+    c.drawImage(O, -el.w / 2 - ow, -el.h / 2 - ow, el.w + ow * 2, el.h + ow * 2);
+  }, 'M12 3l3 6 6 1-4 4 1 7-6-3-6 3 1-7-4-4 6-1z');
+
+/* procedural sigils: seeded, rotationally symmetric marks */
+const SIGIL_STYLES = [['arcane', 'Arcane'], ['runic', 'Angular'], ['tech', 'Circuit'], ['organic', 'Organic'], ['star', 'Stellar']];
+def('sigil', 'Sigil', { w: 32, h: 32, seed: 7, sym: 6, style: 'arcane', detail: 5, lw: 3.2, ring: true, color: '#1b1d22' },
+  [['seed', 'Seed', 'num', { min: 1, max: 99999, step: 1 }], ['style', 'Style', 'select', SIGIL_STYLES], ['sym', 'Symmetry', 'range', { min: 2, max: 12, step: 1 }], ['detail', 'Detail', 'range', { min: 2, max: 10, step: 1 }], ['lw', 'Line weight', 'range', { min: 1, max: 8, step: .1 }], ['ring', 'Outer ring', 'check'], ['color', 'Colour', 'color']],
+  function (c, el, ov, k) {
+    const pw = Math.max(8, Math.ceil(el.w * k)), ph = Math.max(8, Math.ceil(el.h * k)), M = _gly.M; M.width = pw; M.height = ph; const x = M.getContext('2d'), s = Math.min(pw, ph) / 100;
+    x.translate(pw / 2, ph / 2); x.scale(s, s); x.strokeStyle = x.fillStyle = '#fff'; x.lineCap = 'round'; x.lineJoin = 'round';
+    const R = rng(el.seed * 7919 + 13), n = Math.max(2, el.sym | 0), wedge = Math.PI * 2 / n, lw = el.lw, P = (r, a) => [Math.cos(a - Math.PI / 2) * r, Math.sin(a - Math.PI / 2) * r];
+    const parts = []; const rr0 = () => 10 + R() * 34;
+    for (let i = 0; i < el.detail; i++) {
+      const st = el.style, a = R() * wedge * .5, r1 = rr0(), r2 = Math.min(44, r1 + 6 + R() * 18);
+      if (st === 'tech') parts.push(R() < .55 ? { t: 'path', p: [P(r1, a), P(r2, a), P(r2, a + wedge * .25 * (R() < .5 ? 1 : -1))] } : { t: 'sq', p: P(r2, a), s: 2 + R() * 3 });
+      else if (st === 'runic') parts.push({ t: 'path', p: [P(r1, a), P(r2, a + (R() - .5) * .5), P(r2 - 6 - R() * 8, a + wedge * .3)] });
+      else if (st === 'organic') parts.push({ t: 'curve', p: [P(r1, a), P((r1 + r2) / 2, a + wedge * .4), P(r2, a)] }, ...(R() < .4 ? [{ t: 'dot', p: P(r2 + 3, a), s: 2 + R() * 2 }] : []));
+      else if (st === 'star') parts.push({ t: 'tri', p: [P(r1, a - .08), P(r2 + 4, a), P(r1, a + .08)] }, ...(R() < .5 ? [{ t: 'dot', p: P(r1 - 4, a), s: 1.6 + R() * 2 }] : []));
+      else parts.push(R() < .45 ? { t: 'path', p: [P(r1, a), P(r2, a)] } : R() < .6 ? { t: 'arc', r: r1, a0: a, a1: a + wedge * (.2 + R() * .3) } : { t: 'circ', p: P(r2, a), s: 2 + R() * 4 });
+    }
+    const drawPart = (q) => { x.lineWidth = lw; if (q.t === 'path') { x.beginPath(); q.p.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); } else if (q.t === 'curve') { x.beginPath(); x.moveTo(...q.p[0]); x.quadraticCurveTo(...q.p[1], ...q.p[2]); x.stroke(); } else if (q.t === 'arc') { x.beginPath(); x.arc(0, 0, q.r, q.a0 - Math.PI / 2, q.a1 - Math.PI / 2); x.stroke(); } else if (q.t === 'circ') { x.beginPath(); x.arc(q.p[0], q.p[1], q.s, 0, Math.PI * 2); x.stroke(); } else if (q.t === 'dot') { x.beginPath(); x.arc(q.p[0], q.p[1], q.s, 0, Math.PI * 2); x.fill(); } else if (q.t === 'sq') { x.fillRect(q.p[0] - q.s / 2, q.p[1] - q.s / 2, q.s, q.s); } else if (q.t === 'tri') { x.beginPath(); q.p.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fill(); } };
+    for (let i = 0; i < n; i++) { x.save(); x.rotate(i * wedge); parts.forEach(drawPart); x.scale(-1, 1); parts.forEach(drawPart); x.restore(); }
+    x.beginPath(); x.arc(0, 0, 4 + R() * 4, 0, Math.PI * 2); x.fill();
+    if (el.ring) { x.lineWidth = lw; x.beginPath(); x.arc(0, 0, 47, 0, Math.PI * 2); x.stroke(); if (R() < .6) { x.lineWidth = lw * .5; x.beginPath(); x.arc(0, 0, 42, 0, Math.PI * 2); x.stroke(); } }
+    const T = tintedCopy(M, _gly.T, fillOf(ov, el.color)); c.drawImage(T, -el.w / 2, -el.h / 2, el.w, el.h);
+  }, 'M12 2v20M2 12h20M5 5l14 14M19 5L5 19');
+Forge.ICONS = ICONS;
 
 /* ================= ID Forge — templates ================= */
 function makeEl(type, props) {
@@ -1828,7 +2057,7 @@ function normEl(e) { const t = T[e.type]; if (!t) return null; if (e.type === 'p
 function normalize(o) { return { card: { ...CARD_DEF, ...(o.card || {}) }, scene: { ...SCENE_DEF, ...(o.scene || {}) }, front: (o.front || []).map(normEl).filter(Boolean), back: (o.back || []).map(normEl).filter(Boolean), assets: { ...(o.assets || {}) } }; }
 function applyTemplate(id) {
   const t = TEMPLATES.find(t => t.id === id) || TEMPLATES[0]; const d = t.build();
-  P.card = { ...CARD_DEF, ...d.card }; P.scene = { ...SCENE_DEF, ...d.scene }; P.front = d.front; P.back = d.back;
+  P.card = { ...CARD_DEF, ...d.card }; P.scene = { ...SCENE_DEF, ...d.scene }; P.front = d.front; P.back = d.back; P.card.mode = t.mode || 'card';
   selIds = []; selId = null; side = 'front';
 }
 
@@ -2556,7 +2785,7 @@ function layKit(C, seed) {
   COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
 
-Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent; Forge.thumbEls = thumbEls;
+Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent; Forge.thumbEls = thumbEls; Forge.applyTemplate = applyTemplate;
 
 /* ================= 200 rubber stamps & seals, plus stickers, labels, ribbons and insignia ================= */
 (() => {
@@ -2783,6 +3012,117 @@ Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateCompone
   COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
 
+/* ================= faction-logo presets, emblem templates and acrylic badges ================= */
+const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Emblems', 'Emblem parts', 'Sigils'];
+const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Holograms', 'Decoration', 'Text styles'];
+(() => {
+  const add = (cat, name, make) => COMPONENTS.push({ cat, name, mode: 'logo', make });
+  /* every icon as a drop-in */
+  for (const [id, ic] of Object.entries(ICONS)) add('Icons · ' + ic.cat, ic.label, C => { const s = Math.min(C.w, C.h) * .56; return [{ type: 'glyph', name: ic.label, x: C.w / 2, y: C.h / 2, w: s, h: s, icon: id, color: '#1b1d22' }]; });
+
+  const back = (kind, cx, cy, s, fill, fill2, rim) => {
+    const base = { name: 'Backing', x: cx, y: cy, w: s, h: s, fill, fill2: fill2 || fill, grad: !!fill2, angle: 90, ...(rim ? { stroke: rim, strokeW: s * .03 } : {}) };
+    if (kind === 'circle') return { type: 'ellipse', ...base };
+    if (kind === 'shield') return { type: 'shape', ...base, kind: 'shield', h: s * 1.12 };
+    if (kind === 'hex') return { type: 'shape', ...base, kind: 'polygon', sides: 6 };
+    if (kind === 'oct') return { type: 'shape', ...base, kind: 'polygon', sides: 8 };
+    return { type: 'shape', ...base, kind: 'diamond', h: s * 1.15 };
+  };
+  /* emblem parts */
+  const P = 'Emblem parts', S = C => Math.min(C.w, C.h);
+  [['Round backing', 'circle', '#1d3f6e', '#2f6fb0'], ['Shield backing', 'shield', '#7a1c24', '#b02a36'], ['Hex backing', 'hex', '#1b1d22', '#3a3f48'], ['Octagon backing', 'oct', '#2f4a2a', '#4f7a44'], ['Diamond backing', 'diamond', '#3a2a5a', '#6a4aa0']].forEach(([n, k, a, b]) => add(P, n, C => [back(k, C.w / 2, C.h / 2, S(C) * .84, a, b, '#d6b25e')]));
+  add(P, 'Double ring', C => [{ type: 'ellipse', name: 'Outer ring', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, fillOn: false, stroke: '#1b1d22', strokeW: S(C) * .025 }, { type: 'ellipse', name: 'Inner ring', x: C.w / 2, y: C.h / 2, w: S(C) * .78, h: S(C) * .78, fillOn: false, stroke: '#1b1d22', strokeW: S(C) * .01 }]);
+  add(P, 'Studded ring', C => { const s = S(C), o = [{ type: 'ellipse', name: 'Ring', x: C.w / 2, y: C.h / 2, w: s * .88, h: s * .88, fillOn: false, stroke: '#55585e', strokeW: s * .05 }]; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; o.push({ type: 'ellipse', name: 'Stud ' + (i + 1), x: C.w / 2 + Math.cos(a) * s * .44, y: C.h / 2 + Math.sin(a) * s * .44, w: s * .035, h: s * .035, fill: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }); } return o; });
+  add(P, 'Rope ring', C => [{ type: 'ellipse', name: 'Rope ring', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, fillOn: false, stroke: '#b8892b', strokeW: S(C) * .03, dash: S(C) * .02 }]);
+  add(P, 'Laurel wreath', C => [{ type: 'seal', name: 'Laurel', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, style: 'laurel', text: '', color: '#b8892b', finish: 'foil', foil: '#d6b25e' }]);
+  add(P, 'Sunburst rays', C => [{ type: 'shape', name: 'Rays', x: C.w / 2, y: C.h / 2, w: S(C) * .96, h: S(C) * .96, kind: 'burst', points: 28, inner: .62, fill: '#d6b25e', opacity: .85 }]);
+  add(P, 'Wings', C => [{ type: 'glyph', name: 'Wings', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, icon: 'wings', color: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }]);
+  add(P, 'Crossed swords behind', C => [{ type: 'glyph', name: 'Crossed swords', x: C.w / 2, y: C.h / 2, w: S(C) * .86, h: S(C) * .86, icon: 'swords', color: '#8a8f98', finish: 'foil', foil: '#c8ccd3' }]);
+  add(P, 'Arc of stars', C => { const s = S(C), o = []; for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * .32; o.push({ type: 'shape', name: 'Star ' + (i + 1), x: C.w / 2 + Math.cos(a) * s * .36, y: C.h / 2 + Math.sin(a) * s * .36, w: s * .07, h: s * .07, kind: 'star', points: 5, inner: .42, fill: '#d6b25e', finish: 'foil', foil: '#d6b25e' }); } return o; });
+  add(P, 'Motto ribbon', C => [{ type: 'shape', name: 'Ribbon', x: C.w / 2, y: C.h * .82, w: S(C) * .86, h: S(C) * .14, kind: 'ribbon', fill: '#7a1c24' }, { type: 'text', name: 'Motto', x: C.w / 2, y: C.h * .815, w: S(C) * .56, h: S(C) * .07, text: 'FORTIS ET FIDELIS', font: 'Cinzel', weight: 700, size: S(C) * .045, align: 'center', color: '#f3efe4', spacing: .12 }]);
+  add(P, 'Name arc · top', C => [{ type: 'text', name: 'Faction name', x: C.w / 2, y: C.h * .14, w: S(C) * .8, h: S(C) * .12, text: 'ORDER OF THE EMBER', font: 'Cinzel', weight: 700, size: S(C) * .06, align: 'center', color: '#1b1d22', arc: 70, spacing: .08 }]);
+  add(P, 'Chevron band', C => [{ type: 'shape', name: 'Chevron', x: C.w / 2, y: C.h * .62, w: S(C) * .7, h: S(C) * .26, kind: 'chevron', fill: '#d6b25e', rot: 180 }]);
+
+  /* complete emblems */
+  const EMB = 'Emblems';
+  const emblem = (name, o) => add(EMB, name, C => {
+    const s = S(C), cx = C.w / 2, cy = C.h / 2 - (o.motto ? s * .05 : 0), out = [];
+    if (o.rays) out.push({ type: 'shape', name: 'Rays', x: cx, y: cy, w: s * .98, h: s * .98, kind: 'burst', points: 28, inner: .66, fill: o.rays });
+    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: cy + s * .02, w: s * .98, h: s * .98, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
+    if (o.back) out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim));
+    if (o.laurel) out.push({ type: 'seal', name: 'Laurel', x: cx, y: cy, w: s * (o.name ? .74 : .86), h: s * (o.name ? .74 : .86), style: 'laurel', text: '', color: o.laurel, finish: 'foil', foil: o.laurel });
+    if (o.ring) out.push({ type: 'ellipse', name: 'Ring', x: cx, y: cy, w: s * .62, h: s * .62, fillOn: false, stroke: o.ring, strokeW: s * .018 });
+    if (o.behind) out.push({ type: 'glyph', name: 'Behind', x: cx, y: cy, w: s * .7, h: s * .7, icon: o.behind, color: o.behindC || '#8a8f98', opacity: .9 });
+    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil } : {}) });
+    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: cy - s * .42, w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
+    if (o.motto) out.push({ type: 'shape', name: 'Ribbon', x: cx, y: cy + s * .44, w: s * .84, h: s * .13, kind: 'ribbon', fill: o.ribbon || '#7a1c24' }, { type: 'text', name: 'Motto', x: cx, y: cy + s * .435, w: s * .54, h: s * .065, text: o.motto, font: o.font || 'Cinzel', weight: 700, size: s * .042, align: 'center', color: '#f3efe4', spacing: .1 });
+    return out;
+  });
+  [
+    ['Iron Wolves', { icon: 'wolf', back: 'shield', fill: '#2a2d33', fill2: '#4a4f58', rim: '#c8ccd3', color: '#e9edf2', name: 'IRON WOLVES', motto: 'NO RETREAT', ribbon: '#2a2d33' }],
+    ['Solar Concord', { icon: 'sun', rays: '#e8b84a', back: 'circle', fill: '#f6efd8', rim: '#b8892b', color: '#b8892b', name: 'SOLAR CONCORD', nameC: '#7a5a1c', iconS: .4 }],
+    ['Crimson Wyrm', { icon: 'dragon', back: 'circle', fill: '#5a1018', fill2: '#9a1b2b', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', motto: 'FIRE ABIDES', ribbon: '#1b1d22' }],
+    ['Silver Stag Order', { icon: 'stag', laurel: '#c8ccd3', color: '#2f4a2a', name: 'ORDER OF THE SILVER STAG', iconS: .42 }],
+    ['Void Syndicate', { icon: 'eye', back: 'hex', fill: '#0c0d12', fill2: '#24203a', rim: '#9a5af0', color: '#c79aff', name: 'VOID SYNDICATE', nameC: '#6a3ab8', font: 'Rajdhani' }],
+    ['Storm Riders', { icon: 'bolt', back: 'diamond', fill: '#16304f', fill2: '#2f6fb0', rim: '#ffd23d', color: '#ffd23d', motto: 'RIDE THE THUNDER', ribbon: '#16304f', font: 'Oswald' }],
+    ['Deepwater Compact', { icon: 'trident', back: 'circle', fill: '#0a3a5a', fill2: '#1f6f9a', rim: '#9fd8e8', color: '#e8f6fa', name: 'DEEPWATER COMPACT', nameC: '#0a3a5a' }],
+    ['Gilded Lion', { icon: 'lion', back: 'shield', fill: '#7a1c24', fill2: '#a3243a', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', motto: 'COR LEONIS' }],
+    ['Raven Court', { icon: 'raven', back: 'oct', fill: '#15161a', rim: '#8a8f98', color: '#e6e8eb', name: 'THE RAVEN COURT', nameC: '#2a2d33' }],
+    ['Rustwater Guild', { icon: 'anvil', back: 'circle', fill: '#6a3a1a', fill2: '#9a5a2a', rim: '#c47a4a', color: '#f2e2c8', behind: 'cogs', behindC: '#c47a4a', name: 'RUSTWATER GUILD', nameC: '#6a3a1a', font: 'Oswald', iconS: .32 }],
+    ['Starfall Navy', { icon: 'rocket', wings: '#c8ccd3', wingFoil: '#c8ccd3', back: 'circle', backS: .5, fill: '#16203a', rim: '#c8ccd3', color: '#e8eef6', motto: 'AD ASTRA', ribbon: '#16203a', iconS: .32, font: 'Oswald' }],
+    ['Thornwick Crown', { icon: 'crown', laurel: '#b8892b', color: '#7a1c24', name: 'KINGDOM OF THORNWICK', nameC: '#7a1c24', motto: 'DEO ET REGI', iconS: .36 }],
+    ['Ashen Covenant', { icon: 'skull', back: 'hex', fill: '#2a2a2a', fill2: '#4a4a4a', rim: '#8a8a8a', color: '#d8d4cc', name: 'ASHEN COVENANT', nameC: '#2a2a2a' }],
+    ['Emerald Circle', { icon: 'oak', back: 'circle', fill: '#1f4a2a', fill2: '#2f6b3a', rim: '#9fc88a', color: '#e8f2dc', ring: '#9fc88a', name: 'THE EMERALD CIRCLE', nameC: '#1f4a2a' }],
+    ['Black Spiders', { icon: 'spider', back: 'diamond', fill: '#1b1d22', rim: '#9a1b2b', color: '#9a1b2b', motto: 'PATIENCE · VENOM', ribbon: '#1b1d22' }],
+    ['Neon Ronin', { icon: 'swords', back: 'hex', fill: '#0a0a12', rim: '#ff2d95', color: '#2de2ff', name: 'NEON RONIN', nameC: '#ff2d95', font: 'Rajdhani' }],
+    ['Lunar Sisterhood', { icon: 'triplemoon', back: 'circle', fill: '#1a1a3a', fill2: '#3a3a6a', rim: '#c8ccd3', color: '#e8e8f6', name: 'LUNAR SISTERHOOD', nameC: '#3a3a6a' }],
+    ['Atomic Union', { icon: 'atom', back: 'oct', fill: '#f2b632', rim: '#1b1d22', color: '#1b1d22', name: 'ATOMIC WORKERS UNION', nameC: '#1b1d22', font: 'Oswald' }],
+    ['Free Mariners', { icon: 'anchor', back: 'shield', fill: '#16304f', rim: '#f3efe4', color: '#f3efe4', motto: 'SEMPER LIBER', ribbon: '#9a1b2b' }],
+    ['Watchers of the Gate', { icon: 'eyetri', rays: '#d6b25e', color: '#3a2a10', iconS: .5, name: 'WATCHERS OF THE GATE', nameC: '#3a2a10' }],
+    ['Ember Brotherhood', { icon: 'flame', back: 'diamond', fill: '#3a0a0a', fill2: '#8a1c1c', rim: '#ff8a1f', color: '#ffb02e', motto: 'FROM ASH', ribbon: '#3a0a0a' }],
+    ['Harvest Commonwealth', { icon: 'wheat', laurel: '#b8892b', color: '#7a5a1c', name: 'HARVEST COMMONWEALTH', nameC: '#7a5a1c' }],
+    ['Serpent Cult', { icon: 'serpent', back: 'circle', fill: '#1a2a1a', rim: '#6a9a3a', color: '#9ad84a', ring: '#6a9a3a', name: 'COILED ONES', nameC: '#2a3a1a' }],
+    ['Clockwork League', { icon: 'gear', back: 'circle', fill: '#4a3a20', fill2: '#7a6030', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', name: 'CLOCKWORK LEAGUE', nameC: '#4a3a20' }],
+    ['Night Owls', { icon: 'owl', back: 'oct', fill: '#1a1f3a', rim: '#c9a04e', color: '#e9d6a8', motto: 'WE SEE', ribbon: '#1a1f3a' }],
+    ['Bear Clan', { icon: 'bearpaw', back: 'shield', fill: '#4a2a14', fill2: '#6b3f22', rim: '#e8dcc0', color: '#e8dcc0', name: 'CLAN OF THE BEAR', nameC: '#4a2a14' }],
+    ['Arcane Library', { icon: 'book', back: 'circle', fill: '#2a1a4a', rim: '#d6b25e', color: '#e8dcc0', behind: 'star', behindC: '#5a3a9a', name: 'ARCANE LIBRARY', nameC: '#2a1a4a', iconS: .38 }],
+    ['Highland Watch', { icon: 'mountain', back: 'shield', fill: '#2f4a5a', fill2: '#4f7a8a', rim: '#f3efe4', color: '#f3efe4', motto: 'WE HOLD', ribbon: '#2f4a5a' }],
+    ['Hex Collective', { icon: 'hexcore', back: 'hex', fill: '#0f2a2a', rim: '#3dff8a', color: '#3dff8a', name: 'HEX COLLECTIVE', nameC: '#0f4a3a', font: 'Rajdhani' }],
+    ['Royal Navy of Saltmere', { icon: 'ship', back: 'circle', fill: '#f3efe4', rim: '#16304f', color: '#16304f', ring: '#16304f', name: 'SALTMERE ROYAL NAVY', nameC: '#16304f', iconS: .4 }],
+  ].forEach(([n, o]) => emblem(n, o));
+
+  /* sigils */
+  [['arcane', 6], ['arcane', 8], ['arcane', 5], ['runic', 4], ['runic', 6], ['runic', 3], ['tech', 4], ['tech', 6], ['tech', 8], ['organic', 5], ['organic', 7], ['organic', 3], ['star', 8], ['star', 12], ['star', 6], ['arcane', 12], ['runic', 8], ['tech', 3], ['organic', 9], ['star', 5], ['arcane', 4], ['runic', 5], ['tech', 12], ['organic', 6]].forEach(([st, sym], i) => add('Sigils', `Sigil · ${st} ${sym}-fold #${i + 1}`, C => { const s = Math.min(C.w, C.h) * .7; return [{ type: 'sigil', name: 'Sigil', x: C.w / 2, y: C.h / 2, w: s, h: s, seed: 1000 + i * 137, style: st, sym, detail: 3 + (i % 5), lw: 2.4 + (i % 3) * .8, ring: i % 4 !== 3, color: '#1b1d22' }]; }));
+
+  const order = ['Security', 'Holograms', 'Seals & stamps', 'Office stamps', 'Travel stamps', 'Postal & date', 'Genre stamps', 'Stickers & labels', 'Ribbons & insignia', 'Identity', 'Decoration', 'Text styles', ...LAYOUT_CATS, ...LOGO_CATS];
+  COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
+
+  /* templates: logo mode + acrylic badges */
+  const T = (o) => TEMPLATES.push(o), fm = k => { const f = FORMATS[k]; return { fmt: k, w: f.w, h: f.h, r: f.r, shape: f.shape || 'rect', thick: f.thick }; };
+  const G = (icon, x, y, s, o = {}) => E('glyph', { name: ICONS[icon].label, icon, x, y, w: s, h: s, ...o });
+  const TX = (text, x, y, w, h, o = {}) => E('text', { name: o.name || text, text, x, y, w, h, font: 'Cinzel', weight: 700, size: h * .7, align: 'center', color: '#1b1d22', ...o });
+  const L = (id, name, build) => T({ id, name, mode: 'logo', build });
+  L('lg_lion', 'Gilded Lion · gold medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'gold' }, scene: { env: 'golden', backdrop: 'velvet', pose: 'hover' }, front: [E('ellipse', { name: 'Rim', x: 30, y: 30, w: 54, h: 54, fillOn: false, stroke: '#8a6a2a', strokeW: .6, finish: 'blind', relief: .8 }), G('lion', 30, 30, 30, { color: '#5a4010', finish: 'laser' }), TX('HOUSE OF THE GILDED LION', 30, 9, 48, 6, { arc: 80, color: '#5a4010', finish: 'laser' }), TX('MCMXII', 30, 51, 20, 4, { color: '#5a4010', finish: 'laser' })], back: [G('crown', 30, 26, 20, { color: '#5a4010', finish: 'laser' }), TX('FORTIS · FIDELIS', 30, 42, 36, 4.4, { color: '#5a4010', finish: 'laser' })] }; });
+  L('lg_wolves', 'Iron Wolves · forged iron shield', () => { const c = fm('em_heater'); return { card: { ...c, sub: 'iron', age: .3, wear: .3 }, scene: { env: 'interrogation', backdrop: 'concrete', pose: 'stand' }, front: [G('wolf', 28, 28, 32, { color: '#e9edf2', finish: 'foil', foil: '#dfe3e8' }), TX('IRON WOLVES', 28, 8, 40, 5.4, { color: '#dfe3e8', finish: 'foil', foil: '#dfe3e8', font: 'Oswald' }), TX('NO RETREAT', 28, 50, 30, 4, { color: '#c8ccd3', finish: 'laser', font: 'Oswald' })], back: [] }; });
+  L('lg_rose', 'Order of the Rose · enamel pin', () => { const c = fm('em_french'); return { card: { ...c, sub: 'enamel', tint: '#6a1424', tintOn: true, thick: 2.2, edgeFin: 'gold' }, scene: { env: 'softbox', backdrop: 'linen', pose: 'desk' }, front: [E('shape', { name: 'Inset', x: 28, y: 31, w: 46, h: 54, kind: 'shield', fillOn: false, stroke: '#d6b25e', strokeW: .8, finish: 'foil', foil: '#d6b25e' }), G('rose', 28, 30, 28, { color: '#f2d0d6', outline: '#d6b25e', outlineW: .5 }), TX('ORDER OF THE ROSE', 28, 9, 40, 4.6, { color: '#d6b25e', finish: 'foil', foil: '#d6b25e' })], back: [] }; });
+  L('lg_starfall', 'Starfall Navy · embroidered patch', () => { const c = fm('em_patch'); return { card: { ...c, sub: 'felt', tint: '#16203a', tintOn: true, edgeOn: true, edge: '#c8ccd3' }, scene: { env: 'softbox', backdrop: 'leather', pose: 'desk' }, front: [E('ellipse', { name: 'Stitch ring', x: 38, y: 28, w: 70, h: 50, fillOn: false, stroke: '#c8ccd3', strokeW: .9, dash: 1.2 }), G('wings', 38, 28, 46, { color: '#c8ccd3' }), G('rocket', 38, 27, 20, { color: '#f2b632' }), TX('STARFALL NAVY', 38, 9, 44, 5, { color: '#e8eef6', font: 'Oswald' }), TX('AD ASTRA', 38, 47, 24, 4, { color: '#f2b632', font: 'Oswald' })], back: [] }; });
+  L('lg_ashen', 'Ashen Covenant · carved slate', () => { const c = fm('em_oct'); return { card: { ...c, sub: 'stone' }, scene: { env: 'candle', backdrop: 'slate', pose: 'stand' }, front: [G('skull', 30, 29, 30, { color: '#2a2c30', finish: 'laser' }), TX('ASHEN COVENANT', 30, 8, 44, 5, { color: '#1b1d22', finish: 'laser' }), TX('MEMENTO', 30, 52, 24, 4, { color: '#1b1d22', finish: 'laser' })], back: [] }; });
+  L('lg_solar', 'Solar Concord · brass coin', () => { const c = fm('em_coin'); return { card: { ...c, sub: 'brass' }, scene: { env: 'golden', backdrop: 'walnut', pose: 'desk' }, front: [G('sun', 20, 20, 24, { color: '#5a4010', finish: 'laser' }), TX('SOLAR CONCORD', 20, 5, 32, 3.6, { arc: 90, color: '#5a4010', finish: 'laser' })], back: [G('sunrise', 20, 18, 20, { color: '#5a4010', finish: 'laser' }), TX('ONE LIGHT', 20, 32, 20, 3, { color: '#5a4010', finish: 'laser' })] }; });
+  L('lg_rust', 'Rustwater Guild · copper cog', () => { const c = fm('em_cog'); return { card: { ...c, sub: 'copper', age: .4, wear: .35 }, scene: { env: 'sunset', backdrop: 'steel', pose: 'hover' }, front: [E('ellipse', { name: 'Ring', x: 32, y: 32, w: 44, h: 44, fillOn: false, stroke: '#4a2a14', strokeW: .8, finish: 'laser' }), G('anvil', 32, 32, 26, { color: '#3a1d0d', finish: 'laser' }), TX('RUSTWATER GUILD', 32, 14, 34, 4, { arc: 70, color: '#3a1d0d', finish: 'laser', font: 'Oswald' })], back: [] }; });
+  L('lg_wyrm', 'Wyrmguard · hanging banner', () => { const c = fm('em_banner'); return { card: { ...c, sub: 'felt', tint: '#5a1018', tintOn: true }, scene: { env: 'candle', backdrop: 'velvet', pose: 'stand' }, front: [E('rect', { name: 'Border', x: 25, y: 34, w: 44, h: 60, fillOn: false, stroke: '#d6b25e', strokeW: .8 }), G('dragon', 25, 34, 34, { color: '#d6b25e' }), TX('WYRMGUARD', 25, 9, 40, 5, { color: '#d6b25e' })], back: [] }; });
+  L('lg_ronin', 'Neon Ronin · carbon diamond', () => { const c = fm('em_diamond'); return { card: { ...c, sub: 'carbon' }, scene: { env: 'neon', backdrop: 'blackglass', pose: 'hover', bloom: .6 }, front: [G('swords', 28, 36, 30, { color: '#2de2ff', finish: 'holo' }), TX('NEON RONIN', 28, 58, 26, 4, { color: '#ff2d95', font: 'Rajdhani' })], back: [] }; });
+  L('lg_deep', 'Deepwater Compact · bronze medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'bronze', age: .5 }, scene: { env: 'aqua', backdrop: 'slate', pose: 'hover' }, front: [E('ellipse', { name: 'Ring', x: 30, y: 30, w: 52, h: 52, fillOn: false, stroke: '#2a1808', strokeW: .8, finish: 'blind', relief: .8 }), G('trident', 30, 31, 30, { color: '#2a1808', finish: 'laser' }), TX('DEEPWATER COMPACT', 30, 9, 46, 5, { arc: 80, color: '#2a1808', finish: 'laser' })], back: [] }; });
+  L('lg_acrylic', 'Neon sigil · fluorescent acrylic hex', () => { const c = fm('em_hex'); return { card: { ...c, sub: 'acr_pink', glowInt: 1.2 }, scene: { env: 'neon', backdrop: 'walnut', pose: 'desk', bloom: .7 }, front: [E('sigil', { name: 'Sigil', x: 32, y: 27.7, w: 40, h: 40, seed: 4242, style: 'arcane', sym: 6, detail: 6, lw: 3, color: '#ffffff', finish: 'laser' })], back: [] }; });
+  L('lg_blank', 'Blank emblem · round', () => { const c = fm('em_round'); return { card: { ...c, sub: 'enamel' }, scene: { env: 'softbox', backdrop: 'slate', pose: 'hover' }, front: [], back: [] }; });
+  /* the acrylic badges from the reference: engraved text glows, cord through the corner holes or a badge clip */
+  const NB = (id, name, card, scene, front) => T({ id, name, build: () => ({ card: { ...CARD_DEF, ...card }, scene: { ...SCENE_DEF, ...scene }, front, back: [] }) });
+  const LZ = (text, x, y, w, h, o = {}) => E('text', { name: o.name || text, text, x, y, w, h, font: 'Space Grotesk', weight: 700, size: h * .72, align: 'center', color: '#ffffff', finish: 'laser', ...o });
+  NB('acr_portrait', 'Neon acrylic event badge · portrait', { fmt: 'id1p', w: 53.98, h: 85.6, r: 1.4, sub: 'acr_green', thick: 3, slot: 'slot2', glowInt: 1.1 }, { env: 'neon', backdrop: 'walnut', pose: 'lanyard', lanyardStyle: 'holes', lanyardColor: '#111114', bloom: .65, keyInt: .7 },
+    [E('shape', { name: 'Logo hex', x: 27, y: 25, w: 18, h: 18, kind: 'polygon', sides: 6, fillOn: false, stroke: '#ffffff', strokeW: .8, finish: 'laser' }), G('hexcore', 27, 25, 10, { color: '#ffffff', finish: 'laser' }), LZ('MAREN', 27, 43, 44, 6.4, { align: 'left', x: 29 }), LZ('VOSS', 27, 50, 44, 6.4, { align: 'left', x: 29 }), LZ('LANTERN SUMMIT', 31, 60, 36, 3.4, { align: 'left', weight: 600 }), LZ('12–14 MARCH', 31, 64.4, 36, 3.4, { align: 'left', weight: 600 }), LZ('VIP / SPEAKER / GUEST', 29, 75, 40, 3.6, { align: 'left' })]);
+  NB('acr_landscape', 'Neon acrylic event badge · landscape', { fmt: 'custom', w: 90, h: 56, r: 1.4, sub: 'acr_green', thick: 3, slot: 'slot2', glowInt: 1.1 }, { env: 'neon', backdrop: 'walnut', pose: 'lanyard', lanyardStyle: 'clip', lanyardColor: '#111114', bloom: .65, keyInt: .7 },
+    [LZ('ORBITAL', 28, 16, 30, 5, { weight: 300, align: 'left', x: 24 }), LZ('MAREN', 47, 25, 64, 7.4, { align: 'left', x: 45 }), LZ('VOSS', 47, 33, 64, 7.4, { align: 'left', x: 45 }), LZ('ORBITAL DESIGN WEEK · 3 OCT', 47, 41, 64, 3.6, { align: 'left', x: 45, weight: 600 }), LZ('VIP / SPEAKER / GUEST', 47, 46.5, 64, 4, { align: 'left', x: 45 })]);
+})();
+
 /* ================= UI ================= */
 const ui = Forge.ui = {};
 let side = 'front', selId = null, selIds = [], viewMode = '3d', uvOn = false, torchOn = false, formSeq = 0, clip = null;
@@ -2814,11 +3154,13 @@ function restoreState(s) { const o = JSON.parse(s); P.card = o.card; P.scene = o
 function updUndo() { $('#undo').disabled = hist.i <= 0; $('#redo').disabled = hist.i >= hist.stack.length - 1; }
 let saveT = null, draftT = null;
 function autosave() {
-  clearTimeout(saveT); saveT = setTimeout(() => { const pack = { P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() }; try { localStorage.setItem('idforge.v2', JSON.stringify(pack)); } catch (e) { try { localStorage.setItem('idforge.v2', JSON.stringify({ ...pack, P: { ...P, assets: {} } })); } catch (e2) { } } }, 1000);
+  clearTimeout(saveT); saveT = setTimeout(() => { const pack = { P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() }; try { localStorage.setItem(saveKey(), JSON.stringify(pack)); localStorage.setItem('idforge.mode', appMode); } catch (e) { try { localStorage.setItem('idforge.v2', JSON.stringify({ ...pack, P: { ...P, assets: {} } })); } catch (e2) { } } }, 1000);
   clearTimeout(draftT); draftT = setTimeout(() => Lib.saveDraft(), 4000);
 }
+let appMode = 'card';
+const saveKey = (m = appMode) => m === 'logo' ? 'idforge.logo' : 'idforge.v2';
 function loadSaved() {
-  try { const s = localStorage.getItem('idforge.v2'); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
+  try { appMode = localStorage.getItem('idforge.mode') === 'logo' ? 'logo' : 'card'; const s = localStorage.getItem(saveKey()); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
 }
 
 /* ---------- storage: account library (db + assets) or this browser (IndexedDB) ---------- */
@@ -2872,7 +3214,7 @@ Lib.restoreDraft = async function () {
 function isDirty() { return docMeta.savedSnap !== snapState(); }
 function updStatus(state) {
   const n = $('#docName'), s = $('#docState'); if (!n) return;
-  n.textContent = docMeta.name || 'Untitled card';
+  n.textContent = docMeta.name || (appMode === 'logo' ? 'Untitled emblem' : 'Untitled card');
   const where = Lib.mode === 'cloud' ? 'your account' : Lib.mode === 'local' ? 'this browser' : Lib.mode === 'pending' ? '' : 'files only';
   s.textContent = state || (Lib.mode === 'pending' ? 'Connecting storage…' : !docMeta.id ? 'Not saved yet' : isDirty() ? 'Unsaved changes' : 'Saved to ' + where);
   $('#status').title = Lib.mode === 'cloud' ? 'Saved privately to your account library' : Lib.mode === 'local' ? 'Saved in this browser only' : Lib.mode === 'none' ? 'Library storage is not available in this view; use Export file' : '';
@@ -2893,7 +3235,7 @@ function askName(def, title, cb, desc) {
   showModal(`<h2>${esc(title)}</h2><p>${esc(desc || (Lib.mode === 'cloud' ? 'Cards are saved privately to your account and follow you to other devices.' : 'Cards are saved in this browser.'))}</p><div class="row"><label for="nameIn">Name</label><input type="text" id="nameIn" maxlength="80"></div><div class="mrow"><button class="btn" data-x="close">Cancel</button><button class="btn acc" data-x="ok">Save</button></div>`, (a) => { if (a === 'close') closeModal(); if (a === 'ok') { const v = $('#nameIn').value.trim() || def; closeModal(); cb(v); } });
   const i = $('#nameIn'); i.value = def; setTimeout(() => { i.focus(); i.select(); }, 30); i.onkeydown = (e) => { if (e.key === 'Enter') { const v = i.value.trim() || def; closeModal(); cb(v); } };
 }
-function loadProject(o, meta, msg) { P = normalize(o); imgs.clear(); setSel([]); side = 'front'; docMeta = meta || { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (msg) toast(msg); }
+function loadProject(o, meta, msg) { const lm = (o && o.card && o.card.mode) || 'card'; if (lm !== appMode) setModeUI(lm); P = normalize(o); imgs.clear(); setSel([]); side = 'front'; docMeta = meta || { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (msg) toast(msg); }
 function openLibrary() {
   const where = Lib.mode === 'cloud' ? 'Saved privately to your account, so they follow you to other devices.' : Lib.mode === 'local' ? 'Saved in this browser. Export a file to move a card elsewhere.' : Lib.mode === 'pending' ? 'Connecting to storage…' : 'Library storage isn’t available in this view. Export and import files instead.';
   showModal(`<h2>Your cards</h2><p>${where}</p><div class="libbar"><button class="btn acc" data-x="save">Save</button><button class="btn" data-x="saveas">Save as new…</button><button class="btn" data-x="new">New from template…</button><button class="btn" data-x="import">Import file…</button><button class="btn" data-x="export">Export file</button></div><div class="libgrid" id="libGrid"><div class="empty">Loading…</div></div>`, async (a, btn) => {
@@ -2915,7 +3257,7 @@ async function refreshLib() {
   const g = $('#libGrid'); if (!g) return;
   if (Lib.mode === 'none' || Lib.mode === 'pending') { g.innerHTML = `<div class="empty">${Lib.mode === 'pending' ? 'Still connecting… reopen this in a moment.' : 'Use <b>Export file</b> to save this card, and <b>Import file</b> to open one.'}</div>`; return; }
   try {
-    const list = await Lib.list(); if (!$('#libGrid')) return;
+    const list = (await Lib.list()).filter(r => ((r.project && r.project.card && r.project.card.mode) || 'card') === appMode); if (!$('#libGrid')) return;
     g.innerHTML = list.length ? list.map(r => `<div class="libcard${r.id === docMeta.id ? ' cur' : ''}" data-id="${esc(r.id)}">${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : '<div class="nothumb"></div>'}<div class="ln"><b>${esc(r.name || 'Untitled')}</b><small>${new Date(r.updated || 0).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</small></div><div class="la"><button class="btn" data-x="open">Open</button><button class="btn" data-x="dup">Duplicate</button><button class="btn" data-x="ren">Rename</button><button class="btn" data-x="del">Delete</button></div></div>`).join('') : '<div class="empty">No saved cards yet. Press <b>Save</b> to keep this one.</div>';
   } catch (e) { g.innerHTML = `<div class="empty">The library couldn’t be read right now (${esc(e.message || e.code || 'error')}).</div>`; }
 }
@@ -2925,7 +3267,8 @@ function readProjectFile(file) { file.text().then(t => { try { const o = JSON.pa
 /* ---------- template gallery ---------- */
 const thumbCache = new Map();
 function openGallery() {
-  showModal(`<h2>Start a new card</h2><p>${TEMPLATES.length} fictional templates. Pick one; Undo brings your current card back.</p><div class="tgrid">${TEMPLATES.map(t => { const [a, b] = t.name.split(' · '); return `<button class="tcard" data-x="tpl" data-id="${t.id}"><span class="tth" data-th="${t.id}"></span><b>${esc(a)}</b><small>${esc(b || '')}</small></button>`; }).join('')}</div><div class="mrow"><button class="btn" data-x="close">Close</button></div>`, (a, btn) => {
+  const TL = TEMPLATES.filter(t => (t.mode || 'card') === appMode), noun = appMode === 'logo' ? 'emblem' : 'card';
+  showModal(`<h2>Start a new ${noun}</h2><p>${TL.length} fictional templates. Pick one; Undo brings your current ${noun} back.</p><div class="tgrid">${TL.map(t => { const [a, b] = t.name.split(' · '); return `<button class="tcard" data-x="tpl" data-id="${t.id}"><span class="tth" data-th="${t.id}"></span><b>${esc(a)}</b><small>${esc(b || '')}</small></button>`; }).join('')}</div><div class="mrow"><button class="btn" data-x="close">Close</button></div>`, (a, btn) => {
     if (a === 'close') closeModal();
     if (a === 'tpl') { const id = btn.dataset.id, t = TEMPLATES.find(x => x.id === id); closeModal(); applyTemplate(id); imgs.clear(); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand') setTimeout(() => view && view.camPreset('hero'), 60); toast(`Loaded ${t.name.split(' ·')[0]}. Undo brings your previous card back.`); }
   });
@@ -2938,6 +3281,25 @@ function openGallery() {
 function elChanged(live, sides) { const el = selEl(); invalidate(sides || (live && !(el && el.finish === 'window') ? [sideOf(selId) || side] : ['front', 'back']), live); if (!live) { commit(); renderLayers(); } }
 ui.changed = (final) => { elChanged(!final); if (final) renderInspector(); };
 function liveEdit() { invalidate([sideOf(selId) || side], true); syncInputs(); ui.drawFlat(); }
+function fmtOpts() { return Object.entries(FORMATS).filter(([k, v]) => k === 'custom' || !!v.logo === (appMode === 'logo')).map(([k, v]) => [k, v.label]); }
+function setModeUI(m) {
+  appMode = m; document.body.dataset.mode = m;
+  $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  const sub = $('.brand span'); if (sub) sub.textContent = m === 'logo' ? 'a studio for fictional faction emblems' : 'a studio for fictional identity cards';
+  const f = CARD_P.find(p => p[0] === 'fmt'); if (f) f[3] = fmtOpts();
+  presetThumbs.clear(); if (presetsOpen()) { renderPresetCats(); renderPresetGrid(); }
+  try { localStorage.setItem('idforge.mode', m); } catch (e) { }
+}
+function switchMode(m) {
+  if (m === appMode) return;
+  try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { }
+  let o = null; try { o = JSON.parse(localStorage.getItem(saveKey(m)) || 'null'); } catch (e) { }
+  setModeUI(m); imgs.clear(); setSel([]); side = 'front';
+  if (o && o.P && o.P.card) { P = normalize(o.P); P.card.mode = m; docMeta = { id: o.meta?.id || null, name: o.meta?.name || '', savedAt: 0, savedSnap: o.meta?.savedSnap || null }; }
+  else { applyTemplate(m === 'logo' ? 'lg_lion' : 'aurelian'); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; }
+  refreshAll(); pushHist(); updStatus(); if (view) setTimeout(() => view.camPreset(P.scene.pose === 'stand' || P.scene.pose === 'lanyard' ? 'hero' : 'front'), 60);
+  toast(m === 'logo' ? 'Faction logo maker · your ID card is kept for when you switch back' : 'ID card designer · your emblem is kept for when you switch back');
+}
 function refreshAll() { renderSideSeg(); renderLayers(); renderInspector(); renderCardPane(); renderScenePane(); if (view) { view.setCard(); view.setScene(); view.flipTo(side, true); } invalidate(); flatLayout(); }
 function renderSideSeg() { $$('#sideSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === side)); }
 function setSide(sd, flip) { if (sd === side) { if (flip && view) view.flipTo(sd); return; } side = sd; renderSideSeg(); renderLayers(); ui.drawFlat(); ui.hud(); if (flip && view) view.flipTo(sd); if (presetsOpen()) renderPresetGrid(); }
@@ -3079,7 +3441,8 @@ function savePresetFromSel() {
 /* ---------- presets panel ---------- */
 const presetThumbs = new Map(); let presetCat = 'Security';
 const presetsOpen = () => !$('#leftPresets').hidden;
-function renderPresetCats() { const cats = ['My presets', ...new Set(COMPONENTS.map(c => c.cat))]; $('#presetCats').innerHTML = cats.map(c => `<button class="${c === presetCat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''); }
+const modeOK = c => appMode === 'logo' ? (c.mode === 'logo' || LOGO_SHARED.includes(c.cat)) : c.mode !== 'logo';
+function renderPresetCats() { const have = new Set(COMPONENTS.filter(modeOK).map(c => c.cat)), cats = ['My presets', ...(appMode === 'logo' ? [...LOGO_CATS, ...LOGO_SHARED].filter(c => have.has(c)) : [...have])]; if (!cats.includes(presetCat)) presetCat = cats[1]; $('#presetCats').innerHTML = cats.map(c => `<button class="${c === presetCat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''); }
 async function renderPresetGrid() {
   if (presetCat === 'My presets') {
     const g = $('#presetGrid'); g.innerHTML = '<div class="empty" style="grid-column:1/-1">Loading your presets…</div>';
@@ -3161,14 +3524,14 @@ function applyIdentity(mrzOnly) {
 /* ---------- card + scene panes ---------- */
 const flexOnly = () => sub().flex;
 const CARD_P = [
-  ['§', 'Format'], ['fmt', 'Size preset', 'select', Object.entries(FORMATS).map(([k, v]) => [k, v.label])], ['w', 'Width (mm)', 'num', { min: 20, max: 220, step: .1 }], ['h', 'Height (mm)', 'num', { min: 20, max: 220, step: .1 }], ['r', 'Corner radius', 'range', { min: 0, max: 15, step: .05 }], ['thick', 'Thickness (mm)', 'range', { min: .08, max: 3, step: .01 }], ['slot', 'Punch', 'select', [['none', 'None'], ['slot', 'Lanyard slot'], ['hole', 'Round hole']]],
-  ['§', 'Material'], ['sub', 'Substrate', 'select', Object.entries(SUBS).map(([k, v]) => [k, v.label])], ['tintOn', 'Custom tint', 'check', null, () => !sub().clear || sub().tintable], ['tint', 'Tint colour', 'color', null, c => c.tintOn], ['edgeFin', 'Card edge', 'select', [['core', 'Core material'], ['gold', 'Gilded gold'], ['silver', 'Silver leaf'], ['black', 'Black painted'], ['glow', 'Neon glow']], () => !flexOnly()], ['edgeOn', 'Coloured core', 'check', null, c => !flexOnly() && c.edgeFin === 'core'], ['edge', 'Core colour', 'color', null, c => c.edgeOn && !flexOnly() && c.edgeFin === 'core'], ['ink', 'Ink finish', 'select', [['matte', 'Matte'], ['satin', 'Satin'], ['gloss', 'Gloss']]], ['lam', 'Overlay', 'select', [['none', 'None'], ['gloss', 'Gloss laminate'], ['matte', 'Matte laminate']]],
+  ['§', 'Format'], ['fmt', 'Size preset', 'select', fmtOpts()], ['shape', 'Outline', 'select', CARD_SHAPES], ['w', 'Width (mm)', 'num', { min: 20, max: 220, step: .1 }], ['h', 'Height (mm)', 'num', { min: 20, max: 220, step: .1 }], ['r', 'Corner radius', 'range', { min: 0, max: 15, step: .05 }], ['thick', 'Thickness (mm)', 'range', { min: .08, max: 8, step: .01 }], ['slot', 'Punch', 'select', [['none', 'None'], ['slot', 'Lanyard slot'], ['hole', 'Round hole'], ['slot2', 'Slot + corner holes'], ['corners', 'Two corner holes']]],
+  ['§', 'Material'], ['sub', 'Substrate', 'select', Object.entries(SUBS).map(([k, v]) => [k, v.label])], ['glowInt', 'Glow strength', 'range', { min: 0, max: 3, step: .05 }, C => !!SUBS[C.sub]?.glow], ['tintOn', 'Custom tint', 'check', null, () => !sub().clear || sub().tintable], ['tint', 'Tint colour', 'color', null, c => c.tintOn], ['edgeFin', 'Card edge', 'select', [['core', 'Core material'], ['gold', 'Gilded gold'], ['silver', 'Silver leaf'], ['black', 'Black painted'], ['glow', 'Neon glow']], () => !flexOnly()], ['edgeOn', 'Coloured core', 'check', null, c => !flexOnly() && c.edgeFin === 'core'], ['edge', 'Core colour', 'color', null, c => c.edgeOn && !flexOnly() && c.edgeFin === 'core'], ['ink', 'Ink finish', 'select', [['matte', 'Matte'], ['satin', 'Satin'], ['gloss', 'Gloss']]], ['lam', 'Overlay', 'select', [['none', 'None'], ['gloss', 'Gloss laminate'], ['matte', 'Matte laminate']]],
   ['§', 'Security layers'], ['holoLam', 'Holo laminate', 'select', [['none', 'None'], ['stars', 'Star field'], ['waves', 'Waves'], ['rings', 'Rings'], ['hex', 'Hex cells'], ['sunburst', 'Sunburst'], ['guilloche', 'Guilloche'], ['diamond', 'Diamond grid']]], ['holoLamInt', 'Laminate strength', 'range', { min: 0, max: 1, step: .01 }, c => c.holoLam !== 'none'], ['holoLamBack', 'Laminate the back too', 'check', null, c => c.holoLam !== 'none'], ['uvFibers', 'UV fibres', 'range', { min: 0, max: 400, step: 5 }], ['fluor', 'Optical brighteners', 'select', [['auto', 'Substrate default'], ['on', 'Glows under UV'], ['off', 'UV-dull']]],
   ['§', 'Wear and age'], ['age', 'Age / yellowing', 'range', { min: 0, max: 1, step: .01 }], ['stains', 'Stains', 'range', { min: 0, max: 1, step: .01 }], ['wear', 'Edge wear', 'range', { min: 0, max: 1, step: .01 }], ['fade', 'Ink fade', 'range', { min: 0, max: 1, step: .01 }], ['creases', 'Creases', 'range', { min: 0, max: 1, step: .01 }], ['foldV', 'Centre fold', 'range', { min: 0, max: 1, step: .01 }], ['foldH', 'Cross fold', 'range', { min: 0, max: 1, step: .01 }],
   ['§', 'Paper flex', null, null, flexOnly], ['curl', 'Curl', 'range', { min: -1, max: 1, step: .01 }, flexOnly], ['crumple', 'Crumple', 'range', { min: 0, max: 1, step: .01 }, flexOnly],
   ['§', 'Output'], ['res', 'Texture width', 'select', [[1024, '1K · quick'], [2048, '2K · default'], [4096, '4K · detailed'], [5120, '5K · absurd']]], ['relief', 'Relief depth', 'range', { min: 0, max: 6, step: .05 }], ['seed', 'Wear seed', 'range', { min: 1, max: 99, step: 1 }]
 ];
-const CARD_REFORM = new Set(['fmt', 'sub', 'tintOn', 'edgeOn', 'holoLam', 'edgeFin']);
+const CARD_REFORM = new Set(['fmt', 'shape', 'sub', 'tintOn', 'edgeOn', 'holoLam', 'edgeFin']);
 let rcBase = null; const rc = { h: 0, s: 1, l: 0 };
 function recolorApply(live) {
   if (!rcBase) { rcBase = new Map(); for (const sd of ['front', 'back']) for (const e of P[sd]) { const o = {}; for (const k of COLOR_KEYS) if (typeof e[k] === 'string' && e[k][0] === '#') o[k] = e[k]; rcBase.set(e.id, o); } }
@@ -3181,11 +3544,11 @@ function renderCardPane() {
   host.appendChild(top); $('#cIdent').onclick = () => applyIdentity(false); $('#cMrz').onclick = () => applyIdentity(true);
   buildForm(host, P.card, CARD_P, (k, v, f) => {
     const C = P.card, S0 = sub(); const ow = C.w, oh = C.h; C[k] = v;
-    if (k === 'fmt' && FORMATS[v] && FORMATS[v].w) { const fm = FORMATS[v]; C.w = fm.w; C.h = fm.h; C.r = fm.r; rescale(ow, oh); }
+    if (k === 'fmt' && FORMATS[v] && FORMATS[v].w) { const fm = FORMATS[v]; C.w = fm.w; C.h = fm.h; C.r = fm.r; C.shape = fm.shape || 'rect'; if (fm.thick) C.thick = fm.thick; rescale(ow, oh); }
     if ((k === 'w' || k === 'h') && f) { C.fmt = 'custom'; rescale(ow, oh); }
     if (k === 'sub') { const S = SUBS[v]; C.thick = S.thick; if (!C.tintOn) C.tint = S.clear ? (S.atten || '#ffffff') : S.color; if (S.flex !== S0.flex && !S.flex) { C.curl = 0; C.crumple = 0; } }
     if (view) view.setCard(); invalidate(['front', 'back'], !f);
-    if (f) { commit(); if (CARD_REFORM.has(k)) renderCardPane(); if (k === 'fmt' || k === 'w' || k === 'h') { flatLayout(); renderInspector(); presetThumbs.clear(); } ui.hud(); }
+    if (f) { commit(); if (CARD_REFORM.has(k)) renderCardPane(); if (k === 'fmt' || k === 'w' || k === 'h' || k === 'shape') { flatLayout(); renderInspector(); presetThumbs.clear(); } ui.hud(); }
   });
   const rcw = document.createElement('div'); rcw.innerHTML = `<div class="sec">Recolour every ink</div><div class="chips" id="palChips">${PALETTES.map(([n], i) => `<button data-p="${i}">${esc(n)}</button>`).join('')}</div>`; host.appendChild(rcw);
   rcw.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const [, h, s, l] = PALETTES[+b.dataset.p]; rc.h = h; rc.s = s; rc.l = l; recolorApply(false); renderRcSliders(); });
@@ -3199,7 +3562,7 @@ const ENV_OPTS = [['softbox', 'Softbox studio'], ['white', 'Catalogue white'], [
 const BD_OPTS = [['slate', 'Slate'], ['walnut', 'Walnut desk'], ['marble', 'White marble'], ['concrete', 'Concrete'], ['velvet', 'Velvet'], ['leather', 'Leather blotter'], ['felt', 'Card-table felt'], ['cork', 'Cork board'], ['mat', 'Cutting mat'], ['steel', 'Steel bench'], ['linen', 'Linen'], ['paper', 'Seamless paper'], ['blackglass', 'Black glass'], ['void', 'Void']];
 const SCENE_P = [
   ['§', 'Light'], ['env', 'Studio', 'select', ENV_OPTS], ['envInt', 'Ambient', 'range', { min: 0, max: 3, step: .01 }], ['keyInt', 'Key light', 'range', { min: 0, max: 3, step: .01 }], ['azim', 'Light direction', 'range', { min: -180, max: 180, step: 1 }], ['elev', 'Light height', 'range', { min: 4, max: 89, step: 1 }], ['refl', 'Reflections / glare', 'range', { min: 0, max: 1.5, step: .01 }], ['exposure', 'Exposure', 'range', { min: .2, max: 3, step: .01 }], ['tone', 'Tone mapping', 'select', [['agx', 'AgX (filmic)'], ['aces', 'ACES'], ['neutral', 'Neutral'], ['none', 'Linear']]],
-  ['§', 'Set'], ['backdrop', 'Surface', 'select', BD_OPTS], ['pose', 'Card pose', 'select', [['hover', 'Floating'], ['desk', 'Lying on the surface'], ['stand', 'Standing up'], ['lanyard', 'On a lanyard']]], ['float', 'Gentle float', 'check', null, s => s.pose === 'hover'], ['lanyardColor', 'Strap colour', 'color', null, s => s.pose === 'lanyard'], ['lanyardText', 'Strap text', 'text', null, s => s.pose === 'lanyard'], ['dust', 'Dust in the light', 'check'],
+  ['§', 'Set'], ['backdrop', 'Surface', 'select', BD_OPTS], ['pose', 'Card pose', 'select', [['hover', 'Floating'], ['desk', 'Lying on the surface'], ['stand', 'Standing up'], ['lanyard', 'On a lanyard']]], ['float', 'Gentle float', 'check', null, s => s.pose === 'hover'], ['lanyardStyle', 'Lanyard', 'select', [['strap', 'Printed strap'], ['clip', 'Cord & badge clip'], ['holes', 'Cord through corner holes']], s => s.pose === 'lanyard'], ['lanyardColor', 'Lanyard colour', 'color', null, s => s.pose === 'lanyard'], ['lanyardText', 'Strap text', 'text', null, s => s.pose === 'lanyard' && (s.lanyardStyle || 'strap') === 'strap'], ['dust', 'Dust in the light', 'check'],
   ['§', 'Lens'], ['bloom', 'Bloom', 'range', { min: 0, max: 2, step: .01 }], ['dof', 'Depth of field', 'range', { min: 0, max: 1, step: .01 }], ['vignette', 'Vignette', 'range', { min: 0, max: 1, step: .01 }], ['grain', 'Film grain', 'range', { min: 0, max: 1, step: .01 }], ['ca', 'Chromatic fringe', 'range', { min: 0, max: 1, step: .01 }], ['quality', 'Render quality', 'select', [['draft', 'Draft · fastest'], ['high', 'High'], ['ultra', 'Ultra · retina']]]
 ];
 function renderScenePane() {
@@ -3437,6 +3800,7 @@ function init() {
   };
   $('#presetGrid').addEventListener('change', e => { if (e.target.id === 'layRep') layReplace = e.target.checked; });
   $('#presetGrid').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-u]')) { e.preventDefault(); e.target.click(); } });
+  $$('#modeSeg button').forEach(b => b.onclick = () => switchMode(b.dataset.m));
   $('#newBtn').onclick = openGallery; $('#libBtn').onclick = openLibrary; $('#saveBtn').onclick = () => saveDesign(false); $('#status').onclick = openLibrary; $('#helpBtn').onclick = openHelp;
   $('#undo').onclick = undo; $('#redo').onclick = redo;
   $('#viewSeg').onclick = e => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); };
@@ -3488,9 +3852,9 @@ function init() {
     if (e.key === '[' && el) return reorder(el, -1);
     if (e.key.startsWith('Arrow') && selIds.length) { e.preventDefault(); const st = e.shiftKey ? 2 : .25; for (const s of selEls()) { if (s.locked) continue; if (e.key === 'ArrowLeft') s.x -= st; if (e.key === 'ArrowRight') s.x += st; if (e.key === 'ArrowUp') s.y -= st; if (e.key === 'ArrowDown') s.y += st; } liveEdit(); commit(500); }
   });
-  window.addEventListener('beforeunload', () => { try { localStorage.setItem('idforge.v2', JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { } });
+  window.addEventListener('beforeunload', () => { try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { } });
   bindLayers(); bindFlat();
-  Lib.localTs = loadSaved(); if (!Lib.localTs) applyTemplate('aurelian');
+  Lib.localTs = loadSaved(); if (!Lib.localTs) applyTemplate(appMode === 'logo' ? 'lg_lion' : 'aurelian'); setModeUI((P.card && P.card.mode) || appMode);
   hist.stack = [snapState()]; hist.i = 0; updUndo();
   refreshAll(); updStatus();
   new ResizeObserver(() => flatLayout()).observe(stage);
@@ -3635,10 +3999,13 @@ void main(){
   let W = 85.6, H = 53.98, TH = .76, flexMode = false, geoSig = '', body = null, flexF = null, flexB = null, holoF = null, holoB = null, flexMinZ = 0, exp = null;
   function cardShape(C, inset) {
     const w = C.w, h = C.h, r = Math.max(.01, Math.min(C.r, w / 2, h / 2) - inset), x0 = -w / 2 + inset, y0 = -h / 2 + inset, x1 = w / 2 - inset, y1 = h / 2 - inset, s = new THREE.Shape();
-    s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
-    s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false);
+    const pts = C.shape && C.shape !== 'rect' ? F.cardOutline(C.shape, w, h) : null;
+    if (pts) { const kx = Math.max(.1, 1 - 2 * inset / w), ky = Math.max(.1, 1 - 2 * inset / h); pts.forEach(([px, py], i) => { const X = (px - w / 2) * kx, Y = (h / 2 - py) * ky; i ? s.lineTo(X, Y) : s.moveTo(X, Y); }); s.closePath(); }
+    else { s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+    s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false); }
     const SL = F.SLOT;
-    if (C.slot === 'slot') { const sw = SL.slot.w + inset * 2, sh = SL.slot.h + inset * 2, cy = h / 2 - SL.slot.cy, rr = sh / 2, p = new THREE.Path(); p.moveTo(-sw / 2 + rr, cy - sh / 2); p.lineTo(sw / 2 - rr, cy - sh / 2); p.absarc(sw / 2 - rr, cy, rr, -Math.PI / 2, Math.PI / 2, false); p.lineTo(-sw / 2 + rr, cy + sh / 2); p.absarc(-sw / 2 + rr, cy, rr, Math.PI / 2, Math.PI * 1.5, false); s.holes.push(p); }
+    if (C.slot === 'slot2' || C.slot === 'corners') for (const sx of [-1, 1]) { const p = new THREE.Path(); p.absarc(sx * (w / 2 - SL.corner.dx), h / 2 - SL.corner.cy, SL.corner.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
+    if (C.slot === 'slot' || C.slot === 'slot2') { const sw = SL.slot.w + inset * 2, sh = SL.slot.h + inset * 2, cy = h / 2 - SL.slot.cy, rr = sh / 2, p = new THREE.Path(); p.moveTo(-sw / 2 + rr, cy - sh / 2); p.lineTo(sw / 2 - rr, cy - sh / 2); p.absarc(sw / 2 - rr, cy, rr, -Math.PI / 2, Math.PI / 2, false); p.lineTo(-sw / 2 + rr, cy + sh / 2); p.absarc(-sw / 2 + rr, cy, rr, Math.PI / 2, Math.PI * 1.5, false); s.holes.push(p); }
     else if (C.slot === 'hole') { const p = new THREE.Path(); p.absarc(0, h / 2 - SL.hole.cy, SL.hole.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
     return s;
   }
@@ -3711,7 +4078,7 @@ void main(){
     matE.color.set(C.edgeOn && !flexMode ? C.edge : (S.edge || (clear ? '#ffffff' : S.color)));
     matE.roughness = Math.max(.05, S.rough * .8); matE.metalness = S.metal; matE.transmission = C.edgeOn ? 0 : (S.edgeClear ?? S.clear ?? 0); matE.thickness = C.thick * 2; matE.ior = S.ior || 1.5;
     matE.attenuationColor.copy(clear ? atten.clone().multiplyScalar(.85) : new THREE.Color('#dfe8e4')); matE.attenuationDistance = clear ? (S.attenD || 1e6) * .45 : 2.5; matE.clearcoat = clear ? 1 : .3; matE.dispersion = S.disper || 0; matE.iridescence = S.irid || 0;
-    const fin = flexMode ? 'core' : (C.edgeFin || 'core'); matE.emissive.set(0x000000); matE.emissiveIntensity = 0;
+    const fin = flexMode ? 'core' : (C.edgeFin || 'core'); matE.emissive.set(0x000000); matE.emissiveIntensity = 0; glowBase = S.glow ? 1.5 * (C.glowInt ?? 1) : 0; if (S.glow && fin === 'core') { matE.emissive.set(S.glow); matE.emissiveIntensity = 2.2 * (C.glowInt ?? 1); }
     if (fin !== 'core') { matE.transmission = 0; matE.attenuationDistance = 1e6; matE.clearcoat = .5; matE.iridescence = 0; if (fin === 'gold') { matE.color.set('#d9b25a'); matE.metalness = 1; matE.roughness = .22; } else if (fin === 'silver') { matE.color.set('#e4e7eb'); matE.metalness = 1; matE.roughness = .18; } else if (fin === 'black') { matE.color.set('#111214'); matE.metalness = 0; matE.roughness = .35; } else if (fin === 'glow') { matE.color.set('#0a2a30'); matE.metalness = 0; matE.roughness = .3; matE.emissive.set('#3df5ff'); matE.emissiveIntensity = 2.4; } }
     if (F.P.scene.pose === 'lanyard') buildLanyard();
     if (body) body.castShadow = !clear;
@@ -3739,7 +4106,8 @@ void main(){
   }
 
   /* ---------- lanyard ---------- */
-  const lanyardG = new THREE.Group(); orient.add(lanyardG); lanyardG.visible = false; let lanyardSig = '', strapMat = null;
+  const lanyardG = new THREE.Group(); orient.add(lanyardG); lanyardG.visible = false; let lanyardSig = '', strapMat = null, glowBase = 0;
+  const cordMat = new THREE.MeshPhysicalMaterial({ color: 0x111114, roughness: .55, sheen: .5 }), clipPlastic = new THREE.MeshPhysicalMaterial({ color: 0x2a2c30, roughness: .35, clearcoat: .6 });
   const metalMat = new THREE.MeshPhysicalMaterial({ color: 0xdfe3e8, metalness: 1, roughness: .22, clearcoat: .4 });
   function strapTexture(col, text) {
     const c = document.createElement('canvas'); c.width = 128; c.height = 1024; const x = c.getContext('2d'), hsl = {}; new THREE.Color(col).getHSL(hsl);
@@ -3749,10 +4117,26 @@ void main(){
     const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = maxAniso; return tx;
   }
   function buildLanyard() {
-    const C = F.P.card, s = F.P.scene, sig = [C.w, C.h, C.slot, s.lanyardColor, s.lanyardText].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
+    const C = F.P.card, s = F.P.scene, sig = [C.w, C.h, C.slot, C.shape, s.lanyardColor, s.lanyardText, s.lanyardStyle].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
     while (lanyardG.children.length) { const o = lanyardG.children.pop(); if (o.geometry) o.geometry.dispose(); }
     if (strapMat) { if (strapMat.map) strapMat.map.dispose(); strapMat.dispose(); }
-    const SL = F.SLOT, topY = C.slot === 'slot' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5;
+    const SL = F.SLOT, topY = C.slot === 'slot' || C.slot === 'slot2' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5, style = s.lanyardStyle || 'strap';
+    if (style !== 'strap') {   // thin cord: through a clip at the slot, or looped through the two corner holes
+      cordMat.color.set(s.lanyardColor || '#111114');
+      const tube = (pts, r = .75) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 90, r, 10, false), cordMat); lanyardG.add(m); };
+      if (style === 'holes') {
+        const hy = C.h / 2 - SL.corner.cy, hx = C.w / 2 - SL.corner.dx;
+        for (const sx of [-1, 1]) { const x = sx * hx; tube([[x - sx * 1.2, hy - .2, 1.2], [x, hy - SL.corner.r - .4, 0], [x + sx * .8, hy, -1.4], [x + sx * 2, hy + 8, -2.4], [x * .7, hy + 60, -7], [sx * 5, hy + 200, -10], [sx * 2.5, hy + 330, -6]]); }
+      } else {
+        const tab = new THREE.Mesh(new THREE.BoxGeometry(5, 9, .5), clipPlastic); tab.position.set(0, topY + 2.4, 0);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(7.5, 11, 2.2), metalMat); body.position.set(0, topY + 11.5, 0);
+        const jaw = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 2.8), metalMat); jaw.position.set(0, topY + 6.8, 0);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, .45, 12, 32), metalMat); ring.position.set(0, topY + 19, 0);
+        lanyardG.add(tab, body, jaw, ring);
+        for (const sx of [-1, 1]) tube([[0, topY + 20.5, 0], [sx * 1.5, topY + 26, -1], [sx * 5, topY + 70, -6], [sx * 9, topY + 200, -10], [sx * 4, topY + 330, -6]]);
+      }
+      lanyardG.children.forEach(m => { m.castShadow = true; }); return;
+    }
     const tex = strapTexture(s.lanyardColor || '#1f2a44', s.lanyardText), L = 340, wS = 14; tex.repeat.set(1, L / (wS * 8));
     strapMat = new THREE.MeshPhysicalMaterial({ map: tex, roughness: .78, sheen: .7, sheenColor: new THREE.Color(s.lanyardColor || '#1f2a44').offsetHSL(0, 0, .25), side: THREE.DoubleSide });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(4.4, .55, 14, 48), metalMat); ring.position.set(0, topY + 3.4, 0); ring.rotation.y = Math.PI / 2;
@@ -3916,7 +4300,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     uvFlood.target.position.copy(center); uvFlood.intensity = uvT * (torchOn ? .35 : 2.2);
     torchU.uTorchOn.value = torchOn ? uvT : 0; torch.intensity = torchOn ? uvT * 7 : 0;
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
-    matF.emissiveIntensity = matB.emissiveIntensity = uvT * 2.6;
+    matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? glowBase : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? glowBase : 0);
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
     bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;

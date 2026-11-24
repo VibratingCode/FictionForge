@@ -1,0 +1,110 @@
+/* ================= faction-logo presets, emblem templates and acrylic badges ================= */
+const LOGO_CATS = [...ICON_CATS.map(c => 'Icons · ' + c), 'Emblems', 'Emblem parts', 'Sigils'];
+const LOGO_SHARED = ['Ribbons & insignia', 'Seals & stamps', 'Genre stamps', 'Holograms', 'Decoration', 'Text styles'];
+(() => {
+  const add = (cat, name, make) => COMPONENTS.push({ cat, name, mode: 'logo', make });
+  /* every icon as a drop-in */
+  for (const [id, ic] of Object.entries(ICONS)) add('Icons · ' + ic.cat, ic.label, C => { const s = Math.min(C.w, C.h) * .56; return [{ type: 'glyph', name: ic.label, x: C.w / 2, y: C.h / 2, w: s, h: s, icon: id, color: '#1b1d22' }]; });
+
+  const back = (kind, cx, cy, s, fill, fill2, rim) => {
+    const base = { name: 'Backing', x: cx, y: cy, w: s, h: s, fill, fill2: fill2 || fill, grad: !!fill2, angle: 90, ...(rim ? { stroke: rim, strokeW: s * .03 } : {}) };
+    if (kind === 'circle') return { type: 'ellipse', ...base };
+    if (kind === 'shield') return { type: 'shape', ...base, kind: 'shield', h: s * 1.12 };
+    if (kind === 'hex') return { type: 'shape', ...base, kind: 'polygon', sides: 6 };
+    if (kind === 'oct') return { type: 'shape', ...base, kind: 'polygon', sides: 8 };
+    return { type: 'shape', ...base, kind: 'diamond', h: s * 1.15 };
+  };
+  /* emblem parts */
+  const P = 'Emblem parts', S = C => Math.min(C.w, C.h);
+  [['Round backing', 'circle', '#1d3f6e', '#2f6fb0'], ['Shield backing', 'shield', '#7a1c24', '#b02a36'], ['Hex backing', 'hex', '#1b1d22', '#3a3f48'], ['Octagon backing', 'oct', '#2f4a2a', '#4f7a44'], ['Diamond backing', 'diamond', '#3a2a5a', '#6a4aa0']].forEach(([n, k, a, b]) => add(P, n, C => [back(k, C.w / 2, C.h / 2, S(C) * .84, a, b, '#d6b25e')]));
+  add(P, 'Double ring', C => [{ type: 'ellipse', name: 'Outer ring', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, fillOn: false, stroke: '#1b1d22', strokeW: S(C) * .025 }, { type: 'ellipse', name: 'Inner ring', x: C.w / 2, y: C.h / 2, w: S(C) * .78, h: S(C) * .78, fillOn: false, stroke: '#1b1d22', strokeW: S(C) * .01 }]);
+  add(P, 'Studded ring', C => { const s = S(C), o = [{ type: 'ellipse', name: 'Ring', x: C.w / 2, y: C.h / 2, w: s * .88, h: s * .88, fillOn: false, stroke: '#55585e', strokeW: s * .05 }]; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; o.push({ type: 'ellipse', name: 'Stud ' + (i + 1), x: C.w / 2 + Math.cos(a) * s * .44, y: C.h / 2 + Math.sin(a) * s * .44, w: s * .035, h: s * .035, fill: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }); } return o; });
+  add(P, 'Rope ring', C => [{ type: 'ellipse', name: 'Rope ring', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, fillOn: false, stroke: '#b8892b', strokeW: S(C) * .03, dash: S(C) * .02 }]);
+  add(P, 'Laurel wreath', C => [{ type: 'seal', name: 'Laurel', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, style: 'laurel', text: '', color: '#b8892b', finish: 'foil', foil: '#d6b25e' }]);
+  add(P, 'Sunburst rays', C => [{ type: 'shape', name: 'Rays', x: C.w / 2, y: C.h / 2, w: S(C) * .96, h: S(C) * .96, kind: 'burst', points: 28, inner: .62, fill: '#d6b25e', opacity: .85 }]);
+  add(P, 'Wings', C => [{ type: 'glyph', name: 'Wings', x: C.w / 2, y: C.h / 2, w: S(C) * .9, h: S(C) * .9, icon: 'wings', color: '#c8ccd3', finish: 'foil', foil: '#c8ccd3' }]);
+  add(P, 'Crossed swords behind', C => [{ type: 'glyph', name: 'Crossed swords', x: C.w / 2, y: C.h / 2, w: S(C) * .86, h: S(C) * .86, icon: 'swords', color: '#8a8f98', finish: 'foil', foil: '#c8ccd3' }]);
+  add(P, 'Arc of stars', C => { const s = S(C), o = []; for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * .32; o.push({ type: 'shape', name: 'Star ' + (i + 1), x: C.w / 2 + Math.cos(a) * s * .36, y: C.h / 2 + Math.sin(a) * s * .36, w: s * .07, h: s * .07, kind: 'star', points: 5, inner: .42, fill: '#d6b25e', finish: 'foil', foil: '#d6b25e' }); } return o; });
+  add(P, 'Motto ribbon', C => [{ type: 'shape', name: 'Ribbon', x: C.w / 2, y: C.h * .82, w: S(C) * .86, h: S(C) * .14, kind: 'ribbon', fill: '#7a1c24' }, { type: 'text', name: 'Motto', x: C.w / 2, y: C.h * .815, w: S(C) * .56, h: S(C) * .07, text: 'FORTIS ET FIDELIS', font: 'Cinzel', weight: 700, size: S(C) * .045, align: 'center', color: '#f3efe4', spacing: .12 }]);
+  add(P, 'Name arc · top', C => [{ type: 'text', name: 'Faction name', x: C.w / 2, y: C.h * .14, w: S(C) * .8, h: S(C) * .12, text: 'ORDER OF THE EMBER', font: 'Cinzel', weight: 700, size: S(C) * .06, align: 'center', color: '#1b1d22', arc: 70, spacing: .08 }]);
+  add(P, 'Chevron band', C => [{ type: 'shape', name: 'Chevron', x: C.w / 2, y: C.h * .62, w: S(C) * .7, h: S(C) * .26, kind: 'chevron', fill: '#d6b25e', rot: 180 }]);
+
+  /* complete emblems */
+  const EMB = 'Emblems';
+  const emblem = (name, o) => add(EMB, name, C => {
+    const s = S(C), cx = C.w / 2, cy = C.h / 2 - (o.motto ? s * .05 : 0), out = [];
+    if (o.rays) out.push({ type: 'shape', name: 'Rays', x: cx, y: cy, w: s * .98, h: s * .98, kind: 'burst', points: 28, inner: .66, fill: o.rays });
+    if (o.wings) out.push({ type: 'glyph', name: 'Wings', x: cx, y: cy + s * .02, w: s * .98, h: s * .98, icon: 'wings', color: o.wings, ...(o.wingFoil ? { finish: 'foil', foil: o.wingFoil } : {}) });
+    if (o.back) out.push(back(o.back, cx, cy, s * (o.backS || (o.name && (o.back === 'shield' || o.back === 'diamond') ? .6 : .72)), o.fill, o.fill2, o.rim));
+    if (o.laurel) out.push({ type: 'seal', name: 'Laurel', x: cx, y: cy, w: s * (o.name ? .74 : .86), h: s * (o.name ? .74 : .86), style: 'laurel', text: '', color: o.laurel, finish: 'foil', foil: o.laurel });
+    if (o.ring) out.push({ type: 'ellipse', name: 'Ring', x: cx, y: cy, w: s * .62, h: s * .62, fillOn: false, stroke: o.ring, strokeW: s * .018 });
+    if (o.behind) out.push({ type: 'glyph', name: 'Behind', x: cx, y: cy, w: s * .7, h: s * .7, icon: o.behind, color: o.behindC || '#8a8f98', opacity: .9 });
+    out.push({ type: 'glyph', name: ICONS[o.icon].label, x: cx, y: cy, w: s * (o.iconS || .44), h: s * (o.iconS || .44), icon: o.icon, color: o.color, ...(o.outline ? { outline: o.outline, outlineW: s * .012 } : {}), ...(o.foil ? { finish: 'foil', foil: o.foil } : {}) });
+    if (o.name) out.push({ type: 'text', name: 'Faction name', x: cx, y: cy - s * .42, w: s * .86, h: s * .12, text: o.name, font: o.font || 'Cinzel', weight: 700, size: s * .058, align: 'center', color: o.nameC || '#1b1d22', arc: 64, spacing: .08 });
+    if (o.motto) out.push({ type: 'shape', name: 'Ribbon', x: cx, y: cy + s * .44, w: s * .84, h: s * .13, kind: 'ribbon', fill: o.ribbon || '#7a1c24' }, { type: 'text', name: 'Motto', x: cx, y: cy + s * .435, w: s * .54, h: s * .065, text: o.motto, font: o.font || 'Cinzel', weight: 700, size: s * .042, align: 'center', color: '#f3efe4', spacing: .1 });
+    return out;
+  });
+  [
+    ['Iron Wolves', { icon: 'wolf', back: 'shield', fill: '#2a2d33', fill2: '#4a4f58', rim: '#c8ccd3', color: '#e9edf2', name: 'IRON WOLVES', motto: 'NO RETREAT', ribbon: '#2a2d33' }],
+    ['Solar Concord', { icon: 'sun', rays: '#e8b84a', back: 'circle', fill: '#f6efd8', rim: '#b8892b', color: '#b8892b', name: 'SOLAR CONCORD', nameC: '#7a5a1c', iconS: .4 }],
+    ['Crimson Wyrm', { icon: 'dragon', back: 'circle', fill: '#5a1018', fill2: '#9a1b2b', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', motto: 'FIRE ABIDES', ribbon: '#1b1d22' }],
+    ['Silver Stag Order', { icon: 'stag', laurel: '#c8ccd3', color: '#2f4a2a', name: 'ORDER OF THE SILVER STAG', iconS: .42 }],
+    ['Void Syndicate', { icon: 'eye', back: 'hex', fill: '#0c0d12', fill2: '#24203a', rim: '#9a5af0', color: '#c79aff', name: 'VOID SYNDICATE', nameC: '#6a3ab8', font: 'Rajdhani' }],
+    ['Storm Riders', { icon: 'bolt', back: 'diamond', fill: '#16304f', fill2: '#2f6fb0', rim: '#ffd23d', color: '#ffd23d', motto: 'RIDE THE THUNDER', ribbon: '#16304f', font: 'Oswald' }],
+    ['Deepwater Compact', { icon: 'trident', back: 'circle', fill: '#0a3a5a', fill2: '#1f6f9a', rim: '#9fd8e8', color: '#e8f6fa', name: 'DEEPWATER COMPACT', nameC: '#0a3a5a' }],
+    ['Gilded Lion', { icon: 'lion', back: 'shield', fill: '#7a1c24', fill2: '#a3243a', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', motto: 'COR LEONIS' }],
+    ['Raven Court', { icon: 'raven', back: 'oct', fill: '#15161a', rim: '#8a8f98', color: '#e6e8eb', name: 'THE RAVEN COURT', nameC: '#2a2d33' }],
+    ['Rustwater Guild', { icon: 'anvil', back: 'circle', fill: '#6a3a1a', fill2: '#9a5a2a', rim: '#c47a4a', color: '#f2e2c8', behind: 'cogs', behindC: '#c47a4a', name: 'RUSTWATER GUILD', nameC: '#6a3a1a', font: 'Oswald', iconS: .32 }],
+    ['Starfall Navy', { icon: 'rocket', wings: '#c8ccd3', wingFoil: '#c8ccd3', back: 'circle', backS: .5, fill: '#16203a', rim: '#c8ccd3', color: '#e8eef6', motto: 'AD ASTRA', ribbon: '#16203a', iconS: .32, font: 'Oswald' }],
+    ['Thornwick Crown', { icon: 'crown', laurel: '#b8892b', color: '#7a1c24', name: 'KINGDOM OF THORNWICK', nameC: '#7a1c24', motto: 'DEO ET REGI', iconS: .36 }],
+    ['Ashen Covenant', { icon: 'skull', back: 'hex', fill: '#2a2a2a', fill2: '#4a4a4a', rim: '#8a8a8a', color: '#d8d4cc', name: 'ASHEN COVENANT', nameC: '#2a2a2a' }],
+    ['Emerald Circle', { icon: 'oak', back: 'circle', fill: '#1f4a2a', fill2: '#2f6b3a', rim: '#9fc88a', color: '#e8f2dc', ring: '#9fc88a', name: 'THE EMERALD CIRCLE', nameC: '#1f4a2a' }],
+    ['Black Spiders', { icon: 'spider', back: 'diamond', fill: '#1b1d22', rim: '#9a1b2b', color: '#9a1b2b', motto: 'PATIENCE · VENOM', ribbon: '#1b1d22' }],
+    ['Neon Ronin', { icon: 'swords', back: 'hex', fill: '#0a0a12', rim: '#ff2d95', color: '#2de2ff', name: 'NEON RONIN', nameC: '#ff2d95', font: 'Rajdhani' }],
+    ['Lunar Sisterhood', { icon: 'triplemoon', back: 'circle', fill: '#1a1a3a', fill2: '#3a3a6a', rim: '#c8ccd3', color: '#e8e8f6', name: 'LUNAR SISTERHOOD', nameC: '#3a3a6a' }],
+    ['Atomic Union', { icon: 'atom', back: 'oct', fill: '#f2b632', rim: '#1b1d22', color: '#1b1d22', name: 'ATOMIC WORKERS UNION', nameC: '#1b1d22', font: 'Oswald' }],
+    ['Free Mariners', { icon: 'anchor', back: 'shield', fill: '#16304f', rim: '#f3efe4', color: '#f3efe4', motto: 'SEMPER LIBER', ribbon: '#9a1b2b' }],
+    ['Watchers of the Gate', { icon: 'eyetri', rays: '#d6b25e', color: '#3a2a10', iconS: .5, name: 'WATCHERS OF THE GATE', nameC: '#3a2a10' }],
+    ['Ember Brotherhood', { icon: 'flame', back: 'diamond', fill: '#3a0a0a', fill2: '#8a1c1c', rim: '#ff8a1f', color: '#ffb02e', motto: 'FROM ASH', ribbon: '#3a0a0a' }],
+    ['Harvest Commonwealth', { icon: 'wheat', laurel: '#b8892b', color: '#7a5a1c', name: 'HARVEST COMMONWEALTH', nameC: '#7a5a1c' }],
+    ['Serpent Cult', { icon: 'serpent', back: 'circle', fill: '#1a2a1a', rim: '#6a9a3a', color: '#9ad84a', ring: '#6a9a3a', name: 'COILED ONES', nameC: '#2a3a1a' }],
+    ['Clockwork League', { icon: 'gear', back: 'circle', fill: '#4a3a20', fill2: '#7a6030', rim: '#d6b25e', color: '#d6b25e', foil: '#d6b25e', name: 'CLOCKWORK LEAGUE', nameC: '#4a3a20' }],
+    ['Night Owls', { icon: 'owl', back: 'oct', fill: '#1a1f3a', rim: '#c9a04e', color: '#e9d6a8', motto: 'WE SEE', ribbon: '#1a1f3a' }],
+    ['Bear Clan', { icon: 'bearpaw', back: 'shield', fill: '#4a2a14', fill2: '#6b3f22', rim: '#e8dcc0', color: '#e8dcc0', name: 'CLAN OF THE BEAR', nameC: '#4a2a14' }],
+    ['Arcane Library', { icon: 'book', back: 'circle', fill: '#2a1a4a', rim: '#d6b25e', color: '#e8dcc0', behind: 'star', behindC: '#5a3a9a', name: 'ARCANE LIBRARY', nameC: '#2a1a4a', iconS: .38 }],
+    ['Highland Watch', { icon: 'mountain', back: 'shield', fill: '#2f4a5a', fill2: '#4f7a8a', rim: '#f3efe4', color: '#f3efe4', motto: 'WE HOLD', ribbon: '#2f4a5a' }],
+    ['Hex Collective', { icon: 'hexcore', back: 'hex', fill: '#0f2a2a', rim: '#3dff8a', color: '#3dff8a', name: 'HEX COLLECTIVE', nameC: '#0f4a3a', font: 'Rajdhani' }],
+    ['Royal Navy of Saltmere', { icon: 'ship', back: 'circle', fill: '#f3efe4', rim: '#16304f', color: '#16304f', ring: '#16304f', name: 'SALTMERE ROYAL NAVY', nameC: '#16304f', iconS: .4 }],
+  ].forEach(([n, o]) => emblem(n, o));
+
+  /* sigils */
+  [['arcane', 6], ['arcane', 8], ['arcane', 5], ['runic', 4], ['runic', 6], ['runic', 3], ['tech', 4], ['tech', 6], ['tech', 8], ['organic', 5], ['organic', 7], ['organic', 3], ['star', 8], ['star', 12], ['star', 6], ['arcane', 12], ['runic', 8], ['tech', 3], ['organic', 9], ['star', 5], ['arcane', 4], ['runic', 5], ['tech', 12], ['organic', 6]].forEach(([st, sym], i) => add('Sigils', `Sigil · ${st} ${sym}-fold #${i + 1}`, C => { const s = Math.min(C.w, C.h) * .7; return [{ type: 'sigil', name: 'Sigil', x: C.w / 2, y: C.h / 2, w: s, h: s, seed: 1000 + i * 137, style: st, sym, detail: 3 + (i % 5), lw: 2.4 + (i % 3) * .8, ring: i % 4 !== 3, color: '#1b1d22' }]; }));
+
+  const order = ['Security', 'Holograms', 'Seals & stamps', 'Office stamps', 'Travel stamps', 'Postal & date', 'Genre stamps', 'Stickers & labels', 'Ribbons & insignia', 'Identity', 'Decoration', 'Text styles', ...LAYOUT_CATS, ...LOGO_CATS];
+  COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
+
+  /* templates: logo mode + acrylic badges */
+  const T = (o) => TEMPLATES.push(o), fm = k => { const f = FORMATS[k]; return { fmt: k, w: f.w, h: f.h, r: f.r, shape: f.shape || 'rect', thick: f.thick }; };
+  const G = (icon, x, y, s, o = {}) => E('glyph', { name: ICONS[icon].label, icon, x, y, w: s, h: s, ...o });
+  const TX = (text, x, y, w, h, o = {}) => E('text', { name: o.name || text, text, x, y, w, h, font: 'Cinzel', weight: 700, size: h * .7, align: 'center', color: '#1b1d22', ...o });
+  const L = (id, name, build) => T({ id, name, mode: 'logo', build });
+  L('lg_lion', 'Gilded Lion · gold medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'gold' }, scene: { env: 'golden', backdrop: 'velvet', pose: 'hover' }, front: [E('ellipse', { name: 'Rim', x: 30, y: 30, w: 54, h: 54, fillOn: false, stroke: '#8a6a2a', strokeW: .6, finish: 'blind', relief: .8 }), G('lion', 30, 30, 30, { color: '#5a4010', finish: 'laser' }), TX('HOUSE OF THE GILDED LION', 30, 9, 48, 6, { arc: 80, color: '#5a4010', finish: 'laser' }), TX('MCMXII', 30, 51, 20, 4, { color: '#5a4010', finish: 'laser' })], back: [G('crown', 30, 26, 20, { color: '#5a4010', finish: 'laser' }), TX('FORTIS · FIDELIS', 30, 42, 36, 4.4, { color: '#5a4010', finish: 'laser' })] }; });
+  L('lg_wolves', 'Iron Wolves · forged iron shield', () => { const c = fm('em_heater'); return { card: { ...c, sub: 'iron', age: .3, wear: .3 }, scene: { env: 'interrogation', backdrop: 'concrete', pose: 'stand' }, front: [G('wolf', 28, 28, 32, { color: '#e9edf2', finish: 'foil', foil: '#dfe3e8' }), TX('IRON WOLVES', 28, 8, 40, 5.4, { color: '#dfe3e8', finish: 'foil', foil: '#dfe3e8', font: 'Oswald' }), TX('NO RETREAT', 28, 50, 30, 4, { color: '#c8ccd3', finish: 'laser', font: 'Oswald' })], back: [] }; });
+  L('lg_rose', 'Order of the Rose · enamel pin', () => { const c = fm('em_french'); return { card: { ...c, sub: 'enamel', tint: '#6a1424', tintOn: true, thick: 2.2, edgeFin: 'gold' }, scene: { env: 'softbox', backdrop: 'linen', pose: 'desk' }, front: [E('shape', { name: 'Inset', x: 28, y: 31, w: 46, h: 54, kind: 'shield', fillOn: false, stroke: '#d6b25e', strokeW: .8, finish: 'foil', foil: '#d6b25e' }), G('rose', 28, 30, 28, { color: '#f2d0d6', outline: '#d6b25e', outlineW: .5 }), TX('ORDER OF THE ROSE', 28, 9, 40, 4.6, { color: '#d6b25e', finish: 'foil', foil: '#d6b25e' })], back: [] }; });
+  L('lg_starfall', 'Starfall Navy · embroidered patch', () => { const c = fm('em_patch'); return { card: { ...c, sub: 'felt', tint: '#16203a', tintOn: true, edgeOn: true, edge: '#c8ccd3' }, scene: { env: 'softbox', backdrop: 'leather', pose: 'desk' }, front: [E('ellipse', { name: 'Stitch ring', x: 38, y: 28, w: 70, h: 50, fillOn: false, stroke: '#c8ccd3', strokeW: .9, dash: 1.2 }), G('wings', 38, 28, 46, { color: '#c8ccd3' }), G('rocket', 38, 27, 20, { color: '#f2b632' }), TX('STARFALL NAVY', 38, 9, 44, 5, { color: '#e8eef6', font: 'Oswald' }), TX('AD ASTRA', 38, 47, 24, 4, { color: '#f2b632', font: 'Oswald' })], back: [] }; });
+  L('lg_ashen', 'Ashen Covenant · carved slate', () => { const c = fm('em_oct'); return { card: { ...c, sub: 'stone' }, scene: { env: 'candle', backdrop: 'slate', pose: 'stand' }, front: [G('skull', 30, 29, 30, { color: '#2a2c30', finish: 'laser' }), TX('ASHEN COVENANT', 30, 8, 44, 5, { color: '#1b1d22', finish: 'laser' }), TX('MEMENTO', 30, 52, 24, 4, { color: '#1b1d22', finish: 'laser' })], back: [] }; });
+  L('lg_solar', 'Solar Concord · brass coin', () => { const c = fm('em_coin'); return { card: { ...c, sub: 'brass' }, scene: { env: 'golden', backdrop: 'walnut', pose: 'desk' }, front: [G('sun', 20, 20, 24, { color: '#5a4010', finish: 'laser' }), TX('SOLAR CONCORD', 20, 5, 32, 3.6, { arc: 90, color: '#5a4010', finish: 'laser' })], back: [G('sunrise', 20, 18, 20, { color: '#5a4010', finish: 'laser' }), TX('ONE LIGHT', 20, 32, 20, 3, { color: '#5a4010', finish: 'laser' })] }; });
+  L('lg_rust', 'Rustwater Guild · copper cog', () => { const c = fm('em_cog'); return { card: { ...c, sub: 'copper', age: .4, wear: .35 }, scene: { env: 'sunset', backdrop: 'steel', pose: 'hover' }, front: [E('ellipse', { name: 'Ring', x: 32, y: 32, w: 44, h: 44, fillOn: false, stroke: '#4a2a14', strokeW: .8, finish: 'laser' }), G('anvil', 32, 32, 26, { color: '#3a1d0d', finish: 'laser' }), TX('RUSTWATER GUILD', 32, 14, 34, 4, { arc: 70, color: '#3a1d0d', finish: 'laser', font: 'Oswald' })], back: [] }; });
+  L('lg_wyrm', 'Wyrmguard · hanging banner', () => { const c = fm('em_banner'); return { card: { ...c, sub: 'felt', tint: '#5a1018', tintOn: true }, scene: { env: 'candle', backdrop: 'velvet', pose: 'stand' }, front: [E('rect', { name: 'Border', x: 25, y: 34, w: 44, h: 60, fillOn: false, stroke: '#d6b25e', strokeW: .8 }), G('dragon', 25, 34, 34, { color: '#d6b25e' }), TX('WYRMGUARD', 25, 9, 40, 5, { color: '#d6b25e' })], back: [] }; });
+  L('lg_ronin', 'Neon Ronin · carbon diamond', () => { const c = fm('em_diamond'); return { card: { ...c, sub: 'carbon' }, scene: { env: 'neon', backdrop: 'blackglass', pose: 'hover', bloom: .6 }, front: [G('swords', 28, 36, 30, { color: '#2de2ff', finish: 'holo' }), TX('NEON RONIN', 28, 58, 26, 4, { color: '#ff2d95', font: 'Rajdhani' })], back: [] }; });
+  L('lg_deep', 'Deepwater Compact · bronze medallion', () => { const c = fm('em_round'); return { card: { ...c, sub: 'bronze', age: .5 }, scene: { env: 'aqua', backdrop: 'slate', pose: 'hover' }, front: [E('ellipse', { name: 'Ring', x: 30, y: 30, w: 52, h: 52, fillOn: false, stroke: '#2a1808', strokeW: .8, finish: 'blind', relief: .8 }), G('trident', 30, 31, 30, { color: '#2a1808', finish: 'laser' }), TX('DEEPWATER COMPACT', 30, 9, 46, 5, { arc: 80, color: '#2a1808', finish: 'laser' })], back: [] }; });
+  L('lg_acrylic', 'Neon sigil · fluorescent acrylic hex', () => { const c = fm('em_hex'); return { card: { ...c, sub: 'acr_pink', glowInt: 1.2 }, scene: { env: 'neon', backdrop: 'walnut', pose: 'desk', bloom: .7 }, front: [E('sigil', { name: 'Sigil', x: 32, y: 27.7, w: 40, h: 40, seed: 4242, style: 'arcane', sym: 6, detail: 6, lw: 3, color: '#ffffff', finish: 'laser' })], back: [] }; });
+  L('lg_blank', 'Blank emblem · round', () => { const c = fm('em_round'); return { card: { ...c, sub: 'enamel' }, scene: { env: 'softbox', backdrop: 'slate', pose: 'hover' }, front: [], back: [] }; });
+  /* the acrylic badges from the reference: engraved text glows, cord through the corner holes or a badge clip */
+  const NB = (id, name, card, scene, front) => T({ id, name, build: () => ({ card: { ...CARD_DEF, ...card }, scene: { ...SCENE_DEF, ...scene }, front, back: [] }) });
+  const LZ = (text, x, y, w, h, o = {}) => E('text', { name: o.name || text, text, x, y, w, h, font: 'Space Grotesk', weight: 700, size: h * .72, align: 'center', color: '#ffffff', finish: 'laser', ...o });
+  NB('acr_portrait', 'Neon acrylic event badge · portrait', { fmt: 'id1p', w: 53.98, h: 85.6, r: 1.4, sub: 'acr_green', thick: 3, slot: 'slot2', glowInt: 1.1 }, { env: 'neon', backdrop: 'walnut', pose: 'lanyard', lanyardStyle: 'holes', lanyardColor: '#111114', bloom: .65, keyInt: .7 },
+    [E('shape', { name: 'Logo hex', x: 27, y: 25, w: 18, h: 18, kind: 'polygon', sides: 6, fillOn: false, stroke: '#ffffff', strokeW: .8, finish: 'laser' }), G('hexcore', 27, 25, 10, { color: '#ffffff', finish: 'laser' }), LZ('MAREN', 27, 43, 44, 6.4, { align: 'left', x: 29 }), LZ('VOSS', 27, 50, 44, 6.4, { align: 'left', x: 29 }), LZ('LANTERN SUMMIT', 31, 60, 36, 3.4, { align: 'left', weight: 600 }), LZ('12–14 MARCH', 31, 64.4, 36, 3.4, { align: 'left', weight: 600 }), LZ('VIP / SPEAKER / GUEST', 29, 75, 40, 3.6, { align: 'left' })]);
+  NB('acr_landscape', 'Neon acrylic event badge · landscape', { fmt: 'custom', w: 90, h: 56, r: 1.4, sub: 'acr_green', thick: 3, slot: 'slot2', glowInt: 1.1 }, { env: 'neon', backdrop: 'walnut', pose: 'lanyard', lanyardStyle: 'clip', lanyardColor: '#111114', bloom: .65, keyInt: .7 },
+    [LZ('ORBITAL', 28, 16, 30, 5, { weight: 300, align: 'left', x: 24 }), LZ('MAREN', 47, 25, 64, 7.4, { align: 'left', x: 45 }), LZ('VOSS', 47, 33, 64, 7.4, { align: 'left', x: 45 }), LZ('ORBITAL DESIGN WEEK · 3 OCT', 47, 41, 64, 3.6, { align: 'left', x: 45, weight: 600 }), LZ('VIP / SPEAKER / GUEST', 47, 46.5, 64, 4, { align: 'left', x: 45 })]);
+})();

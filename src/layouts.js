@@ -514,4 +514,4 @@ function layKit(C, seed) {
   COMPONENTS.sort((a, b) => order.indexOf(a.cat) - order.indexOf(b.cat));
 })();
 
-Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent; Forge.thumbEls = thumbEls;
+Forge.FORMATS = FORMATS; Forge.COMPONENTS = COMPONENTS; Forge.instantiateComponent = instantiateComponent; Forge.thumbEls = thumbEls; Forge.applyTemplate = applyTemplate;

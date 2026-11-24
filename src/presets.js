@@ -497,7 +497,7 @@ function normEl(e) { const t = T[e.type]; if (!t) return null; if (e.type === 'p
 function normalize(o) { return { card: { ...CARD_DEF, ...(o.card || {}) }, scene: { ...SCENE_DEF, ...(o.scene || {}) }, front: (o.front || []).map(normEl).filter(Boolean), back: (o.back || []).map(normEl).filter(Boolean), assets: { ...(o.assets || {}) } }; }
 function applyTemplate(id) {
   const t = TEMPLATES.find(t => t.id === id) || TEMPLATES[0]; const d = t.build();
-  P.card = { ...CARD_DEF, ...d.card }; P.scene = { ...SCENE_DEF, ...d.scene }; P.front = d.front; P.back = d.back;
+  P.card = { ...CARD_DEF, ...d.card }; P.scene = { ...SCENE_DEF, ...d.scene }; P.front = d.front; P.back = d.back; P.card.mode = t.mode || 'card';
   selIds = []; selId = null; side = 'front';
 }
 

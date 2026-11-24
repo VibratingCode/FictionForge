@@ -127,10 +127,13 @@ void main(){
   let W = 85.6, H = 53.98, TH = .76, flexMode = false, geoSig = '', body = null, flexF = null, flexB = null, holoF = null, holoB = null, flexMinZ = 0, exp = null;
   function cardShape(C, inset) {
     const w = C.w, h = C.h, r = Math.max(.01, Math.min(C.r, w / 2, h / 2) - inset), x0 = -w / 2 + inset, y0 = -h / 2 + inset, x1 = w / 2 - inset, y1 = h / 2 - inset, s = new THREE.Shape();
-    s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
-    s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false);
+    const pts = C.shape && C.shape !== 'rect' ? F.cardOutline(C.shape, w, h) : null;
+    if (pts) { const kx = Math.max(.1, 1 - 2 * inset / w), ky = Math.max(.1, 1 - 2 * inset / h); pts.forEach(([px, py], i) => { const X = (px - w / 2) * kx, Y = (h / 2 - py) * ky; i ? s.lineTo(X, Y) : s.moveTo(X, Y); }); s.closePath(); }
+    else { s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+    s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false); }
     const SL = F.SLOT;
-    if (C.slot === 'slot') { const sw = SL.slot.w + inset * 2, sh = SL.slot.h + inset * 2, cy = h / 2 - SL.slot.cy, rr = sh / 2, p = new THREE.Path(); p.moveTo(-sw / 2 + rr, cy - sh / 2); p.lineTo(sw / 2 - rr, cy - sh / 2); p.absarc(sw / 2 - rr, cy, rr, -Math.PI / 2, Math.PI / 2, false); p.lineTo(-sw / 2 + rr, cy + sh / 2); p.absarc(-sw / 2 + rr, cy, rr, Math.PI / 2, Math.PI * 1.5, false); s.holes.push(p); }
+    if (C.slot === 'slot2' || C.slot === 'corners') for (const sx of [-1, 1]) { const p = new THREE.Path(); p.absarc(sx * (w / 2 - SL.corner.dx), h / 2 - SL.corner.cy, SL.corner.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
+    if (C.slot === 'slot' || C.slot === 'slot2') { const sw = SL.slot.w + inset * 2, sh = SL.slot.h + inset * 2, cy = h / 2 - SL.slot.cy, rr = sh / 2, p = new THREE.Path(); p.moveTo(-sw / 2 + rr, cy - sh / 2); p.lineTo(sw / 2 - rr, cy - sh / 2); p.absarc(sw / 2 - rr, cy, rr, -Math.PI / 2, Math.PI / 2, false); p.lineTo(-sw / 2 + rr, cy + sh / 2); p.absarc(-sw / 2 + rr, cy, rr, Math.PI / 2, Math.PI * 1.5, false); s.holes.push(p); }
     else if (C.slot === 'hole') { const p = new THREE.Path(); p.absarc(0, h / 2 - SL.hole.cy, SL.hole.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
     return s;
   }
@@ -203,7 +206,7 @@ void main(){
     matE.color.set(C.edgeOn && !flexMode ? C.edge : (S.edge || (clear ? '#ffffff' : S.color)));
     matE.roughness = Math.max(.05, S.rough * .8); matE.metalness = S.metal; matE.transmission = C.edgeOn ? 0 : (S.edgeClear ?? S.clear ?? 0); matE.thickness = C.thick * 2; matE.ior = S.ior || 1.5;
     matE.attenuationColor.copy(clear ? atten.clone().multiplyScalar(.85) : new THREE.Color('#dfe8e4')); matE.attenuationDistance = clear ? (S.attenD || 1e6) * .45 : 2.5; matE.clearcoat = clear ? 1 : .3; matE.dispersion = S.disper || 0; matE.iridescence = S.irid || 0;
-    const fin = flexMode ? 'core' : (C.edgeFin || 'core'); matE.emissive.set(0x000000); matE.emissiveIntensity = 0;
+    const fin = flexMode ? 'core' : (C.edgeFin || 'core'); matE.emissive.set(0x000000); matE.emissiveIntensity = 0; glowBase = S.glow ? 1.5 * (C.glowInt ?? 1) : 0; if (S.glow && fin === 'core') { matE.emissive.set(S.glow); matE.emissiveIntensity = 2.2 * (C.glowInt ?? 1); }
     if (fin !== 'core') { matE.transmission = 0; matE.attenuationDistance = 1e6; matE.clearcoat = .5; matE.iridescence = 0; if (fin === 'gold') { matE.color.set('#d9b25a'); matE.metalness = 1; matE.roughness = .22; } else if (fin === 'silver') { matE.color.set('#e4e7eb'); matE.metalness = 1; matE.roughness = .18; } else if (fin === 'black') { matE.color.set('#111214'); matE.metalness = 0; matE.roughness = .35; } else if (fin === 'glow') { matE.color.set('#0a2a30'); matE.metalness = 0; matE.roughness = .3; matE.emissive.set('#3df5ff'); matE.emissiveIntensity = 2.4; } }
     if (F.P.scene.pose === 'lanyard') buildLanyard();
     if (body) body.castShadow = !clear;
@@ -231,7 +234,8 @@ void main(){
   }
 
   /* ---------- lanyard ---------- */
-  const lanyardG = new THREE.Group(); orient.add(lanyardG); lanyardG.visible = false; let lanyardSig = '', strapMat = null;
+  const lanyardG = new THREE.Group(); orient.add(lanyardG); lanyardG.visible = false; let lanyardSig = '', strapMat = null, glowBase = 0;
+  const cordMat = new THREE.MeshPhysicalMaterial({ color: 0x111114, roughness: .55, sheen: .5 }), clipPlastic = new THREE.MeshPhysicalMaterial({ color: 0x2a2c30, roughness: .35, clearcoat: .6 });
   const metalMat = new THREE.MeshPhysicalMaterial({ color: 0xdfe3e8, metalness: 1, roughness: .22, clearcoat: .4 });
   function strapTexture(col, text) {
     const c = document.createElement('canvas'); c.width = 128; c.height = 1024; const x = c.getContext('2d'), hsl = {}; new THREE.Color(col).getHSL(hsl);
@@ -241,10 +245,26 @@ void main(){
     const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = maxAniso; return tx;
   }
   function buildLanyard() {
-    const C = F.P.card, s = F.P.scene, sig = [C.w, C.h, C.slot, s.lanyardColor, s.lanyardText].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
+    const C = F.P.card, s = F.P.scene, sig = [C.w, C.h, C.slot, C.shape, s.lanyardColor, s.lanyardText, s.lanyardStyle].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
     while (lanyardG.children.length) { const o = lanyardG.children.pop(); if (o.geometry) o.geometry.dispose(); }
     if (strapMat) { if (strapMat.map) strapMat.map.dispose(); strapMat.dispose(); }
-    const SL = F.SLOT, topY = C.slot === 'slot' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5;
+    const SL = F.SLOT, topY = C.slot === 'slot' || C.slot === 'slot2' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5, style = s.lanyardStyle || 'strap';
+    if (style !== 'strap') {   // thin cord: through a clip at the slot, or looped through the two corner holes
+      cordMat.color.set(s.lanyardColor || '#111114');
+      const tube = (pts, r = .75) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 90, r, 10, false), cordMat); lanyardG.add(m); };
+      if (style === 'holes') {
+        const hy = C.h / 2 - SL.corner.cy, hx = C.w / 2 - SL.corner.dx;
+        for (const sx of [-1, 1]) { const x = sx * hx; tube([[x - sx * 1.2, hy - .2, 1.2], [x, hy - SL.corner.r - .4, 0], [x + sx * .8, hy, -1.4], [x + sx * 2, hy + 8, -2.4], [x * .7, hy + 60, -7], [sx * 5, hy + 200, -10], [sx * 2.5, hy + 330, -6]]); }
+      } else {
+        const tab = new THREE.Mesh(new THREE.BoxGeometry(5, 9, .5), clipPlastic); tab.position.set(0, topY + 2.4, 0);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(7.5, 11, 2.2), metalMat); body.position.set(0, topY + 11.5, 0);
+        const jaw = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 2.8), metalMat); jaw.position.set(0, topY + 6.8, 0);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, .45, 12, 32), metalMat); ring.position.set(0, topY + 19, 0);
+        lanyardG.add(tab, body, jaw, ring);
+        for (const sx of [-1, 1]) tube([[0, topY + 20.5, 0], [sx * 1.5, topY + 26, -1], [sx * 5, topY + 70, -6], [sx * 9, topY + 200, -10], [sx * 4, topY + 330, -6]]);
+      }
+      lanyardG.children.forEach(m => { m.castShadow = true; }); return;
+    }
     const tex = strapTexture(s.lanyardColor || '#1f2a44', s.lanyardText), L = 340, wS = 14; tex.repeat.set(1, L / (wS * 8));
     strapMat = new THREE.MeshPhysicalMaterial({ map: tex, roughness: .78, sheen: .7, sheenColor: new THREE.Color(s.lanyardColor || '#1f2a44').offsetHSL(0, 0, .25), side: THREE.DoubleSide });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(4.4, .55, 14, 48), metalMat); ring.position.set(0, topY + 3.4, 0); ring.rotation.y = Math.PI / 2;
@@ -408,7 +428,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     uvFlood.target.position.copy(center); uvFlood.intensity = uvT * (torchOn ? .35 : 2.2);
     torchU.uTorchOn.value = torchOn ? uvT : 0; torch.intensity = torchOn ? uvT * 7 : 0;
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
-    matF.emissiveIntensity = matB.emissiveIntensity = uvT * 2.6;
+    matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? glowBase : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? glowBase : 0);
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
     bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;

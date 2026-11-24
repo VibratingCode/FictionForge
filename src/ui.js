@@ -29,11 +29,13 @@ function restoreState(s) { const o = JSON.parse(s); P.card = o.card; P.scene = o
 function updUndo() { $('#undo').disabled = hist.i <= 0; $('#redo').disabled = hist.i >= hist.stack.length - 1; }
 let saveT = null, draftT = null;
 function autosave() {
-  clearTimeout(saveT); saveT = setTimeout(() => { const pack = { P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() }; try { localStorage.setItem('idforge.v2', JSON.stringify(pack)); } catch (e) { try { localStorage.setItem('idforge.v2', JSON.stringify({ ...pack, P: { ...P, assets: {} } })); } catch (e2) { } } }, 1000);
+  clearTimeout(saveT); saveT = setTimeout(() => { const pack = { P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() }; try { localStorage.setItem(saveKey(), JSON.stringify(pack)); localStorage.setItem('idforge.mode', appMode); } catch (e) { try { localStorage.setItem('idforge.v2', JSON.stringify({ ...pack, P: { ...P, assets: {} } })); } catch (e2) { } } }, 1000);
   clearTimeout(draftT); draftT = setTimeout(() => Lib.saveDraft(), 4000);
 }
+let appMode = 'card';
+const saveKey = (m = appMode) => m === 'logo' ? 'idforge.logo' : 'idforge.v2';
 function loadSaved() {
-  try { const s = localStorage.getItem('idforge.v2'); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
+  try { appMode = localStorage.getItem('idforge.mode') === 'logo' ? 'logo' : 'card'; const s = localStorage.getItem(saveKey()); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
 }
 
 /* ---------- storage: account library (db + assets) or this browser (IndexedDB) ---------- */
@@ -87,7 +89,7 @@ Lib.restoreDraft = async function () {
 function isDirty() { return docMeta.savedSnap !== snapState(); }
 function updStatus(state) {
   const n = $('#docName'), s = $('#docState'); if (!n) return;
-  n.textContent = docMeta.name || 'Untitled card';
+  n.textContent = docMeta.name || (appMode === 'logo' ? 'Untitled emblem' : 'Untitled card');
   const where = Lib.mode === 'cloud' ? 'your account' : Lib.mode === 'local' ? 'this browser' : Lib.mode === 'pending' ? '' : 'files only';
   s.textContent = state || (Lib.mode === 'pending' ? 'Connecting storage…' : !docMeta.id ? 'Not saved yet' : isDirty() ? 'Unsaved changes' : 'Saved to ' + where);
   $('#status').title = Lib.mode === 'cloud' ? 'Saved privately to your account library' : Lib.mode === 'local' ? 'Saved in this browser only' : Lib.mode === 'none' ? 'Library storage is not available in this view; use Export file' : '';
@@ -108,7 +110,7 @@ function askName(def, title, cb, desc) {
   showModal(`<h2>${esc(title)}</h2><p>${esc(desc || (Lib.mode === 'cloud' ? 'Cards are saved privately to your account and follow you to other devices.' : 'Cards are saved in this browser.'))}</p><div class="row"><label for="nameIn">Name</label><input type="text" id="nameIn" maxlength="80"></div><div class="mrow"><button class="btn" data-x="close">Cancel</button><button class="btn acc" data-x="ok">Save</button></div>`, (a) => { if (a === 'close') closeModal(); if (a === 'ok') { const v = $('#nameIn').value.trim() || def; closeModal(); cb(v); } });
   const i = $('#nameIn'); i.value = def; setTimeout(() => { i.focus(); i.select(); }, 30); i.onkeydown = (e) => { if (e.key === 'Enter') { const v = i.value.trim() || def; closeModal(); cb(v); } };
 }
-function loadProject(o, meta, msg) { P = normalize(o); imgs.clear(); setSel([]); side = 'front'; docMeta = meta || { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (msg) toast(msg); }
+function loadProject(o, meta, msg) { const lm = (o && o.card && o.card.mode) || 'card'; if (lm !== appMode) setModeUI(lm); P = normalize(o); imgs.clear(); setSel([]); side = 'front'; docMeta = meta || { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (msg) toast(msg); }
 function openLibrary() {
   const where = Lib.mode === 'cloud' ? 'Saved privately to your account, so they follow you to other devices.' : Lib.mode === 'local' ? 'Saved in this browser. Export a file to move a card elsewhere.' : Lib.mode === 'pending' ? 'Connecting to storage…' : 'Library storage isn’t available in this view. Export and import files instead.';
   showModal(`<h2>Your cards</h2><p>${where}</p><div class="libbar"><button class="btn acc" data-x="save">Save</button><button class="btn" data-x="saveas">Save as new…</button><button class="btn" data-x="new">New from template…</button><button class="btn" data-x="import">Import file…</button><button class="btn" data-x="export">Export file</button></div><div class="libgrid" id="libGrid"><div class="empty">Loading…</div></div>`, async (a, btn) => {
@@ -130,7 +132,7 @@ async function refreshLib() {
   const g = $('#libGrid'); if (!g) return;
   if (Lib.mode === 'none' || Lib.mode === 'pending') { g.innerHTML = `<div class="empty">${Lib.mode === 'pending' ? 'Still connecting… reopen this in a moment.' : 'Use <b>Export file</b> to save this card, and <b>Import file</b> to open one.'}</div>`; return; }
   try {
-    const list = await Lib.list(); if (!$('#libGrid')) return;
+    const list = (await Lib.list()).filter(r => ((r.project && r.project.card && r.project.card.mode) || 'card') === appMode); if (!$('#libGrid')) return;
     g.innerHTML = list.length ? list.map(r => `<div class="libcard${r.id === docMeta.id ? ' cur' : ''}" data-id="${esc(r.id)}">${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : '<div class="nothumb"></div>'}<div class="ln"><b>${esc(r.name || 'Untitled')}</b><small>${new Date(r.updated || 0).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</small></div><div class="la"><button class="btn" data-x="open">Open</button><button class="btn" data-x="dup">Duplicate</button><button class="btn" data-x="ren">Rename</button><button class="btn" data-x="del">Delete</button></div></div>`).join('') : '<div class="empty">No saved cards yet. Press <b>Save</b> to keep this one.</div>';
   } catch (e) { g.innerHTML = `<div class="empty">The library couldn’t be read right now (${esc(e.message || e.code || 'error')}).</div>`; }
 }
@@ -140,7 +142,8 @@ function readProjectFile(file) { file.text().then(t => { try { const o = JSON.pa
 /* ---------- template gallery ---------- */
 const thumbCache = new Map();
 function openGallery() {
-  showModal(`<h2>Start a new card</h2><p>${TEMPLATES.length} fictional templates. Pick one; Undo brings your current card back.</p><div class="tgrid">${TEMPLATES.map(t => { const [a, b] = t.name.split(' · '); return `<button class="tcard" data-x="tpl" data-id="${t.id}"><span class="tth" data-th="${t.id}"></span><b>${esc(a)}</b><small>${esc(b || '')}</small></button>`; }).join('')}</div><div class="mrow"><button class="btn" data-x="close">Close</button></div>`, (a, btn) => {
+  const TL = TEMPLATES.filter(t => (t.mode || 'card') === appMode), noun = appMode === 'logo' ? 'emblem' : 'card';
+  showModal(`<h2>Start a new ${noun}</h2><p>${TL.length} fictional templates. Pick one; Undo brings your current ${noun} back.</p><div class="tgrid">${TL.map(t => { const [a, b] = t.name.split(' · '); return `<button class="tcard" data-x="tpl" data-id="${t.id}"><span class="tth" data-th="${t.id}"></span><b>${esc(a)}</b><small>${esc(b || '')}</small></button>`; }).join('')}</div><div class="mrow"><button class="btn" data-x="close">Close</button></div>`, (a, btn) => {
     if (a === 'close') closeModal();
     if (a === 'tpl') { const id = btn.dataset.id, t = TEMPLATES.find(x => x.id === id); closeModal(); applyTemplate(id); imgs.clear(); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand') setTimeout(() => view && view.camPreset('hero'), 60); toast(`Loaded ${t.name.split(' ·')[0]}. Undo brings your previous card back.`); }
   });
@@ -153,6 +156,25 @@ function openGallery() {
 function elChanged(live, sides) { const el = selEl(); invalidate(sides || (live && !(el && el.finish === 'window') ? [sideOf(selId) || side] : ['front', 'back']), live); if (!live) { commit(); renderLayers(); } }
 ui.changed = (final) => { elChanged(!final); if (final) renderInspector(); };
 function liveEdit() { invalidate([sideOf(selId) || side], true); syncInputs(); ui.drawFlat(); }
+function fmtOpts() { return Object.entries(FORMATS).filter(([k, v]) => k === 'custom' || !!v.logo === (appMode === 'logo')).map(([k, v]) => [k, v.label]); }
+function setModeUI(m) {
+  appMode = m; document.body.dataset.mode = m;
+  $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  const sub = $('.brand span'); if (sub) sub.textContent = m === 'logo' ? 'a studio for fictional faction emblems' : 'a studio for fictional identity cards';
+  const f = CARD_P.find(p => p[0] === 'fmt'); if (f) f[3] = fmtOpts();
+  presetThumbs.clear(); if (presetsOpen()) { renderPresetCats(); renderPresetGrid(); }
+  try { localStorage.setItem('idforge.mode', m); } catch (e) { }
+}
+function switchMode(m) {
+  if (m === appMode) return;
+  try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { }
+  let o = null; try { o = JSON.parse(localStorage.getItem(saveKey(m)) || 'null'); } catch (e) { }
+  setModeUI(m); imgs.clear(); setSel([]); side = 'front';
+  if (o && o.P && o.P.card) { P = normalize(o.P); P.card.mode = m; docMeta = { id: o.meta?.id || null, name: o.meta?.name || '', savedAt: 0, savedSnap: o.meta?.savedSnap || null }; }
+  else { applyTemplate(m === 'logo' ? 'lg_lion' : 'aurelian'); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; }
+  refreshAll(); pushHist(); updStatus(); if (view) setTimeout(() => view.camPreset(P.scene.pose === 'stand' || P.scene.pose === 'lanyard' ? 'hero' : 'front'), 60);
+  toast(m === 'logo' ? 'Faction logo maker · your ID card is kept for when you switch back' : 'ID card designer · your emblem is kept for when you switch back');
+}
 function refreshAll() { renderSideSeg(); renderLayers(); renderInspector(); renderCardPane(); renderScenePane(); if (view) { view.setCard(); view.setScene(); view.flipTo(side, true); } invalidate(); flatLayout(); }
 function renderSideSeg() { $$('#sideSeg button').forEach(b => b.classList.toggle('on', b.dataset.s === side)); }
 function setSide(sd, flip) { if (sd === side) { if (flip && view) view.flipTo(sd); return; } side = sd; renderSideSeg(); renderLayers(); ui.drawFlat(); ui.hud(); if (flip && view) view.flipTo(sd); if (presetsOpen()) renderPresetGrid(); }
@@ -294,7 +316,8 @@ function savePresetFromSel() {
 /* ---------- presets panel ---------- */
 const presetThumbs = new Map(); let presetCat = 'Security';
 const presetsOpen = () => !$('#leftPresets').hidden;
-function renderPresetCats() { const cats = ['My presets', ...new Set(COMPONENTS.map(c => c.cat))]; $('#presetCats').innerHTML = cats.map(c => `<button class="${c === presetCat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''); }
+const modeOK = c => appMode === 'logo' ? (c.mode === 'logo' || LOGO_SHARED.includes(c.cat)) : c.mode !== 'logo';
+function renderPresetCats() { const have = new Set(COMPONENTS.filter(modeOK).map(c => c.cat)), cats = ['My presets', ...(appMode === 'logo' ? [...LOGO_CATS, ...LOGO_SHARED].filter(c => have.has(c)) : [...have])]; if (!cats.includes(presetCat)) presetCat = cats[1]; $('#presetCats').innerHTML = cats.map(c => `<button class="${c === presetCat ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</button>`).join(''); }
 async function renderPresetGrid() {
   if (presetCat === 'My presets') {
     const g = $('#presetGrid'); g.innerHTML = '<div class="empty" style="grid-column:1/-1">Loading your presets…</div>';
@@ -376,14 +399,14 @@ function applyIdentity(mrzOnly) {
 /* ---------- card + scene panes ---------- */
 const flexOnly = () => sub().flex;
 const CARD_P = [
-  ['§', 'Format'], ['fmt', 'Size preset', 'select', Object.entries(FORMATS).map(([k, v]) => [k, v.label])], ['w', 'Width (mm)', 'num', { min: 20, max: 220, step: .1 }], ['h', 'Height (mm)', 'num', { min: 20, max: 220, step: .1 }], ['r', 'Corner radius', 'range', { min: 0, max: 15, step: .05 }], ['thick', 'Thickness (mm)', 'range', { min: .08, max: 3, step: .01 }], ['slot', 'Punch', 'select', [['none', 'None'], ['slot', 'Lanyard slot'], ['hole', 'Round hole']]],
-  ['§', 'Material'], ['sub', 'Substrate', 'select', Object.entries(SUBS).map(([k, v]) => [k, v.label])], ['tintOn', 'Custom tint', 'check', null, () => !sub().clear || sub().tintable], ['tint', 'Tint colour', 'color', null, c => c.tintOn], ['edgeFin', 'Card edge', 'select', [['core', 'Core material'], ['gold', 'Gilded gold'], ['silver', 'Silver leaf'], ['black', 'Black painted'], ['glow', 'Neon glow']], () => !flexOnly()], ['edgeOn', 'Coloured core', 'check', null, c => !flexOnly() && c.edgeFin === 'core'], ['edge', 'Core colour', 'color', null, c => c.edgeOn && !flexOnly() && c.edgeFin === 'core'], ['ink', 'Ink finish', 'select', [['matte', 'Matte'], ['satin', 'Satin'], ['gloss', 'Gloss']]], ['lam', 'Overlay', 'select', [['none', 'None'], ['gloss', 'Gloss laminate'], ['matte', 'Matte laminate']]],
+  ['§', 'Format'], ['fmt', 'Size preset', 'select', fmtOpts()], ['shape', 'Outline', 'select', CARD_SHAPES], ['w', 'Width (mm)', 'num', { min: 20, max: 220, step: .1 }], ['h', 'Height (mm)', 'num', { min: 20, max: 220, step: .1 }], ['r', 'Corner radius', 'range', { min: 0, max: 15, step: .05 }], ['thick', 'Thickness (mm)', 'range', { min: .08, max: 8, step: .01 }], ['slot', 'Punch', 'select', [['none', 'None'], ['slot', 'Lanyard slot'], ['hole', 'Round hole'], ['slot2', 'Slot + corner holes'], ['corners', 'Two corner holes']]],
+  ['§', 'Material'], ['sub', 'Substrate', 'select', Object.entries(SUBS).map(([k, v]) => [k, v.label])], ['glowInt', 'Glow strength', 'range', { min: 0, max: 3, step: .05 }, C => !!SUBS[C.sub]?.glow], ['tintOn', 'Custom tint', 'check', null, () => !sub().clear || sub().tintable], ['tint', 'Tint colour', 'color', null, c => c.tintOn], ['edgeFin', 'Card edge', 'select', [['core', 'Core material'], ['gold', 'Gilded gold'], ['silver', 'Silver leaf'], ['black', 'Black painted'], ['glow', 'Neon glow']], () => !flexOnly()], ['edgeOn', 'Coloured core', 'check', null, c => !flexOnly() && c.edgeFin === 'core'], ['edge', 'Core colour', 'color', null, c => c.edgeOn && !flexOnly() && c.edgeFin === 'core'], ['ink', 'Ink finish', 'select', [['matte', 'Matte'], ['satin', 'Satin'], ['gloss', 'Gloss']]], ['lam', 'Overlay', 'select', [['none', 'None'], ['gloss', 'Gloss laminate'], ['matte', 'Matte laminate']]],
   ['§', 'Security layers'], ['holoLam', 'Holo laminate', 'select', [['none', 'None'], ['stars', 'Star field'], ['waves', 'Waves'], ['rings', 'Rings'], ['hex', 'Hex cells'], ['sunburst', 'Sunburst'], ['guilloche', 'Guilloche'], ['diamond', 'Diamond grid']]], ['holoLamInt', 'Laminate strength', 'range', { min: 0, max: 1, step: .01 }, c => c.holoLam !== 'none'], ['holoLamBack', 'Laminate the back too', 'check', null, c => c.holoLam !== 'none'], ['uvFibers', 'UV fibres', 'range', { min: 0, max: 400, step: 5 }], ['fluor', 'Optical brighteners', 'select', [['auto', 'Substrate default'], ['on', 'Glows under UV'], ['off', 'UV-dull']]],
   ['§', 'Wear and age'], ['age', 'Age / yellowing', 'range', { min: 0, max: 1, step: .01 }], ['stains', 'Stains', 'range', { min: 0, max: 1, step: .01 }], ['wear', 'Edge wear', 'range', { min: 0, max: 1, step: .01 }], ['fade', 'Ink fade', 'range', { min: 0, max: 1, step: .01 }], ['creases', 'Creases', 'range', { min: 0, max: 1, step: .01 }], ['foldV', 'Centre fold', 'range', { min: 0, max: 1, step: .01 }], ['foldH', 'Cross fold', 'range', { min: 0, max: 1, step: .01 }],
   ['§', 'Paper flex', null, null, flexOnly], ['curl', 'Curl', 'range', { min: -1, max: 1, step: .01 }, flexOnly], ['crumple', 'Crumple', 'range', { min: 0, max: 1, step: .01 }, flexOnly],
   ['§', 'Output'], ['res', 'Texture width', 'select', [[1024, '1K · quick'], [2048, '2K · default'], [4096, '4K · detailed'], [5120, '5K · absurd']]], ['relief', 'Relief depth', 'range', { min: 0, max: 6, step: .05 }], ['seed', 'Wear seed', 'range', { min: 1, max: 99, step: 1 }]
 ];
-const CARD_REFORM = new Set(['fmt', 'sub', 'tintOn', 'edgeOn', 'holoLam', 'edgeFin']);
+const CARD_REFORM = new Set(['fmt', 'shape', 'sub', 'tintOn', 'edgeOn', 'holoLam', 'edgeFin']);
 let rcBase = null; const rc = { h: 0, s: 1, l: 0 };
 function recolorApply(live) {
   if (!rcBase) { rcBase = new Map(); for (const sd of ['front', 'back']) for (const e of P[sd]) { const o = {}; for (const k of COLOR_KEYS) if (typeof e[k] === 'string' && e[k][0] === '#') o[k] = e[k]; rcBase.set(e.id, o); } }
@@ -396,11 +419,11 @@ function renderCardPane() {
   host.appendChild(top); $('#cIdent').onclick = () => applyIdentity(false); $('#cMrz').onclick = () => applyIdentity(true);
   buildForm(host, P.card, CARD_P, (k, v, f) => {
     const C = P.card, S0 = sub(); const ow = C.w, oh = C.h; C[k] = v;
-    if (k === 'fmt' && FORMATS[v] && FORMATS[v].w) { const fm = FORMATS[v]; C.w = fm.w; C.h = fm.h; C.r = fm.r; rescale(ow, oh); }
+    if (k === 'fmt' && FORMATS[v] && FORMATS[v].w) { const fm = FORMATS[v]; C.w = fm.w; C.h = fm.h; C.r = fm.r; C.shape = fm.shape || 'rect'; if (fm.thick) C.thick = fm.thick; rescale(ow, oh); }
     if ((k === 'w' || k === 'h') && f) { C.fmt = 'custom'; rescale(ow, oh); }
     if (k === 'sub') { const S = SUBS[v]; C.thick = S.thick; if (!C.tintOn) C.tint = S.clear ? (S.atten || '#ffffff') : S.color; if (S.flex !== S0.flex && !S.flex) { C.curl = 0; C.crumple = 0; } }
     if (view) view.setCard(); invalidate(['front', 'back'], !f);
-    if (f) { commit(); if (CARD_REFORM.has(k)) renderCardPane(); if (k === 'fmt' || k === 'w' || k === 'h') { flatLayout(); renderInspector(); presetThumbs.clear(); } ui.hud(); }
+    if (f) { commit(); if (CARD_REFORM.has(k)) renderCardPane(); if (k === 'fmt' || k === 'w' || k === 'h' || k === 'shape') { flatLayout(); renderInspector(); presetThumbs.clear(); } ui.hud(); }
   });
   const rcw = document.createElement('div'); rcw.innerHTML = `<div class="sec">Recolour every ink</div><div class="chips" id="palChips">${PALETTES.map(([n], i) => `<button data-p="${i}">${esc(n)}</button>`).join('')}</div>`; host.appendChild(rcw);
   rcw.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { const [, h, s, l] = PALETTES[+b.dataset.p]; rc.h = h; rc.s = s; rc.l = l; recolorApply(false); renderRcSliders(); });
@@ -414,7 +437,7 @@ const ENV_OPTS = [['softbox', 'Softbox studio'], ['white', 'Catalogue white'], [
 const BD_OPTS = [['slate', 'Slate'], ['walnut', 'Walnut desk'], ['marble', 'White marble'], ['concrete', 'Concrete'], ['velvet', 'Velvet'], ['leather', 'Leather blotter'], ['felt', 'Card-table felt'], ['cork', 'Cork board'], ['mat', 'Cutting mat'], ['steel', 'Steel bench'], ['linen', 'Linen'], ['paper', 'Seamless paper'], ['blackglass', 'Black glass'], ['void', 'Void']];
 const SCENE_P = [
   ['§', 'Light'], ['env', 'Studio', 'select', ENV_OPTS], ['envInt', 'Ambient', 'range', { min: 0, max: 3, step: .01 }], ['keyInt', 'Key light', 'range', { min: 0, max: 3, step: .01 }], ['azim', 'Light direction', 'range', { min: -180, max: 180, step: 1 }], ['elev', 'Light height', 'range', { min: 4, max: 89, step: 1 }], ['refl', 'Reflections / glare', 'range', { min: 0, max: 1.5, step: .01 }], ['exposure', 'Exposure', 'range', { min: .2, max: 3, step: .01 }], ['tone', 'Tone mapping', 'select', [['agx', 'AgX (filmic)'], ['aces', 'ACES'], ['neutral', 'Neutral'], ['none', 'Linear']]],
-  ['§', 'Set'], ['backdrop', 'Surface', 'select', BD_OPTS], ['pose', 'Card pose', 'select', [['hover', 'Floating'], ['desk', 'Lying on the surface'], ['stand', 'Standing up'], ['lanyard', 'On a lanyard']]], ['float', 'Gentle float', 'check', null, s => s.pose === 'hover'], ['lanyardColor', 'Strap colour', 'color', null, s => s.pose === 'lanyard'], ['lanyardText', 'Strap text', 'text', null, s => s.pose === 'lanyard'], ['dust', 'Dust in the light', 'check'],
+  ['§', 'Set'], ['backdrop', 'Surface', 'select', BD_OPTS], ['pose', 'Card pose', 'select', [['hover', 'Floating'], ['desk', 'Lying on the surface'], ['stand', 'Standing up'], ['lanyard', 'On a lanyard']]], ['float', 'Gentle float', 'check', null, s => s.pose === 'hover'], ['lanyardStyle', 'Lanyard', 'select', [['strap', 'Printed strap'], ['clip', 'Cord & badge clip'], ['holes', 'Cord through corner holes']], s => s.pose === 'lanyard'], ['lanyardColor', 'Lanyard colour', 'color', null, s => s.pose === 'lanyard'], ['lanyardText', 'Strap text', 'text', null, s => s.pose === 'lanyard' && (s.lanyardStyle || 'strap') === 'strap'], ['dust', 'Dust in the light', 'check'],
   ['§', 'Lens'], ['bloom', 'Bloom', 'range', { min: 0, max: 2, step: .01 }], ['dof', 'Depth of field', 'range', { min: 0, max: 1, step: .01 }], ['vignette', 'Vignette', 'range', { min: 0, max: 1, step: .01 }], ['grain', 'Film grain', 'range', { min: 0, max: 1, step: .01 }], ['ca', 'Chromatic fringe', 'range', { min: 0, max: 1, step: .01 }], ['quality', 'Render quality', 'select', [['draft', 'Draft · fastest'], ['high', 'High'], ['ultra', 'Ultra · retina']]]
 ];
 function renderScenePane() {
@@ -652,6 +675,7 @@ function init() {
   };
   $('#presetGrid').addEventListener('change', e => { if (e.target.id === 'layRep') layReplace = e.target.checked; });
   $('#presetGrid').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-u]')) { e.preventDefault(); e.target.click(); } });
+  $$('#modeSeg button').forEach(b => b.onclick = () => switchMode(b.dataset.m));
   $('#newBtn').onclick = openGallery; $('#libBtn').onclick = openLibrary; $('#saveBtn').onclick = () => saveDesign(false); $('#status').onclick = openLibrary; $('#helpBtn').onclick = openHelp;
   $('#undo').onclick = undo; $('#redo').onclick = redo;
   $('#viewSeg').onclick = e => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); };
@@ -703,9 +727,9 @@ function init() {
     if (e.key === '[' && el) return reorder(el, -1);
     if (e.key.startsWith('Arrow') && selIds.length) { e.preventDefault(); const st = e.shiftKey ? 2 : .25; for (const s of selEls()) { if (s.locked) continue; if (e.key === 'ArrowLeft') s.x -= st; if (e.key === 'ArrowRight') s.x += st; if (e.key === 'ArrowUp') s.y -= st; if (e.key === 'ArrowDown') s.y += st; } liveEdit(); commit(500); }
   });
-  window.addEventListener('beforeunload', () => { try { localStorage.setItem('idforge.v2', JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { } });
+  window.addEventListener('beforeunload', () => { try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { } });
   bindLayers(); bindFlat();
-  Lib.localTs = loadSaved(); if (!Lib.localTs) applyTemplate('aurelian');
+  Lib.localTs = loadSaved(); if (!Lib.localTs) applyTemplate(appMode === 'logo' ? 'lg_lion' : 'aurelian'); setModeUI((P.card && P.card.mode) || appMode);
   hist.stack = [snapState()]; hist.i = 0; updUndo();
   refreshAll(); updStatus();
   new ResizeObserver(() => flatLayout()).observe(stage);

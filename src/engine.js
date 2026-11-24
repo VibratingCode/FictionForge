@@ -52,8 +52,39 @@ const FORMATS = {
   slip: { label: 'Paper slip · 92 × 60', w: 92, h: 60, r: .8 },
   tall: { label: 'Event badge · 70 × 110', w: 70, h: 110, r: 4 },
   square: { label: 'Square · 64 × 64', w: 64, h: 64, r: 6 },
+  em_round: { label: 'Emblem · round medallion 60', w: 60, h: 60, r: 0, shape: 'circle', thick: 3, logo: true },
+  em_coin: { label: 'Emblem · challenge coin 40', w: 40, h: 40, r: 0, shape: 'circle', thick: 3.2, logo: true },
+  em_heater: { label: 'Emblem · heater shield 56 × 66', w: 56, h: 66, r: 0, shape: 'heater', thick: 3, logo: true },
+  em_french: { label: 'Emblem · round-bottom shield 56 × 66', w: 56, h: 66, r: 0, shape: 'french', thick: 3, logo: true },
+  em_hex: { label: 'Emblem · hex badge 64', w: 64, h: 55.4, r: 0, shape: 'hex', thick: 3, logo: true },
+  em_oct: { label: 'Emblem · octagon plate 60', w: 60, h: 60, r: 0, shape: 'octagon', thick: 3, logo: true },
+  em_diamond: { label: 'Emblem · diamond 56 × 72', w: 56, h: 72, r: 0, shape: 'diamond', thick: 3, logo: true },
+  em_banner: { label: 'Emblem · hanging banner 50 × 80', w: 50, h: 80, r: 0, shape: 'banner', thick: 1.2, logo: true },
+  em_cog: { label: 'Emblem · cog plate 64', w: 64, h: 64, r: 0, shape: 'cog', thick: 3.5, logo: true },
+  em_burst: { label: 'Emblem · star burst 64', w: 64, h: 64, r: 0, shape: 'burst', thick: 3, logo: true },
+  em_square: { label: 'Emblem · square tile 60', w: 60, h: 60, r: 6, shape: 'rect', thick: 3, logo: true },
+  em_patch: { label: 'Emblem · oval patch 76 × 56', w: 76, h: 56, r: 0, shape: 'circle', thick: 1.6, logo: true },
   custom: { label: 'Custom size' }
 };
+const CARD_SHAPES = [['rect', 'Rounded rectangle'], ['circle', 'Circle / oval'], ['heater', 'Heater shield'], ['french', 'Round-bottom shield'], ['hex', 'Hexagon'], ['octagon', 'Octagon'], ['diamond', 'Diamond'], ['banner', 'Swallowtail banner'], ['cog', 'Cog'], ['burst', 'Star burst']];
+function cardOutline(shape, w, h) {   // outline points in mm, canvas orientation (origin top-left, y down)
+  const P = [], cx = w / 2, cy = h / 2, q = (a, b, c, n = 22) => { for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t; P.push([u * u * a[0] + 2 * u * t * b[0] + t * t * c[0], u * u * a[1] + 2 * u * t * b[1] + t * t * c[1]]); } };
+  const radial = (n, f) => { for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * Math.PI * 2, r = f(i); P.push([cx + Math.cos(a) * cx * r, cy + Math.sin(a) * cy * r]); } };
+  switch (shape) {
+    case 'circle': radial(128, () => 1); break;
+    case 'heater': P.push([0, 0], [w, 0], [w, h * .4]); q([w, h * .4], [w, h * .8], [cx, h]); q([cx, h], [0, h * .8], [0, h * .4]); break;
+    case 'french': P.push([0, 0], [w, 0], [w, h * .58]); for (let i = 1; i <= 40; i++) { const a = i / 40 * Math.PI; P.push([cx + Math.cos(a) * cx, h * .58 + Math.sin(a) * h * .42]); } break;
+    case 'hex': P.push([w * .25, 0], [w * .75, 0], [w, cy], [w * .75, h], [w * .25, h], [0, cy]); break;
+    case 'octagon': { const c = .2929; P.push([w * c, 0], [w * (1 - c), 0], [w, h * c], [w, h * (1 - c)], [w * (1 - c), h], [w * c, h], [0, h * (1 - c)], [0, h * c]); break; }
+    case 'diamond': P.push([cx, 0], [w, cy], [cx, h], [0, cy]); break;
+    case 'banner': P.push([0, 0], [w, 0], [w, h], [cx, h * .8], [0, h]); break;
+    case 'cog': for (let t = 0; t < 12; t++) { const b = -Math.PI / 2 + t * Math.PI / 6, d = Math.PI / 180; for (const [a, r] of [[b - 11 * d, .84], [b - 6 * d, 1], [b + 6 * d, 1], [b + 11 * d, .84]]) P.push([cx + Math.cos(a) * cx * r, cy + Math.sin(a) * cy * r]); } break;
+    case 'burst': radial(32, i => i % 2 ? .84 : 1); break;
+    default: return null;
+  }
+  return P;
+}
+Forge.cardOutline = cardOutline;
 const SUBS = {
   paper: { label: 'Plain paper (flexible)', color: '#f2ede1', rough: .93, metal: 0, clear: 0, thick: .18, tex: 'paper', flex: true, fluor: '#6d7dff', laser: '#4b2e19', edge: '#e8e1d0' },
   kraft: { label: 'Kraft card (flexible)', color: '#b48a5c', rough: .95, metal: 0, clear: 0, thick: .3, tex: 'paper', flex: true, fluor: null, laser: '#2c1a0e' },
@@ -79,6 +110,18 @@ const SUBS = {
   rosegold: { label: 'Rose-gold metal', color: '#eab7a3', rough: .22, metal: 1, clear: 0, thick: .8, tex: 'brushed', laser: '#5a2f22' },
   titanium: { label: 'Anodised titanium', color: '#7d8ea8', rough: .3, metal: 1, clear: 0, thick: .8, tex: 'brushed', irid: .6, laser: '#e6e9ee' },
   marble: { label: 'White marble', color: '#efedea', rough: .26, metal: 0, clear: 0, thick: 1, cc: .8, ccr: .05, tex: 'marble', laser: '#3b3a38' },
+  brass: { label: 'Polished brass', color: '#d4b45a', rough: .2, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .3, laser: '#4a3a10' },
+  bronze: { label: 'Antique bronze', color: '#9a6a3a', rough: .38, metal: 1, clear: 0, thick: 3, tex: 'brushed', aniso: .2, laser: '#2a1808' },
+  iron: { label: 'Forged iron', color: '#55585e', rough: .58, metal: 1, clear: 0, thick: 3.5, tex: 'brushed', aniso: .15, laser: '#c9ccd1' },
+  enamel: { label: 'Glossy enamel', color: '#1d3f6e', rough: .12, metal: 0, clear: 0, thick: 2.5, cc: 1, ccr: .02, laser: '#e9edf2' },
+  leather: { label: 'Tooled leather', color: '#6b3f22', rough: .74, metal: 0, clear: 0, thick: 2.2, tex: 'paper', laser: '#2a160a', edge: '#4a2a14' },
+  felt: { label: 'Embroidered twill (patch)', color: '#2a3a2a', rough: .95, metal: 0, clear: 0, thick: 1.6, tex: 'paper', laser: '#151d15', edge: '#1d281d' },
+  stone: { label: 'Carved slate', color: '#4a4e54', rough: .8, metal: 0, clear: 0, thick: 5, tex: 'marble', laser: '#c9ccd1' },
+  acr_green: { label: 'Fluorescent acrylic · green', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#39ff7a', attenD: 1.4, laser: '#d4ffe0', disp: 'rgba(40,220,100,.5)', glow: '#3dff74' },
+  acr_orange: { label: 'Fluorescent acrylic · orange', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#ff8a2a', attenD: 1.4, laser: '#ffe6cf', disp: 'rgba(255,130,40,.5)', glow: '#ff8a1f' },
+  acr_pink: { label: 'Fluorescent acrylic · pink', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#ff3aa0', attenD: 1.4, laser: '#ffd6ec', disp: 'rgba(255,60,160,.5)', glow: '#ff3d9e' },
+  acr_blue: { label: 'Fluorescent acrylic · blue', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#3ad8ff', attenD: 1.4, laser: '#d6f6ff', disp: 'rgba(50,200,255,.5)', glow: '#38dcff' },
+  acr_yellow: { label: 'Fluorescent acrylic · yellow', color: '#ffffff', rough: .03, metal: 0, clear: 1, ior: 1.49, thick: 3, atten: '#e8ff3a', attenD: 1.4, laser: '#f8ffd6', disp: 'rgba(225,255,50,.5)', glow: '#e9ff36' },
   ivory: { label: 'Ivory resin', color: '#efe6d1', rough: .42, metal: 0, clear: 0, thick: .8, cc: .35, ccr: .2, tex: 'frost', laser: '#4a3a28' }
 };
 const FINISHES = [['ink', 'Ink'], ['foil', 'Foil'], ['holo', 'Holo foil'], ['laser', 'Laser engrave'], ['uv', 'UV ink (invisible)'], ['gloss', 'Spot gloss'], ['blind', 'Blind emboss'], ['window', 'Clear window']];
@@ -86,7 +129,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 2048, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -132,10 +175,12 @@ function rr(c, x, y, w, h, r) {
   c.arcTo(x + w, y + h, x + w - r, y + h, r); c.lineTo(x + r, y + h); c.arcTo(x, y + h, x, y + h - r, r);
   c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r); c.closePath();
 }
-const SLOT = { slot: { w: 12.7, h: 3.2, cy: 4.6 }, hole: { r: 2.5, cy: 5 } };
+const SLOT = { slot: { w: 12.7, h: 3.2, cy: 4.6 }, hole: { r: 2.5, cy: 5 }, corner: { r: 1.6, dx: 5, cy: 5 } };
 function cardPath(c, k) {
-  const C = P.card; c.beginPath(); rr(c, 0, 0, C.w * k, C.h * k, Math.min(C.r, C.w / 2, C.h / 2) * k);
-  if (C.slot === 'slot') { const s = SLOT.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
+  const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, C.w, C.h) : null; c.beginPath();
+  if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(x * k, y * k) : c.moveTo(x * k, y * k)); c.closePath(); } else rr(c, 0, 0, C.w * k, C.h * k, Math.min(C.r, C.w / 2, C.h / 2) * k);
+  if (C.slot === 'slot2' || C.slot === 'corners') { const s = SLOT.corner; for (const x of [s.dx, C.w - s.dx]) { c.moveTo((x + s.r) * k, s.cy * k); c.arc(x * k, s.cy * k, s.r * k, 0, Math.PI * 2); } }
+  if (C.slot === 'slot' || C.slot === 'slot2') { const s = SLOT.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
   else if (C.slot === 'hole') { const s = SLOT.hole; c.moveTo((C.w / 2 + s.r) * k, s.cy * k); c.arc(C.w / 2 * k, s.cy * k, s.r * k, 0, Math.PI * 2); }
 }
 Forge.SLOT = SLOT;
@@ -683,7 +728,7 @@ function renderSide(side, tier, opts) {
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
   const wins = els.filter(e => e.finish === 'window').concat(P[other].filter(e => e.visible !== false && e.finish === 'window').map(e => ({ ...e, x: Wm - e.x, rot: -(e.rot || 0), _mirror: true })));
   const clear = S.clear > 0, fl = fluorOf(), lamOn = C.holoLam !== 'none' && (side === 'front' || C.holoLamBack);
-  const need = { T: clear || wins.length > 0, X: !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
+  const need = { T: clear || wins.length > 0, X: !!S.glow || !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
   const out = { side, tier, pw, ph, need };
 
   /* albedo */
@@ -739,6 +784,7 @@ function renderSide(side, tier, opts) {
     const Xc = cv(side, tier, 'X', hw, hh), x = prep(Xc, '#000'); clipCard(x, kh);
     if (fl) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
     for (const el of els) { if (el.finish !== 'uv') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.uvColor, uv: true }); x.restore(); }
+    if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
     if (C.uvFibers > 0) { const R = rng(C.seed * 4111 + (side === 'back' ? 9 : 2)), cols = ['#ff3b6b', '#38d6ff', '#ffe14d', '#7dff6a', '#ff7af0']; x.lineCap = 'round'; for (let i = 0; i < C.uvFibers; i++) { const px = R() * C.w, py = R() * C.h, an = R() * Math.PI * 2, L = .9 + R() * 2.6, b = (R() - .5) * 2; x.strokeStyle = cols[R() * cols.length | 0]; x.lineWidth = (.06 + R() * .05) * kh; const dx = Math.cos(an) * L / 2, dy = Math.sin(an) * L / 2; x.beginPath(); x.moveTo((px - dx) * kh, (py - dy) * kh); x.quadraticCurveTo((px + b * dy) * kh, (py - b * dx) * kh, (px + dx) * kh, (py + dy) * kh); x.stroke(); } }
     x.restore(); out.X = Xc;
   }
