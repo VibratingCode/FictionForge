@@ -64,6 +64,8 @@ const FORMATS = {
   em_burst: { label: 'Emblem · star burst 64', w: 64, h: 64, r: 0, shape: 'burst', thick: 3, logo: true },
   em_square: { label: 'Emblem · square tile 60', w: 60, h: 60, r: 6, shape: 'rect', thick: 3, logo: true },
   em_patch: { label: 'Emblem · oval patch 76 × 56', w: 76, h: 56, r: 0, shape: 'circle', thick: 1.6, logo: true },
+  em_flag: { label: 'Flag · 3:2 90 × 60', w: 90, h: 60, r: .4, shape: 'rect', thick: .5, logo: true },
+  em_flag2: { label: 'Flag · 2:1 100 × 50', w: 100, h: 50, r: .4, shape: 'rect', thick: .5, logo: true },
   custom: { label: 'Custom size' }
 };
 const CARD_SHAPES = [['rect', 'Rounded rectangle'], ['circle', 'Circle / oval'], ['heater', 'Heater shield'], ['french', 'Round-bottom shield'], ['hex', 'Hexagon'], ['octagon', 'Octagon'], ['diamond', 'Diamond'], ['banner', 'Swallowtail banner'], ['cog', 'Cog'], ['burst', 'Star burst']];
@@ -728,7 +730,7 @@ function renderSide(side, tier, opts) {
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
   const wins = els.filter(e => e.finish === 'window').concat(P[other].filter(e => e.visible !== false && e.finish === 'window').map(e => ({ ...e, x: Wm - e.x, rot: -(e.rot || 0), _mirror: true })));
   const clear = S.clear > 0, fl = fluorOf(), lamOn = C.holoLam !== 'none' && (side === 'front' || C.holoLamBack);
-  const need = { T: clear || wins.length > 0, X: !!S.glow || !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
+  const elGlow = els.some(e => e.glow > 0), need = { T: clear || wins.length > 0, X: elGlow || !!S.glow || !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
   const out = { side, tier, pw, ph, need };
 
   /* albedo */
@@ -782,8 +784,9 @@ function renderSide(side, tier, opts) {
   /* UV emission */
   if (need.X) {
     const Xc = cv(side, tier, 'X', hw, hh), x = prep(Xc, '#000'); clipCard(x, kh);
-    if (fl) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
+    if (fl && !elGlow) { x.globalAlpha = .5; x.fillStyle = fl; x.fillRect(0, 0, hw, hh); x.globalAlpha = 1; for (const el of els) { const cvg = coverage(el); if (!cvg) continue; x.save(); x.globalAlpha = cvg * (el.opacity ?? 1); drawEl(x, el, kh, { ch: 'X', color: '#000' }); x.restore(); } for (const w of wins) drawEl(x, w, kh, { ch: 'X', color: '#000' }); }
     for (const el of els) { if (el.finish !== 'uv') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.uvColor, uv: true }); x.restore(); }
+    for (const el of els) { if (!(el.glow > 0)) continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: el.glowColor || '#6ab0ff', uv: true }); x.restore(); }
     if (S.glow) { x.save(); x.globalAlpha = .1; x.fillStyle = S.glow; x.fillRect(0, 0, hw, hh); x.restore(); for (const el of els) { if (el.finish !== 'laser') continue; x.save(); x.globalAlpha = el.opacity ?? 1; drawEl(x, el, kh, { ch: 'X', color: S.glow, uv: true }); x.restore(); } }
     if (C.uvFibers > 0) { const R = rng(C.seed * 4111 + (side === 'back' ? 9 : 2)), cols = ['#ff3b6b', '#38d6ff', '#ffe14d', '#7dff6a', '#ff7af0']; x.lineCap = 'round'; for (let i = 0; i < C.uvFibers; i++) { const px = R() * C.w, py = R() * C.h, an = R() * Math.PI * 2, L = .9 + R() * 2.6, b = (R() - .5) * 2; x.strokeStyle = cols[R() * cols.length | 0]; x.lineWidth = (.06 + R() * .05) * kh; const dx = Math.cos(an) * L / 2, dy = Math.sin(an) * L / 2; x.beginPath(); x.moveTo((px - dx) * kh, (py - dy) * kh); x.quadraticCurveTo((px + b * dy) * kh, (py - b * dx) * kh, (px + dx) * kh, (py + dy) * kh); x.stroke(); } }
     x.restore(); out.X = Xc;

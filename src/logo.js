@@ -1,6 +1,6 @@
 /* ================= faction icons (vector glyph library) + procedural sigils ================= */
 const ICONS = {};
-const ICON_CATS = ['Beasts', 'Weapons', 'Celestial', 'Arcane', 'Tech', 'Nature', 'Royal & civic', 'Industry'];
+const ICON_CATS = ['Beasts', 'Weapons', 'Celestial', 'Arcane', 'Tech', 'Nature', 'Royal & civic', 'Industry', 'Line symbols'];
 (() => {
   const I = (cat, id, label, f) => { ICONS[id] = { cat, label, f }; };
   /* every icon draws white into a 100×100 box with the helper g */
@@ -104,6 +104,24 @@ const ICON_CATS = ['Beasts', 'Weapons', 'Celestial', 'Arcane', 'Tech', 'Nature',
   I('Industry', 'tools', 'Hammer & wrench', g => { g.rot(50, 50, .78, () => { g.rect(46, 26, 8, 66, 3); g.rect(30, 10, 40, 18, 3); }); g.rot(50, 50, -.78, () => { g.rect(45, 30, 10, 54, 4); g.circ(50, 22, 15); g.cut(() => g.rect(44, 5, 12, 17)); }); });
   I('Industry', 'factory', 'Factory', g => { g.path('M 6 94 L 6 50 L 30 36 L 30 50 L 54 36 L 54 50 L 78 36 L 78 94 Z'); g.rect(80, 14, 12, 80); g.cut(() => { for (let i = 0; i < 3; i++) g.rect(12 + i * 22, 64, 12, 10, 1); }); g.circ(86, 8, 4); g.circ(80, 4, 3); });
   I('Industry', 'cogs', 'Twin cogs', g => { g.gear(36, 58, 30, 23, 10); g.cut(() => g.circ(36, 58, 9)); g.gear(70, 30, 22, 16, 8); g.cut(() => g.circ(70, 30, 6)); });
+
+  const R0 = (g) => g.circS(50, 50, 30, 4.5);
+  I('Line symbols', 'lhalf', 'Half-lit world', g => { R0(g); g.path('M 50 22 A 28 28 0 0 1 50 78 Z'); });
+  I('Line symbols', 'ldouble', 'Double ring', g => { R0(g); g.circS(50, 50, 24, 2.6); });
+  I('Line symbols', 'ldots', 'Ring & flanking dots', g => { R0(g); g.circ(8, 50, 3.6); g.circ(92, 50, 3.6); });
+  I('Line symbols', 'lbands', 'Banded world', g => { R0(g); [40, 50, 60].forEach(y => { const dx = Math.sqrt(26 * 26 - (y - 50) ** 2); g.line([[50 - dx, y], [50 + dx, y]], 3.6); }); });
+  I('Line symbols', 'lhorizon', 'Horizon line', g => { R0(g); g.cut(() => g.rect(0, 46, 100, 8)); g.line([[2, 50], [98, 50]], 4.5); });
+  I('Line symbols', 'lsplit', 'Split world', g => { R0(g); g.cut(() => g.rect(45, 0, 10, 100)); g.line([[50, 10], [50, 90]], 4.5); });
+  I('Line symbols', 'lwinds', 'Wind world', g => { R0(g); g.spath('M 30 42 L 58 42 C 66 42 66 32 58 32 C 52 32 52 38 56 38', 3.4); g.spath('M 28 52 L 66 52 C 76 52 76 64 66 64 C 60 64 60 58 64 58', 3.4); g.line([[32, 62], [50, 62]], 3.4); });
+  I('Line symbols', 'lmoon', 'World & moon', g => { g.circS(42, 50, 28, 4.5); g.circS(76, 58, 13, 4); });
+  I('Line symbols', 'lslash', 'Hatched world', g => { R0(g); g.clip(50, 50, 27, () => { for (const q of [112, 126, 140, 154]) g.line([[q - 92, 92], [92, q - 92]], 3.4); }); });
+  I('Line symbols', 'lcore', 'Ring & core', g => { R0(g); g.circ(50, 50, 8); });
+  I('Line symbols', 'ltri', 'Ring & delta', g => { R0(g); g.line([[50, 30], [68, 62], [32, 62], [50, 30]], 3.6); });
+  I('Line symbols', 'lorbit', 'Orbit', g => { g.circS(50, 50, 18, 4.5); g.rot(50, 50, -.4, () => g.ringE(50, 50, 40, 14, 3)); g.circ(86, 36, 4); });
+  I('Line symbols', 'lsprout', 'Sprouting world', g => { R0(g); g.line([[50, 78], [50, 34]], 3.4); g.spath('M 50 58 C 40 54 36 46 36 36', 3.4); g.spath('M 50 58 C 60 54 64 46 64 36', 3.4); g.spath('M 50 68 C 34 64 28 54 28 46', 3); g.spath('M 50 68 C 66 64 72 54 72 46', 3); });
+  I('Line symbols', 'lwave', 'Tide world', g => { R0(g); g.spath('M 22 52 C 30 42 38 42 44 50 C 50 58 58 58 64 50 C 70 42 76 44 78 48', 3.6); });
+  I('Line symbols', 'lcross', 'Quartered ring', g => { R0(g); g.line([[50, 24], [50, 76]], 3.4); g.line([[24, 50], [76, 50]], 3.4); });
+  I('Line symbols', 'leclipse', 'Inner crescent', g => { R0(g); g.path('M 50 28 A 22 22 0 1 0 50 72 A 16 22 0 1 1 50 28 Z'); });
 })();
 const ICON_OPTS = ICON_CATS.flatMap(cat => Object.entries(ICONS).filter(([, v]) => v.cat === cat).map(([k, v]) => [k, `${cat} · ${v.label}`]));
 
@@ -131,6 +149,7 @@ function glyphHelper(x) {
     flip(on, f) { if (!on) return f(); x.save(); x.translate(100, 0); x.scale(-1, 1); f(); x.restore(); },
     rot(cx, cy, a, f) { x.save(); x.translate(cx, cy); x.rotate(a); x.translate(-cx, -cy); f(); x.restore(); },
     cut(f) { x.save(); x.globalCompositeOperation = 'destination-out'; f(); x.restore(); },
+    clip(cx, cy, r, f) { x.save(); x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.clip(); f(); x.restore(); },
   };
   return g;
 }
@@ -143,17 +162,29 @@ function glyphMask(icon, pw, ph, flip) {   // white icon centred in pw×ph
 }
 function tintedCopy(src, dst, fill) { dst.width = src.width; dst.height = src.height; const x = dst.getContext('2d'); x.drawImage(src, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = fill; x.fillRect(0, 0, dst.width, dst.height); x.globalCompositeOperation = 'source-over'; return dst; }
 
-def('glyph', 'Faction icon', { w: 32, h: 32, icon: 'wolf', color: '#1b1d22', color2: '#b8892b', grad: false, gangle: 90, outline: '#ffffff', outlineW: 0, flipX: false },
-  [['icon', 'Icon', 'select', ICON_OPTS], ['color', 'Colour', 'color'], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0], ['flipX', 'Mirror', 'check']],
-  function (c, el, ov, k) {
-    const ow = el.outlineW > 0 ? el.outlineW : 0, pw = Math.max(8, Math.ceil((el.w + ow * 2) * k)), ph = Math.max(8, Math.ceil((el.h + ow * 2) * k)), pad = Math.ceil(ow * k);
-    const M = glyphMask(el.icon, pw - pad * 2, ph - pad * 2, el.flipX), O = _gly.O; O.width = pw; O.height = ph; const o = O.getContext('2d');
-    if (ow > 0) { const T = tintedCopy(M, _gly.T, fillOf(ov, el.outline)); for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; o.drawImage(T, pad + Math.cos(a) * pad, pad + Math.sin(a) * pad); } o.drawImage(T, pad, pad); }
-    let fill = fillOf(ov, el.color);
-    if (el.grad && ov.ch === 'A') { const a = (el.gangle || 0) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.max(pw, ph) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); fill = gr; }
-    o.drawImage(tintedCopy(M, _gly.T, fill), pad, pad);
-    c.drawImage(O, -el.w / 2 - ow, -el.h / 2 - ow, el.w + ow * 2, el.h + ow * 2);
-  }, 'M12 3l3 6 6 1-4 4 1 7-6-3-6 3 1-7-4-4 6-1z');
+function paintMask(c, el, ov, k, maskFn) {
+  const ow = el.outlineW > 0 ? el.outlineW : 0, gl = el.glow > 0 ? el.glow : 0, line = el.style === 'line', lw = line ? Math.max(.15, el.lineW || .6) : 0;
+  const pm = ow + lw + gl * 1.8, pw = Math.max(8, Math.ceil((el.w + pm * 2) * k)), ph = Math.max(8, Math.ceil((el.h + pm * 2) * k)), pad = Math.round(pm * k), iw = Math.max(4, pw - pad * 2), ih = Math.max(4, ph - pad * 2);
+  const M = maskFn(iw, ih), O = _gly.O; O.width = pw; O.height = ph; const o = O.getContext('2d');
+  const ring = (src, r, fill) => { const T = tintedCopy(src, _gly.T, fill); const n = Math.max(12, Math.min(40, Math.round(r * 3))); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; o.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); } o.drawImage(T, pad, pad); };
+  if (ov.ch === 'X' && ov.uv && gl) {   // emissive layer: the halo and the mark itself, in the glow colour
+    o.filter = `blur(${Math.max(1, gl * k * .7)}px)`; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad); o.filter = 'none'; o.drawImage(tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'), pad, pad);
+    c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2); return;
+  }
+  if (gl && ov.ch === 'A') { o.save(); o.filter = `blur(${Math.max(1, gl * k * .8)}px)`; const T = tintedCopy(M, _gly.T, el.glowColor || '#6ab0ff'); o.globalAlpha = .9; o.drawImage(T, pad, pad); o.drawImage(T, pad, pad); o.restore(); }
+  let fill = fillOf(ov, el.color);
+  if (el.grad && ov.ch === 'A') { const a = (el.gangle || 0) * Math.PI / 180, cx = pw / 2, cy = ph / 2, r = Math.max(pw, ph) / 2, gr = o.createLinearGradient(cx - Math.cos(a) * r, cy - Math.sin(a) * r, cx + Math.cos(a) * r, cy + Math.sin(a) * r); gr.addColorStop(0, el.color); gr.addColorStop(1, el.color2); fill = gr; }
+  if (line) {   // outline-only: dilate, then punch the original shape out
+    const L = _gly.L || (_gly.L = document.createElement('canvas')); L.width = pw; L.height = ph; const l = L.getContext('2d'), T = tintedCopy(M, _gly.T, '#fff'), r = lw * k, n = Math.max(12, Math.min(40, Math.round(r * 3)));
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; l.drawImage(T, pad + Math.cos(a) * r, pad + Math.sin(a) * r); }
+    l.globalCompositeOperation = 'destination-out'; l.drawImage(M, pad, pad); l.globalCompositeOperation = 'source-in'; l.fillStyle = fill; l.fillRect(0, 0, pw, ph); l.globalCompositeOperation = 'source-over'; o.drawImage(L, 0, 0);
+  } else { if (ow > 0) ring(M, ow * k, fillOf(ov, el.outline)); o.drawImage(tintedCopy(M, _gly.T, fill), pad, pad); }
+  c.drawImage(O, -el.w / 2 - pm, -el.h / 2 - pm, el.w + pm * 2, el.h + pm * 2);
+}
+const PAINT_DEF = { color: '#1b1d22', color2: '#7a5af0', grad: false, gangle: 90, style: 'solid', lineW: .6, outline: '#ffffff', outlineW: 0, glow: 0, glowColor: '#6ab0ff', flipX: false };
+const PAINT_P = [['color', 'Colour', 'color'], ['grad', 'Gradient', 'check'], ['color2', 'Second colour', 'color', null, e => e.grad], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.grad], ['style', 'Style', 'select', [['solid', 'Solid'], ['line', 'Outline only']]], ['lineW', 'Line weight (mm)', 'range', { min: .15, max: 3, step: .05 }, e => e.style === 'line'], ['outlineW', 'Outline (mm)', 'range', { min: 0, max: 3, step: .05 }, e => e.style !== 'line'], ['outline', 'Outline colour', 'color', null, e => e.outlineW > 0 && e.style !== 'line'], ['glow', 'Glow (mm)', 'range', { min: 0, max: 8, step: .1 }], ['glowColor', 'Glow colour', 'color', null, e => e.glow > 0], ['flipX', 'Mirror', 'check']];
+def('glyph', 'Faction icon', { w: 32, h: 32, icon: 'wolf', ...PAINT_DEF }, [['icon', 'Icon', 'select', ICON_OPTS], ...PAINT_P],
+  function (c, el, ov, k) { paintMask(c, el, ov, k, (iw, ih) => glyphMask(el.icon, iw, ih, el.flipX)); }, 'M12 3l3 6 6 1-4 4 1 7-6-3-6 3 1-7-4-4 6-1z');
 
 /* procedural sigils: seeded, rotationally symmetric marks */
 const SIGIL_STYLES = [['arcane', 'Arcane'], ['runic', 'Angular'], ['tech', 'Circuit'], ['organic', 'Organic'], ['star', 'Stellar']];

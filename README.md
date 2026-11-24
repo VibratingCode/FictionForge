@@ -14,6 +14,8 @@ A three.js studio for designing **fictional** ID cards, badges and passes, from 
 - **Photos:** colour, black-and-white, duotone, halftone and line-screen looks, plus ghost images and illustrated placeholder portraits.
 - **Identity generator:** fills a card with a random fictional person. MRZ-style strips are decorative only.
 - **Rubber stamps:** 15 shapes (round, oval, box, date band, hexagon, octagon, shield, starburst, triangle, entry stamp, postmark, notched ticket, notary gear, banner), 26 icons, wear, uneven ink and double strikes.
+- **Faction logo maker:** a second mode (switch at the top) for emblems, with its own templates, presets and autosave. It includes 109 vector faction icons (beasts, weapons, celestial, arcane, tech, nature, royal and civic, industry, line symbols), adjustable geometric marks (concave starbursts, crescents, chevrons, diamond grids, notched triangles, horned marks, flame shards, radial blades), a procedural sigil generator, a tree-of-life generator, halftone fields, glow and outline-only styles, 32 emblems, 10 neon emblems and 12 flags. Emblem outlines include circle, shields, hexagon, octagon, diamond, banner, cog, starburst and flag, in brass, bronze, iron, enamel, leather, embroidered twill or slate.
+- **Fluorescent acrylic:** edge-lit acrylic in five colours. Laser engraving glows, and there are slot and corner-hole punches with cord, badge-clip or strap lanyards.
 - **Real QR codes** (versions 1–10, error correction levels L, M, Q and H) and Code 128 barcodes.
 - **Saving:** a design library stored in your browser (IndexedDB), autosave, and `.idforge.json` project files you can export and import.
 - **Export:** 3D beauty shots, front/back pairs, turntable videos, full-resolution flat sides and proof sheets.

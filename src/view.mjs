@@ -428,7 +428,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     uvFlood.target.position.copy(center); uvFlood.intensity = uvT * (torchOn ? .35 : 2.2);
     torchU.uTorchOn.value = torchOn ? uvT : 0; torch.intensity = torchOn ? uvT * 7 : 0;
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
-    matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? glowBase : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? glowBase : 0);
+    const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); matF.emissiveIntensity = Math.max(uvT * 2.6, matF.emissiveMap ? gb : 0); matB.emissiveIntensity = Math.max(uvT * 2.6, matB.emissiveMap ? gb : 0);
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
     bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;
