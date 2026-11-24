@@ -143,6 +143,7 @@ h3{font-size:11px;font-weight:600;color:var(--mute);margin:16px 0 8px;display:fl
 .pdel{position:absolute;top:6px;right:6px;min-width:24px;height:24px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);font-size:13px;line-height:1;padding:0 6px;opacity:.85}
 .pdel:hover{border-color:#c0392b;color:#c0392b}.pdel.confirm{background:#c0392b;color:#fff;border-color:#c0392b;font-size:11px}
 .layrep{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);padding:2px 2px 6px;cursor:pointer}.layrep span{color:var(--mute)}.layrep input{accent-color:var(--acc)}
+.stepwrap{display:flex;align-items:stretch;gap:4px;min-width:0}.stepwrap select{flex:1;min-width:0}.step2{display:flex;flex-direction:column;gap:2px}.step2 button{flex:1;width:24px;min-height:13px;padding:0;font-size:8px;line-height:1;border:1px solid var(--line);border-radius:4px;background:var(--panel2);color:var(--ink);cursor:pointer}.step2 button:hover{border-color:var(--acc);color:var(--acc)}
 .wideb{width:100%;justify-content:center;margin:2px 0 6px}
 .pth{display:block;aspect-ratio:220/132;border-radius:5px;overflow:hidden;background:var(--panel)}
 .pth canvas,.tth canvas{width:100%;height:100%;display:block;object-fit:contain}
@@ -373,7 +374,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 3072, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 4096, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -966,7 +967,7 @@ function metalFor(f) { const S = sub(); if (f === 'foil' || f === 'holo') return
 
 function renderSide(side, tier, opts) {
   const C = P.card, S = sub(), Wm = C.w, Hm = C.h;
-  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1536, C.res) : C.res);
+  const res = (opts && opts.res) || (tier === 'q' ? Math.min(768, C.res) : tier === 'p' ? Math.min(1536, C.res) : C.res);
   const pw = Math.round(res), ph = Math.max(2, Math.round(res * Hm / Wm)), k = pw / Wm;
   const hw = Math.max(512, Math.round(res / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
@@ -1063,7 +1064,7 @@ function subTex(c, ch, k) {
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
   } else if (S.tex === 'leather') {
     const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
-    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; for (let i = 0; i < 9; i++) { c.lineWidth = w * (.4 + R()) * k; c.beginPath(); const x0 = R() * W, y0 = R() * Hh; c.moveTo(x0, y0); c.bezierCurveTo(x0 + (R() - .5) * W * .4, y0 + (R() - .5) * Hh * .3, x0 + (R() - .5) * W * .5, y0 + (R() - .5) * Hh * .5, x0 + (R() - .5) * W * .6, y0 + (R() - .5) * Hh * .6); c.stroke(); } c.restore(); };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 55); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .55) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1.5 + R() * 5.5) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
     if (ch === 'A') {
       c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
       c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
@@ -1183,14 +1184,14 @@ function invalidate(sides, live) {
   liveQ = liveQ || !!live; if (!rafQ) { rafQ = true; requestAnimationFrame(flush); }
 }
 function flush() {
-  rafQ = false; const pre = liveQ && P.card.res > 1024; liveQ = false;
+  rafQ = false; const quick = Forge.quick && P.card.res > 768, pre = quick || (liveQ && P.card.res > 1024); liveQ = false;
   for (const s of ['front', 'back']) {
     if (!dirty[s]) continue; dirty[s] = false;
-    const t0 = performance.now(); const r = renderSide(s, pre ? 'p' : 'f'); r.ms = performance.now() - t0; last[s] = r; stale[s] = pre;
+    const t0 = performance.now(); const r = renderSide(s, quick ? 'q' : pre ? 'p' : 'f'); r.ms = performance.now() - t0; last[s] = r; stale[s] = pre;
     if (view) view.setMaps(r);
   }
   Forge.ui && Forge.ui.drawFlat(); Forge.ui && Forge.ui.hud();
-  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, 380);
+  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, 1100);
 }
 function hiPass() {
   if (rafQ) { hiT = setTimeout(hiPass, 200); return; }
@@ -1198,6 +1199,115 @@ function hiPass() {
   Forge.ui && Forge.ui.drawFlat(); Forge.ui && Forge.ui.hud();
 }
 Forge.invalidate = invalidate; Forge.last = last;
+
+/* ================= high-detail procedural substrate textures (seamless noise, 4K-ready) ================= */
+const TEXN = (() => {
+  const cache = new Map();
+  const lattice = (seed, P) => { const R = rng(seed), g = new Float32Array(P * P); for (let i = 0; i < g.length; i++) g[i] = R(); return g; };
+  const sm = t => t * t * (3 - 2 * t);
+  const sample = (g, P, x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = sm(x - xi), fy = sm(y - yi), x0 = ((xi % P) + P) % P, y0 = ((yi % P) + P) % P, x1 = (x0 + 1) % P, y1 = (y0 + 1) % P; const a = g[y0 * P + x0], b = g[y0 * P + x1], c = g[y1 * P + x0], d = g[y1 * P + x1]; return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy; };
+  /* seamless fBm over the unit square: base lattice cells across, octaves doubling */
+  const fbmF = (seed, base, oct, gain = .5) => { const L = []; for (let o = 0; o < oct; o++) L.push([lattice(seed + o * 101, base << o), base << o]); return (u, v) => { let s = 0, a = 1, n = 0; for (const [g, P] of L) { s += sample(g, P, u * P, v * P) * a; n += a; a *= gain; } return s / n; }; };
+  /* build (once) a size×size canvas from f(u,v) -> [r,g,b] or gray number */
+  const tile = (key, size, f) => { if (cache.has(key)) return cache.get(key); const cv = document.createElement('canvas'); cv.width = cv.height = size; const x = cv.getContext('2d'), im = x.createImageData(size, size), d = im.data;
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) { const v = f(i / size, j / size), p = (j * size + i) * 4; if (typeof v === 'number') { const q = Math.max(0, Math.min(255, v * 255)); d[p] = d[p + 1] = d[p + 2] = q; } else { d[p] = v[0]; d[p + 1] = v[1]; d[p + 2] = v[2]; } d[p + 3] = 255; }
+    x.putImageData(im, 0, 0); cache.set(key, cv); return cv; };
+  const hsl = (h, s, l) => { const f = n => { const k = (n + h * 12) % 12; return 255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
+  return {
+    clouds: () => { const f = fbmF(11, 4, 6, .55); return tile('clouds', 512, (u, v) => f(u, v)); },
+    fine: () => { const f = fbmF(23, 32, 4, .6); return tile('fine', 512, (u, v) => .5 + (f(u, v) - .5) * 1.8); },
+    marble: () => { const w1 = fbmF(31, 3, 6, .55), w2 = fbmF(37, 3, 6, .55), b = fbmF(41, 2, 7, .52); return tile('marble', 1024, (u, v) => { const q = b(u + (w1(u, v) - .5) * .55, v + (w2(u, v) - .5) * .55), r = 1 - Math.abs(Math.sin(q * Math.PI * 4)); return 1 - (Math.pow(r, 16) * .75 + Math.pow(r, 4) * .12); }); },
+    slate: () => { const a = fbmF(51, 3, 6, .55), b = fbmF(57, 16, 4, .6); return tile('slate', 1024, (u, v) => { const s = a(u, v * .25 + a(u * .5, v) * .3); return .35 + s * .45 + (b(u, v) - .5) * .35 + .12 * Math.pow(Math.abs(Math.sin((v * 9 + s * 3) * Math.PI)), 12); }); },
+    nacre: () => { const a = fbmF(61, 3, 5, .55), b = fbmF(67, 6, 4, .55); return tile('nacre', 512, (u, v) => { const t = a(u, v) * 2.2 + b(u, v) * .8; return hsl((t + .55) % 1, .55, .74); }); },
+    diffraction: () => { const a = fbmF(71, 2, 4, .5); return tile('diffraction', 512, (u, v) => { const t = u * 2 + v + a(u, v) * .6; return hsl(((t % 1) + 1) % 1, .9, .6); }); },
+    bands: () => { const a = fbmF(81, 2, 5, .55); return tile('bands', 512, (u, v) => .5 + .5 * Math.sin((v * 46 + a(u, v) * 9) * Math.PI)); },
+    heat: () => { const a = fbmF(91, 2, 4, .5); return tile('heat', 512, (u, v) => { const t = u * .7 + v * .3 + (a(u, v) - .5) * .4; return hsl((.6 + t * .55) % 1, .7, .55); }); },
+    twill: () => tile('twill', 128, (u, v) => { const t = ((u + v) * 8) % 1, warp = Math.sin(t * Math.PI), weft = .5 + .5 * Math.sin(((u - v) * 32) * Math.PI * 2), fuzz = ((Math.sin(u * 912.1 + v * 77.3) * 43758.5453) % 1 + 1) % 1; return .18 + warp * .62 + weft * .1 + fuzz * .1; }),
+  };
+})();
+
+const _subTex0 = subTex;
+subTex = function (c, ch, k) {
+  const C = P.card, S = sub(), W = C.w * k, Hh = C.h * k, R = rng(C.seed * 29 + (ch === 'A' ? 1 : ch === 'H' ? 2 : 3)), tex = S.tex2 || S.tex;
+  const pt = (cv, mm, rot = 0, sx = 1, sy = 1) => { const s = mm * k / cv.width, p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * sx * Math.cos(rot), s * sx * Math.sin(rot), -s * sy * Math.sin(rot), s * sy * Math.cos(rot), 0, 0])); return p; };
+  const layer = (fill, op, a) => { c.save(); c.globalCompositeOperation = op; c.globalAlpha = a; c.fillStyle = fill; c.fillRect(0, 0, W, Hh); c.restore(); };
+  const scratches = (n, col, a, len) => { c.save(); c.strokeStyle = col; c.lineCap = 'round'; for (let i = 0; i < n; i++) { c.globalAlpha = a * (.3 + R() * .7); c.lineWidth = Math.max(.6, k * (.008 + R() * .02)); const x = R() * W, y = R() * Hh, an = R() * Math.PI, l = (len * (.3 + R())) * k; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(an) * l * .5 + (R() - .5) * k, y + Math.sin(an) * l * .5 + (R() - .5) * k, x + Math.cos(an) * l, y + Math.sin(an) * l); c.stroke(); } c.restore(); };
+  switch (tex) {
+    case 'marble2': {   // domain-warped veins over soft clouds
+      const M = TEXN.marble(), Cl = TEXN.clouds();
+      if (ch === 'A') { layer(pt(Cl, 70, .3), 'multiply', .1); layer(pt(M, 110, .55), 'multiply', .7); layer(pt(M, 170, -.4, 1, 1.3), 'multiply', .25); layer(pt(Cl, 28, 1.1), 'screen', .08); }
+      else if (ch === 'H') { layer(pt(M, 110, .55), 'multiply', .2); layer(pt(TEXN.fine(), 6), 'source-over', .12); }
+      else layer(pt(M, 110, .55), 'multiply', .12);
+      return;
+    }
+    case 'slate': {
+      const Sl = TEXN.slate();
+      if (ch === 'A') { layer(pt(Sl, 60, .08), 'multiply', .7); layer(pt(TEXN.clouds(), 45, 1.3), 'soft-light', .5); layer(pt(TEXN.fine(), 7), 'multiply', .25); }
+      else if (ch === 'H') { layer(pt(Sl, 60, .08), 'source-over', .85); layer(pt(TEXN.fine(), 7), 'multiply', .4); }
+      else layer(pt(TEXN.fine(), 7), 'screen', .3);
+      return;
+    }
+    case 'twill': {
+      const Tw = TEXN.twill();
+      if (ch === 'A') { layer(pt(Tw, 1.8), 'multiply', .72); layer(pt(TEXN.clouds(), 50), 'soft-light', .35); layer(pt(TEXN.fine(), 4), 'multiply', .15); }
+      else if (ch === 'H') layer(pt(Tw, 1.8), 'source-over', .95);
+      else layer(pt(Tw, 1.5), 'screen', .25);
+      return;
+    }
+    case 'nacre': {
+      if (ch === 'A') { layer(pt(TEXN.nacre(), 55, .4), 'multiply', .17); layer(pt(TEXN.nacre(), 23, -.7), 'multiply', .07); layer(pt(TEXN.clouds(), 40), 'soft-light', .3); layer(pt(TEXN.clouds(), 14, .9), 'screen', .1); }
+      else if (ch === 'H') layer(pt(TEXN.fine(), 3), 'source-over', .08);
+      return;
+    }
+    case 'diffraction': {
+      if (ch === 'A') { layer(pt(TEXN.diffraction(), 26, .35), 'soft-light', .9); layer(pt(TEXN.diffraction(), 9, -.5), 'screen', .16); }
+      else if (ch === 'H') layer(pt(TEXN.fine(), 2.5), 'source-over', .1);
+      else scratches(160, '#fff', .2, 3);
+      return;
+    }
+    case 'peel': {   // plastics and enamel: faint orange-peel and cloudiness
+      if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .2), 'soft-light', .18); layer(pt(TEXN.fine(), 5), 'soft-light', .1); }
+      else if (ch === 'H') { layer(pt(TEXN.fine(), 2.2), 'source-over', .22); layer(pt(TEXN.fine(), .9, .6), 'multiply', .15); }
+      else layer(pt(TEXN.clouds(), 30), 'screen', .1);
+      return;
+    }
+    case 'ivory': {
+      if (ch === 'A') { layer(pt(TEXN.bands(), 70, .12, 1, 1), 'multiply', .035); layer(pt(TEXN.clouds(), 50, .7), 'soft-light', .3); layer(pt(TEXN.fine(), 6), 'soft-light', .12); }
+      else if (ch === 'H') layer(pt(TEXN.bands(), 70, .12), 'source-over', .02);
+      return;
+    }
+    case 'glass': {   // clear sheets: micro-scratches and faint polish haze
+      if (ch === 'H') { layer(pt(TEXN.fine(), 1.4), 'source-over', .06); scratches(220, '#000', .35, 4); }
+      else if (ch !== 'A') { scratches(260, '#fff', .3, 4); layer(pt(TEXN.clouds(), 40), 'screen', .06); }
+      return;
+    }
+    case 'frost': {
+      if (ch === 'H') { layer(pt(TEXN.fine(), 1.1), 'source-over', .55); layer(pt(TEXN.fine(), .45, .7), 'multiply', .35); layer(pt(TEXN.clouds(), 30), 'soft-light', .3); }
+      else if (ch !== 'A') layer(pt(TEXN.fine(), 1.1), 'screen', .4);
+      return;
+    }
+  }
+  _subTex0(c, ch, k);
+  /* enrich the original families */
+  if (tex === 'brushed') {
+    if (ch === 'A') { layer(pt(TEXN.clouds(), 55, .2), 'soft-light', .35); if (S.heat) layer(pt(TEXN.heat(), 70, .3), 'soft-light', .55); scratches(Math.round(C.w * C.h / 22), 'rgba(255,255,255,1)', .12, 5); scratches(Math.round(C.w * C.h / 45), 'rgba(0,0,0,1)', .1, 4); }
+    else if (ch === 'H') scratches(Math.round(C.w * C.h / 30), '#000', .25, 5);
+    else { scratches(Math.round(C.w * C.h / 25), '#fff', .3, 5); layer(pt(TEXN.clouds(), 40), 'soft-light', .3); }
+  } else if (tex === 'wood') {
+    if (ch === 'A') { layer(pt(TEXN.clouds(), 60, .05, 3, .6), 'soft-light', .45); c.save(); c.fillStyle = 'rgba(30,16,8,1)'; for (let i = 0, n = Math.round(C.w * C.h * 1.6); i < n; i++) { c.globalAlpha = .12 + R() * .2; const x = R() * W, y = R() * Hh; c.fillRect(x, y, k * (.15 + R() * .5), Math.max(.6, k * .03)); } c.restore(); }
+    else if (ch === 'H') { c.save(); c.fillStyle = '#000'; for (let i = 0, n = Math.round(C.w * C.h * 1.2); i < n; i++) { c.globalAlpha = .25 + R() * .3; c.fillRect(R() * W, R() * Hh, k * (.15 + R() * .4), Math.max(.6, k * .03)); } c.restore(); }
+  } else if (tex === 'paper') {
+    if (ch === 'A') layer(pt(TEXN.clouds(), 24, .4), 'soft-light', .3);
+    else if (ch === 'H') layer(pt(TEXN.fine(), 3), 'soft-light', .5);
+  } else if (tex === 'carbon') {
+    if (ch === 'A') layer(pt(TEXN.clouds(), 50), 'soft-light', .25);
+  }
+  if (S.metal && !S.clear && ch !== 'A' && tex !== 'brushed') scratches(Math.round(C.w * C.h / 30), '#fff', .25, 4);
+};
+/* which substrates use which family */
+Object.assign(SUBS.pvc, { tex2: 'peel' }); Object.assign(SUBS.poly, { tex2: 'peel' }); Object.assign(SUBS.enamel, { tex2: 'peel' }); Object.assign(SUBS.pearl, { tex2: 'nacre' }); Object.assign(SUBS.ivory, { tex2: 'ivory' }); Object.assign(SUBS.holopvc, { tex2: 'diffraction' });
+Object.assign(SUBS.marble, { tex2: 'marble2' }); Object.assign(SUBS.stone, { tex2: 'slate' }); Object.assign(SUBS.felt, { tex2: 'twill' }); Object.assign(SUBS.titanium, { heat: true });
+for (const k of ['clearpvc', 'smoked', 'tinted', 'aurora', 'acr_green', 'acr_orange', 'acr_pink', 'acr_blue', 'acr_yellow']) if (SUBS[k] && !SUBS[k].tex) SUBS[k].tex2 = 'glass';
 
 /* ---------- QR code (model 2, byte mode, versions 1–10) ---------- */
 const QR_ECC = { L: [7, 10, 15, 20, 26, 18, 20, 24, 30, 18], M: [10, 16, 26, 18, 24, 16, 18, 22, 22, 26], Q: [13, 22, 18, 26, 18, 24, 18, 22, 20, 24], H: [17, 28, 22, 16, 22, 28, 26, 26, 24, 28] };
@@ -3749,7 +3859,23 @@ function recolorApply(live) {
   for (const sd of ['front', 'back']) for (const e of P[sd]) { const o = rcBase.get(e.id); if (o) for (const k in o) e[k] = shiftColor(o[k], rc.h, rc.s, rc.l); }
   invalidate(['front', 'back'], live); if (!live) commit();
 }
-function renderCardPane() {
+let subStepT = null;
+function stepSub(d) {   // move through the substrate list; the pane re-renders, so always find the live select
+  const s = $('#pane-card .row[data-key="sub"] select'); if (!s) return; const n = s.options.length; s.selectedIndex = (s.selectedIndex + d + n) % n;
+  s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function addSubSteppers() {
+  const s = $('#pane-card .row[data-key="sub"] select'); if (!s || s.parentElement.classList.contains('stepwrap')) return;
+  const w = document.createElement('span'); w.className = 'stepwrap'; s.parentElement.insertBefore(w, s); w.appendChild(s);
+  const b = document.createElement('span'); b.className = 'step2'; b.innerHTML = '<button type="button" data-d="-1" aria-label="Previous substrate" title="Previous substrate ( [ )">▲</button><button type="button" data-d="1" aria-label="Next substrate" title="Next substrate ( ] )">▼</button>'; w.appendChild(b);
+  b.addEventListener('pointerdown', e => { const t = e.target.closest('button[data-d]'); if (!t) return; e.preventDefault(); const d = +t.dataset.d; subStepT = { d, last: performance.now(), n: 0 }; stepSub(d); requestAnimationFrame(subHoldLoop); });
+}
+function subHoldLoop() { const h = subStepT; if (!h) return; const t = performance.now(); if (t - h.last > (h.n ? 150 : 400)) { h.n++; Forge.quick = true; stepSub(h.d); h.last = performance.now(); } requestAnimationFrame(subHoldLoop); }
+function subHoldEnd() { const h = subStepT; subStepT = null; if (h && h.n) { Forge.quick = false; invalidate(null, true); } }
+['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, subHoldEnd));
+window.addEventListener('keydown', e => { if ((e.key === '[' || e.key === ']') && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') && !document.activeElement?.isContentEditable) { if (!$('#pane-card .row[data-key="sub"] select')) { showTab('card'); } stepSub(e.key === ']' ? 1 : -1); e.preventDefault(); } });
+function renderCardPane() { renderCardPane0(); addSubSteppers(); }
+function renderCardPane0() {
   const host = $('#pane-card'); host.innerHTML = ''; rcBase = null; rc.h = 0; rc.s = 1; rc.l = 0;
   const top = document.createElement('div'); top.innerHTML = `<div class="sec">Identity</div><div class="acts al" style="grid-template-columns:1fr 1fr"><button id="cIdent" title="Fill names, dates and numbers with a random fictional person">New fictional identity</button><button id="cMrz" title="Rebuild every machine strip from the fields">Rebuild machine strips</button></div>`;
   host.appendChild(top); $('#cIdent').onclick = () => applyIdentity(false); $('#cMrz').onclick = () => applyIdentity(true);

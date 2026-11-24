@@ -133,7 +133,7 @@ const FIN_RELIEF = { ink: 0, foil: .15, holo: .06, laser: -.3, uv: 0, gloss: .08
 const HOLOPATS = [[0, 'Rainbow grating'], [1, 'Kinegram rings'], [2, 'Glitter'], [3, 'Pixel mosaic'], [4, 'Fine lines'], [5, 'Radial sweep'], [6, 'Starburst'], [7, 'Liquid']];
 const FOILS = [['#d6b25e', 'Gold'], ['#dfe3e8', 'Silver'], ['#c97c4f', 'Copper'], ['#e3aaa0', 'Rose'], ['#6c7179', 'Gunmetal'], ['#5fae8f', 'Jade']];
 const BLENDS = [['source-over', 'Normal'], ['multiply', 'Multiply'], ['screen', 'Screen'], ['overlay', 'Overlay'], ['darken', 'Darken'], ['lighten', 'Lighten'], ['color-burn', 'Colour burn']];
-const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 3072, relief: 1.5, seed: 1, edgeFin: 'core' };
+const CARD_DEF = { shape: 'rect', glowInt: 1, fmt: 'id1', w: 85.6, h: 53.98, r: 3.18, thick: .76, slot: 'none', sub: 'poly', tint: '#f3f3ef', tintOn: false, edge: '#d23c2a', edgeOn: false, ink: 'satin', lam: 'gloss', holoLam: 'none', holoLamInt: .35, holoLamBack: false, uvFibers: 0, fluor: 'auto', age: 0, creases: 0, foldV: 0, foldH: 0, stains: 0, wear: 0, fade: 0, curl: 0, crumple: 0, res: 4096, relief: 1.5, seed: 1, edgeFin: 'core' };
 const SCENE_DEF = { env: 'softbox', backdrop: 'slate', pose: 'hover', azim: -38, elev: 50, keyInt: 1, envInt: 1, exposure: 1, tone: 'agx', refl: .55, bloom: .35, dof: 0, vignette: .35, grain: .2, ca: .25, dust: true, float: true, quality: 'high', lanyardColor: '#1f2a44', lanyardText: 'ID FORGE · FICTIONAL · ' };
 
 /* ---------- project state ---------- */
@@ -726,7 +726,7 @@ function metalFor(f) { const S = sub(); if (f === 'foil' || f === 'holo') return
 
 function renderSide(side, tier, opts) {
   const C = P.card, S = sub(), Wm = C.w, Hm = C.h;
-  const res = (opts && opts.res) || (tier === 'p' ? Math.min(1536, C.res) : C.res);
+  const res = (opts && opts.res) || (tier === 'q' ? Math.min(768, C.res) : tier === 'p' ? Math.min(1536, C.res) : C.res);
   const pw = Math.round(res), ph = Math.max(2, Math.round(res * Hm / Wm)), k = pw / Wm;
   const hw = Math.max(512, Math.round(res / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
@@ -823,7 +823,7 @@ function subTex(c, ch, k) {
     else if (ch === 'H') { c.save(); c.globalAlpha = .6; c.fillStyle = pat(c, 'grain', 5 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = .35; c.fillStyle = pat(c, 'mottle', 9 * k); c.fillRect(0, 0, W, Hh); c.restore(); fibers(c, k, '#808080', R, 'H'); }
   } else if (S.tex === 'leather') {
     const L = leatherTiles(), s = 27 * k / L.N, patt = (cv, m = 1, r = 0) => { const p = c.createPattern(cv, 'repeat'); p.setTransform(new DOMMatrix([s * m * Math.cos(r), s * m * Math.sin(r), -s * m * Math.sin(r), s * m * Math.cos(r), 0, 0])); return p; };
-    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; for (let i = 0; i < 9; i++) { c.lineWidth = w * (.4 + R()) * k; c.beginPath(); const x0 = R() * W, y0 = R() * Hh; c.moveTo(x0, y0); c.bezierCurveTo(x0 + (R() - .5) * W * .4, y0 + (R() - .5) * Hh * .3, x0 + (R() - .5) * W * .5, y0 + (R() - .5) * Hh * .5, x0 + (R() - .5) * W * .6, y0 + (R() - .5) * Hh * .6); c.stroke(); } c.restore(); };
+    const creases = (col, a, w) => { c.save(); c.strokeStyle = col; c.globalAlpha = a; c.lineCap = 'round'; c.filter = `blur(${Math.max(.6, k * .3)}px)`; const n = Math.round(C.w * C.h / 55); for (let i = 0; i < n; i++) { c.lineWidth = w * (.2 + R() * .55) * k; const x0 = R() * W, y0 = R() * Hh, an = (R() - .5) * 1.1 + (R() < .55 ? 0 : Math.PI / 2), L = (1.5 + R() * 5.5) * k; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(x0 + Math.cos(an) * L * .5 + (R() - .5) * k * .8, y0 + Math.sin(an) * L * .5 + (R() - .5) * k * .8, x0 + Math.cos(an) * L, y0 + Math.sin(an) * L); c.stroke(); } c.restore(); };
     if (ch === 'A') {
       c.save(); c.globalCompositeOperation = 'multiply'; c.globalAlpha = .34; c.fillStyle = patt(L.H); c.fillRect(0, 0, W, Hh); c.globalAlpha = .18; c.fillStyle = patt(L.H, 2.7, .7); c.fillRect(0, 0, W, Hh);
       c.globalAlpha = .28; c.fillStyle = pat(c, 'mottle', 34 * k); c.fillRect(0, 0, W, Hh);
@@ -943,14 +943,14 @@ function invalidate(sides, live) {
   liveQ = liveQ || !!live; if (!rafQ) { rafQ = true; requestAnimationFrame(flush); }
 }
 function flush() {
-  rafQ = false; const pre = liveQ && P.card.res > 1024; liveQ = false;
+  rafQ = false; const quick = Forge.quick && P.card.res > 768, pre = quick || (liveQ && P.card.res > 1024); liveQ = false;
   for (const s of ['front', 'back']) {
     if (!dirty[s]) continue; dirty[s] = false;
-    const t0 = performance.now(); const r = renderSide(s, pre ? 'p' : 'f'); r.ms = performance.now() - t0; last[s] = r; stale[s] = pre;
+    const t0 = performance.now(); const r = renderSide(s, quick ? 'q' : pre ? 'p' : 'f'); r.ms = performance.now() - t0; last[s] = r; stale[s] = pre;
     if (view) view.setMaps(r);
   }
   Forge.ui && Forge.ui.drawFlat(); Forge.ui && Forge.ui.hud();
-  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, 380);
+  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, 1100);
 }
 function hiPass() {
   if (rafQ) { hiT = setTimeout(hiPass, 200); return; }

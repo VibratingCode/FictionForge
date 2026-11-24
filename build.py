@@ -2,7 +2,7 @@
 from pathlib import Path
 S = Path(__file__).parent / 'src'
 head = (S / 'head.html').read_text()
-parts = [(S / f).read_text() for f in ['engine.js', 'qr.js', 'engine2.js', 'logo.js', 'logo2.js', 'presets.js', 'layouts.js', 'stamps.js', 'logopresets.js', 'ui.js']]
+parts = [(S / f).read_text() for f in ['engine.js', 'textures.js', 'qr.js', 'engine2.js', 'logo.js', 'logo2.js', 'presets.js', 'layouts.js', 'stamps.js', 'logopresets.js', 'ui.js']]
 view = (S / 'view.mjs').read_text()
 cdn = 'https://cdn.jsdelivr.net/npm/three@0.170.0'
 out = head + "<script>\n(function(){\n'use strict';\n" + "\n".join(parts) + "\n})();\n</script>\n"

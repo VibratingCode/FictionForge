@@ -413,7 +413,23 @@ function recolorApply(live) {
   for (const sd of ['front', 'back']) for (const e of P[sd]) { const o = rcBase.get(e.id); if (o) for (const k in o) e[k] = shiftColor(o[k], rc.h, rc.s, rc.l); }
   invalidate(['front', 'back'], live); if (!live) commit();
 }
-function renderCardPane() {
+let subStepT = null;
+function stepSub(d) {   // move through the substrate list; the pane re-renders, so always find the live select
+  const s = $('#pane-card .row[data-key="sub"] select'); if (!s) return; const n = s.options.length; s.selectedIndex = (s.selectedIndex + d + n) % n;
+  s.dispatchEvent(new Event('input', { bubbles: true })); s.dispatchEvent(new Event('change', { bubbles: true }));
+}
+function addSubSteppers() {
+  const s = $('#pane-card .row[data-key="sub"] select'); if (!s || s.parentElement.classList.contains('stepwrap')) return;
+  const w = document.createElement('span'); w.className = 'stepwrap'; s.parentElement.insertBefore(w, s); w.appendChild(s);
+  const b = document.createElement('span'); b.className = 'step2'; b.innerHTML = '<button type="button" data-d="-1" aria-label="Previous substrate" title="Previous substrate ( [ )">▲</button><button type="button" data-d="1" aria-label="Next substrate" title="Next substrate ( ] )">▼</button>'; w.appendChild(b);
+  b.addEventListener('pointerdown', e => { const t = e.target.closest('button[data-d]'); if (!t) return; e.preventDefault(); const d = +t.dataset.d; subStepT = { d, last: performance.now(), n: 0 }; stepSub(d); requestAnimationFrame(subHoldLoop); });
+}
+function subHoldLoop() { const h = subStepT; if (!h) return; const t = performance.now(); if (t - h.last > (h.n ? 150 : 400)) { h.n++; Forge.quick = true; stepSub(h.d); h.last = performance.now(); } requestAnimationFrame(subHoldLoop); }
+function subHoldEnd() { const h = subStepT; subStepT = null; if (h && h.n) { Forge.quick = false; invalidate(null, true); } }
+['pointerup', 'pointercancel', 'blur'].forEach(ev => window.addEventListener(ev, subHoldEnd));
+window.addEventListener('keydown', e => { if ((e.key === '[' || e.key === ']') && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') && !document.activeElement?.isContentEditable) { if (!$('#pane-card .row[data-key="sub"] select')) { showTab('card'); } stepSub(e.key === ']' ? 1 : -1); e.preventDefault(); } });
+function renderCardPane() { renderCardPane0(); addSubSteppers(); }
+function renderCardPane0() {
   const host = $('#pane-card'); host.innerHTML = ''; rcBase = null; rc.h = 0; rc.s = 1; rc.l = 0;
   const top = document.createElement('div'); top.innerHTML = `<div class="sec">Identity</div><div class="acts al" style="grid-template-columns:1fr 1fr"><button id="cIdent" title="Fill names, dates and numbers with a random fictional person">New fictional identity</button><button id="cMrz" title="Rebuild every machine strip from the fields">Rebuild machine strips</button></div>`;
   host.appendChild(top); $('#cIdent').onclick = () => applyIdentity(false); $('#cMrz').onclick = () => applyIdentity(true);
