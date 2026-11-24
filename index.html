@@ -211,7 +211,7 @@ table.keys{width:100%;border-collapse:collapse}table.keys td{padding:6px 4px;bor
   <canvas id="flat"></canvas>
   <div class="labels" id="labels"></div>
   <div class="hud" id="hud"></div>
-  <div class="flatbar" id="flatbar"><button data-f="fit" title="Fit (0)">Fit</button><button data-f="out" aria-label="Zoom out">−</button><span id="zoomLbl">100%</span><button data-f="in" aria-label="Zoom in">+</button><span class="sep"></span><button data-f="grid" title="Millimetre grid (G)">Grid</button><button data-f="safe" title="3 mm safe area and centre lines">Safe area</button><button data-f="snap" class="on" title="Snap to edges, centres and grid">Snap</button></div>
+  <div class="flatbar" id="flatbar"><button data-f="lit" class="on" title="Lit preview: relief, metal sheen, holograms and gloss">Lit</button><button data-f="fit" title="Fit (0)">Fit</button><button data-f="out" aria-label="Zoom out">−</button><span id="zoomLbl">100%</span><button data-f="in" aria-label="Zoom in">+</button><span class="sep"></span><button data-f="grid" title="Millimetre grid (G)">Grid</button><button data-f="safe" title="3 mm safe area and centre lines">Safe area</button><button data-f="snap" class="on" title="Snap to edges, centres and grid">Snap</button></div>
   <div class="dock" id="dock">
    <button data-a="flip" title="Flip card (F)">Flip</button>
    <button data-a="spin">Turntable</button>
@@ -3799,6 +3799,27 @@ function flatLayout() {
 }
 function zoomAt(f, px, py) { const C = P.card, nz = clamp(fv.zoom * f, .35, 14); if (px == null) { px = fv.w / 2; py = fv.h / 2; } const mx = (px - fv.ox) / fv.s, my = (py - fv.oy) / fv.s; fv.zoom = nz; const pad = Math.max(28, Math.min(72, fv.w * .08)), s = Math.min((fv.w - pad * 2) / C.w, (fv.h - pad * 2) / C.h) * nz; fv.px = px - mx * s - (fv.w - C.w * s) / 2; fv.py = py - my * s - (fv.h - C.h * s) / 2; flatLayout(); }
 function checker(x, X, Y, W, Hh) { const s = 8; for (let j = 0; j * s < Hh; j++) for (let i = 0; i * s < W; i++) { x.fillStyle = (i + j) % 2 ? '#2b2d31' : '#1c1e21'; x.fillRect(X + i * s, Y + j * s, s, s); } }
+const _litT = document.createElement('canvas');
+function litLayers(r) {   // soft-light relief + metal map, and a screen map of highlights and holographic rainbow
+  if (r._lit) return r._lit;
+  const W = Math.min(1100, r.A.width), H = Math.max(2, Math.round(W * r.A.height / r.A.width)); _litT.width = W; _litT.height = H; const x = _litT.getContext('2d', { willReadFrequently: true });
+  const read = cv => { if (!cv) return null; x.clearRect(0, 0, W, H); x.drawImage(cv, 0, 0, W, H); return x.getImageData(0, 0, W, H).data; };
+  const h = read(r.H), m = read(r.M), o = read(r.O), sd = new ImageData(W, H), hd = new ImageData(W, H), gain = 1.7 * Math.min(2.5, P.card.relief || 1.5);
+  const hue2 = (hh) => { const f = n => { const k = (n + hh * 12) % 12; return 255 * (.62 - .53 * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
+  for (let y = 0; y < H; y++) { const ya = Math.max(0, y - 1), yb = Math.min(H - 1, y + 1); for (let xx = 0; xx < W; xx++) {
+    const i = (y * W + xx) * 4; let v = 128;
+    if (h) v += (h[(ya * W + Math.max(0, xx - 1)) * 4] - h[(yb * W + Math.min(W - 1, xx + 1)) * 4]) * gain;
+    const met = m ? m[i] / 255 : 0, band = .5 + .5 * Math.sin((xx / W * .9 + y / H * .55) * Math.PI * 3.1 + 1.1);
+    if (met > .02) v += (band - .5) * 160 * met;
+    sd.data[i] = sd.data[i + 1] = sd.data[i + 2] = v < 0 ? 0 : v > 255 ? 255 : v; sd.data[i + 3] = 255;
+    let a = 0, cr = 255, cg = 255, cb = 255;
+    if (met > .02 && band > .8) a = (band - .8) / .2 * met * .6;
+    if (o && o[i] > 8) { const k = o[i] / 255 * .72; if (k > a) { [cr, cg, cb] = hue2(((xx / W) * 1.7 + (y / H) * 1.2 + o[i + 1] / 255 * .5) % 1); a = k; } }
+    hd.data[i] = cr; hd.data[i + 1] = cg; hd.data[i + 2] = cb; hd.data[i + 3] = a * 255;
+  } }
+  const soft = document.createElement('canvas'), scr = document.createElement('canvas'); soft.width = scr.width = W; soft.height = scr.height = H; soft.getContext('2d').putImageData(sd, 0, 0); scr.getContext('2d').putImageData(hd, 0, 0);
+  return (r._lit = { soft, scr });
+}
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
   fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
@@ -3806,17 +3827,28 @@ ui.drawFlat = function () {
     const cx = fv.ox + C.w * fv.s / 2, cy = fv.oy + C.h * fv.s / 2, R = Math.max(fv.w, fv.h), g = fx.createRadialGradient(cx, cy - C.h * fv.s * .15, 0, cx, cy, R * .75);
     g.addColorStop(0, '#363c4c'); g.addColorStop(.35, '#1c2029'); g.addColorStop(1, '#07080b'); fx.fillStyle = g; fx.fillRect(0, 0, fv.w, fv.h);
     const fl = fx.createRadialGradient(cx, cy + C.h * fv.s * .58, 0, cx, cy + C.h * fv.s * .58, C.w * fv.s * .7); fl.addColorStop(0, 'rgba(0,0,0,.55)'); fl.addColorStop(1, 'rgba(0,0,0,0)'); fx.fillStyle = fl; fx.fillRect(0, 0, fv.w, fv.h);
-  } else { fx.fillStyle = '#111215'; fx.fillRect(0, 0, fv.w, fv.h); fx.fillStyle = 'rgba(255,255,255,.05)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1); }
+  } else { const cx = fv.ox + C.w * fv.s / 2, cy = fv.oy + C.h * fv.s / 2, g = fx.createRadialGradient(cx, cy - C.h * fv.s * .2, 0, cx, cy, Math.max(fv.w, fv.h) * .8); g.addColorStop(0, '#2c303a'); g.addColorStop(.4, '#181a20'); g.addColorStop(1, '#08090b'); fx.fillStyle = g; fx.fillRect(0, 0, fv.w, fv.h); fx.fillStyle = 'rgba(255,255,255,.035)'; for (let y = 10; y < fv.h; y += 20) for (let x = 10; x < fv.w; x += 20) fx.fillRect(x, y, 1, 1); }
+  const lit = fv.lit !== false;
   const X = fv.ox, Y = fv.oy, CW = C.w * fv.s, CH = C.h * fv.s;
-  fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = 'rgba(0,0,0,.6)'; fx.shadowBlur = 28; fx.shadowOffsetY = 10; fx.fillStyle = '#18191c'; fx.fill(); fx.restore();
+  for (const [bl, oy, al] of S.clear ? [[30, 14, .35]] : [[54, 26, .55], [16, 6, .5], [4, 1.5, .45]]) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.shadowColor = `rgba(0,0,0,${al})`; fx.shadowBlur = bl; fx.shadowOffsetY = oy; fx.fillStyle = S.clear ? 'rgba(0,0,0,.01)' : '#18191c'; fx.fill(); fx.restore(); }
   if (r) {
     fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); fx.clip(); fx.imageSmoothingQuality = 'high';
-    if (S.clear && r.E) { checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
+    if (S.clear && r.E) { if (!lit) checker(fx, X, Y, CW, CH); fx.fillStyle = S.disp || 'rgba(30,30,30,.5)'; fx.fillRect(X, Y, CW, CH); fx.drawImage(r.E, X, Y, CW, CH); }
     else fx.drawImage(r.A, X, Y, CW, CH);
+    if (lit && !uvOn) {
+      const L = litLayers(r); fx.save(); fx.globalCompositeOperation = 'soft-light'; fx.drawImage(L.soft, X, Y, CW, CH); fx.globalCompositeOperation = 'screen'; fx.drawImage(L.scr, X, Y, CW, CH);
+      const gl = C.lam === 'gloss' ? .16 : C.lam === 'matte' ? .05 : Math.min(.18, (S.cc || 0) * .13 + (S.metal ? .07 : 0) + (S.clear ? .13 : 0));
+      if (gl > 0) { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); [[0, 0], [.3, gl], [.4, 0], [.62, 0], [.69, gl * .5], [.76, 0]].forEach(([t, a]) => g.addColorStop(t, `rgba(255,255,255,${a})`)); fx.fillStyle = g; fx.fillRect(X, Y, CW, CH); }
+      const lf = fx.createLinearGradient(X, Y, X + CW * .55, Y + CH); lf.addColorStop(0, 'rgba(255,255,255,.07)'); lf.addColorStop(1, 'rgba(0,0,0,.16)'); fx.globalCompositeOperation = 'source-over'; fx.fillStyle = lf; fx.fillRect(X, Y, CW, CH); fx.restore();
+    }
     if (!uvOn && r.X && (S.glow || P[side].some(e => e.glow > 0))) { fx.save(); fx.globalCompositeOperation = 'screen'; fx.globalAlpha = .9; fx.drawImage(r.X, X, Y, CW, CH); fx.restore(); }
     if (uvOn) { fx.fillStyle = 'rgba(14,6,30,.88)'; fx.fillRect(X, Y, CW, CH); if (r.X) { fx.globalCompositeOperation = 'lighter'; fx.drawImage(r.X, X, Y, CW, CH); fx.globalCompositeOperation = 'source-over'; } }
     if (fv.grid) { fx.lineWidth = 1; for (let m = 0; m <= C.w; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X + m * fv.s + .5, Y); fx.lineTo(X + m * fv.s + .5, Y + CH); fx.stroke(); } for (let m = 0; m <= C.h; m++) { if (fv.s < 5 && m % 5) continue; fx.strokeStyle = m % 5 ? 'rgba(80,160,255,.12)' : 'rgba(80,160,255,.3)'; fx.beginPath(); fx.moveTo(X, Y + m * fv.s + .5); fx.lineTo(X + CW, Y + m * fv.s + .5); fx.stroke(); } }
     fx.restore();
+    if (lit) { fx.save(); fx.beginPath(); cardPathAt(fx, X, Y, fv.s); const lw = Math.max(1, Math.min(6, C.thick * fv.s * .3));
+      if (S.glow) { fx.shadowColor = S.glow; fx.shadowBlur = 14; fx.strokeStyle = S.glow; fx.lineWidth = lw * 1.2; fx.stroke(); }
+      else { const g = fx.createLinearGradient(X, Y, X + CW, Y + CH); g.addColorStop(0, `rgba(255,255,255,${S.clear ? .7 : .5})`); g.addColorStop(.5, 'rgba(255,255,255,.06)'); g.addColorStop(1, 'rgba(0,0,0,.5)'); fx.strokeStyle = g; fx.lineWidth = lw; fx.stroke(); }
+      fx.restore(); }
   }
   if (fv.safe) { fx.save(); fx.strokeStyle = 'rgba(255,220,90,.75)'; fx.setLineDash([5, 4]); fx.lineWidth = 1; fx.beginPath(); rr(fx, X + 3 * fv.s, Y + 3 * fv.s, CW - 6 * fv.s, CH - 6 * fv.s, Math.max(0, C.r - 3) * fv.s); fx.stroke(); fx.setLineDash([]); fx.strokeStyle = 'rgba(255,220,90,.4)'; fx.beginPath(); fx.moveTo(X + CW / 2, Y); fx.lineTo(X + CW / 2, Y + CH); fx.moveTo(X, Y + CH / 2); fx.lineTo(X + CW, Y + CH / 2); fx.stroke(); fx.restore(); }
   const hv = hoverId && !selIds.includes(hoverId) ? P[side].find(e => e.id === hoverId) : null; if (hv) outline(hv, 'rgba(255,255,255,.55)', false);
@@ -3890,7 +3922,7 @@ function bindFlat() {
   flat.addEventListener('pointerup', end); flat.addEventListener('pointercancel', end);
   flat.addEventListener('pointerleave', () => { if (!drag && hoverId) { hoverId = null; ui.drawFlat(); } });
   flat.addEventListener('dblclick', e => { const [px, py] = pt(e); if (!hitTest(side, (px - fv.ox) / fv.s, (py - fv.oy) / fv.s)) { fv.zoom = 1; fv.px = fv.py = 0; flatLayout(); } });
-  $('#flatbar').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; const f = b.dataset.f; if (f === 'fit') { fv.zoom = 1; fv.px = fv.py = 0; flatLayout(); } if (f === 'in') zoomAt(1.25); if (f === 'out') zoomAt(.8); if (f === 'grid' || f === 'safe' || f === 'snap') { fv[f] = !fv[f]; b.classList.toggle('on', fv[f]); ui.drawFlat(); } });
+  $('#flatbar').addEventListener('click', e => { const b = e.target.closest('button[data-f]'); if (!b) return; const f = b.dataset.f; if (f === 'lit') { fv.lit = fv.lit === false; b.classList.toggle('on', fv.lit !== false); ui.drawFlat(); return; } if (f === 'fit') { fv.zoom = 1; fv.px = fv.py = 0; flatLayout(); } if (f === 'in') zoomAt(1.25); if (f === 'out') zoomAt(.8); if (f === 'grid' || f === 'safe' || f === 'snap') { fv[f] = !fv[f]; b.classList.toggle('on', fv[f]); ui.drawFlat(); } });
 }
 
 /* ---------- 3D bridge ---------- */
