@@ -160,7 +160,7 @@ function fmtOpts() { return Object.entries(FORMATS).filter(([k, v]) => k === 'cu
 function setModeUI(m) {
   appMode = m; document.body.dataset.mode = m;
   $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
-  const sub = $('.brand span'); if (sub) sub.textContent = m === 'logo' ? 'a studio for fictional faction emblems' : 'a studio for fictional identity cards';
+  const sub = $('.brand > span:last-child'); if (sub) sub.textContent = m === 'logo' ? 'a studio for fictional faction emblems' : 'a studio for fictional identity cards';
   const f = CARD_P.find(p => p[0] === 'fmt'); if (f) f[3] = fmtOpts();
   presetThumbs.clear(); if (presetsOpen()) { renderPresetCats(); renderPresetGrid(); }
   try { localStorage.setItem('idforge.mode', m); } catch (e) { }
