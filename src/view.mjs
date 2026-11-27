@@ -389,6 +389,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
   function tweenTo(pos, tgt, dur) { tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, t: 0, dur: dur || 1.1 }; }
   function camPreset(name) {
     cardG.getWorldPosition(center); const s = Math.max(W, H) / 85.6, st = F.P.scene.pose === 'stand' || F.P.scene.pose === 'lanyard';
+    { const ps = F.P.scene.pose, pyT = ps === 'desk' ? (flexMode ? -flexMinZ : TH / 2) + .06 : ps === 'stand' ? H / 2 + 5 : ps === 'lanyard' ? H / 2 + 34 : 13 + Math.max(W, H) * .08; center.y += pyT - poseY; }   // aim where the card will settle, not where it is mid-rise
     const T = st ? { hero: [-70, 35, 230], front: [0, 4, 230], top: [0, 120, 200], macro: [30, 10, 60], edge: [190, 10, 30], low: [120, -10, 150] } : { hero: [-55, 165, 150], front: [0, 250, .01], top: [0, 260, .01], macro: [28, 40, 46], edge: [0, 16, 180], low: [135, 50, 110] };
     const o = T[name] || T.hero; let tgt = center.clone();
     if (name === 'macro') { tmp.set(W / 2 - 9, -H / 2 + 9, TH / 2); cardG.localToWorld(tmp); tgt = tmp.clone(); }
