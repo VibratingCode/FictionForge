@@ -9,6 +9,9 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 
 const F = window.Forge;
 function start() {
+  /* Frames are drawn only when something on screen changes (see the loop at the bottom). */
+  let need = 3, busy = true, shadowDirty = true;
+  function kick(n) { need = Math.max(need, n || 2); }
   const host = document.getElementById('gl');
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -53,7 +56,7 @@ function start() {
 
   /* ---------- lights ---------- */
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 9; key.shadow.blurSamples = 18; key.shadow.bias = -.0003; key.shadow.camera.near = 40; key.shadow.camera.far = 1000;
+  key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6; key.shadow.blurSamples = 18; key.shadow.bias = -.0003; key.shadow.camera.near = 40; key.shadow.camera.far = 1000;
   scene.add(key, key.target);
   const uvFlood = new THREE.SpotLight(0x6c2bff, 0, 0, .75, .85, 0); uvFlood.position.set(0, 170, 70); scene.add(uvFlood, uvFlood.target);
   const torch = new THREE.SpotLight(0x8040ff, 0, 0, .3, .75, 0); scene.add(torch, torch.target);
@@ -197,6 +200,7 @@ void main(){
     const C = F.P.card, S = F.sub();
     const sig = [C.w, C.h, C.r, C.thick, C.slot, C.mode || '', !!S.flex, S.flex ? [C.curl, C.crumple, C.foldV, C.foldH].join(',') : ''].join('|');
     if (sig !== geoSig) { geoSig = sig; rebuild(geoC(), S); }
+    kick(2); shadowDirty = true;
     const clear = S.clear > 0, atten = new THREE.Color(clear && C.tintOn && S.tintable ? C.tint : (S.atten || '#ffffff'));
     for (const m of [matF, matB]) {
       const refl = F.P.scene.refl ?? .55;
@@ -222,8 +226,9 @@ void main(){
   function tex(canvas, srgb) {
     if (!canvas) return null; let t = tc.get(canvas);
     if (t && (t.userData.w !== canvas.width || t.userData.h !== canvas.height)) { t.dispose(); t = null; }
-    if (!t) { t = new THREE.CanvasTexture(canvas); t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = maxAniso; t.userData.w = canvas.width; t.userData.h = canvas.height; tc.set(canvas, t); }
-    t.needsUpdate = true; return t;
+    if (!t) { t = new THREE.CanvasTexture(canvas); t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = maxAniso; t.userData.w = canvas.width; t.userData.h = canvas.height; t.userData.ver = -1; tc.set(canvas, t); }
+    if (canvas._ver == null || t.userData.ver !== canvas._ver) { t.needsUpdate = true; t.userData.ver = canvas._ver; }   // unchanged channels are not uploaded again
+    return t;
   }
   const sigOf = (m) => [m.map, m.bumpMap, m.roughnessMap, m.metalnessMap, m.transmissionMap, m.emissiveMap].map(t => t ? 1 : 0).join('');
   function setMaps(r) {
@@ -234,6 +239,7 @@ void main(){
     hm.uniforms.uMask.value = r.O ? tex(r.O, false) : null;
     const hmesh = r.side === 'front' ? holoF : holoB; if (hmesh) hmesh.visible = !!r.O;
     if (exp && r.side === 'front') exp[0].userData.on = !!r.O;
+    kick(2); shadowDirty = true;
   }
 
   /* ---------- lanyard ---------- */
@@ -325,7 +331,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
   composer.addPass(finish);
 
   /* ---------- state ---------- */
-  let uvOn = false, uvT = 0, torchOn = false, flipTarget = 0, flipCur = 0, spinOn = false, tiltOn = false, tiltK = 0, expOn = false, expT = 0, sweepT = -1, poseY = 30, active = true, time = 0, tween = null, filming = null, keyBase = 2.6;
+  let uvOn = false, uvT = 0, torchOn = false, flipTarget = 0, flipCur = 0, spinOn = false, tiltOn = false, tiltK = 0, expOn = false, expT = 0, sweepT = -1, poseY = 30, active = true, time = 0, bobK = 0, tween = null, filming = null, keyBase = 2.6;
   const lightDir = new THREE.Vector3(0, 1, 0), center = new THREE.Vector3(), tmp = new THREE.Vector3();
   const labels = ['Holographic laminate', 'Front print', 'Core', 'Back print'].map(t => { const d = document.createElement('div'); d.textContent = t; document.getElementById('labels').appendChild(d); return d; });
 
@@ -342,12 +348,15 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     dust.visible = !!s.dust; if (s.pose === 'lanyard') buildLanyard(); lanyardG.visible = s.pose === 'lanyard';
     const pr = s.quality === 'draft' ? 1 : s.quality === 'ultra' ? Math.min(window.devicePixelRatio || 1, 2.5) : Math.min(window.devicePixelRatio || 1, 2);
     if (Math.abs(renderer.getPixelRatio() - pr) > .01) { renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); }
-    key.shadow.mapSize.setScalar(s.quality === 'draft' ? 1024 : s.quality === 'ultra' ? 4096 : 3072);
+    const ms = s.quality === 'draft' ? 1024 : s.quality === 'ultra' ? 4096 : 2048;
+    if (key.shadow.mapSize.x !== ms) { key.shadow.mapSize.setScalar(ms); key.shadow.radius = 9 * ms / 3072; if (key.shadow.map) { key.shadow.map.dispose(); key.shadow.map = null; } if (key.shadow.mapPass) { key.shadow.mapPass.dispose(); key.shadow.mapPass = null; } }
+    kick(2); shadowDirty = true;
   }
   function resize() {
     const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return;
     renderer.setSize(w, h, false); composer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
     const pr = renderer.getPixelRatio(); finish.uniforms.uRes.value.set(w * pr, h * pr); dustMat.uniforms.uPR.value = pr;
+    kick(2);
   }
   new ResizeObserver(resize).observe(host); resize();
 
@@ -366,15 +375,15 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     plane.setFromNormalAndCoplanarPoint(nrm, pnt); const p = ray.ray.intersectPlane(plane, new THREE.Vector3()); return p ? toMM(cardG.worldToLocal(p), sd) : null;
   }
   function pickAny(e) { setRay(e); const objs = [body, flexF, flexB, bd].filter(Boolean); const h = ray.intersectObjects(objs, false)[0]; return h ? h.point.clone() : null; }
-  const cvs = renderer.domElement; let down = null;
+  const cvs = renderer.domElement; let down = null, hoverT = 0;
   cvs.addEventListener('pointerdown', e => {
     if (e.button !== 0) return; const hit = pickCard(e); down = { x: e.clientX, y: e.clientY, hit, drag: false };
     if (hit && F.pick3D(hit.side, hit.mx, hit.my, 'down')) { down.drag = true; controls.enabled = false; cvs.setPointerCapture(e.pointerId); cvs.style.cursor = 'grabbing'; }
   }, true);
   cvs.addEventListener('pointermove', e => {
-    if (torchOn) { const p = pickAny(e); if (p) torchU.uTorchPos.value.copy(p); }
+    if (torchOn) { const p = pickAny(e); if (p) { torchU.uTorchPos.value.copy(p); kick(1); } }
     if (down && down.drag) { const p = planeMM(e, down.hit.side); if (p) F.pick3D(down.hit.side, p.mx, p.my, 'move'); return; }
-    if (!down && !torchOn) { const h = pickCard(e); cvs.style.cursor = h ? 'pointer' : 'grab'; }
+    if (!down && !torchOn && e.timeStamp - hoverT > 50) { hoverT = e.timeStamp; const h = pickCard(e); cvs.style.cursor = h ? 'pointer' : 'grab'; }
   });
   const up = (e) => {
     if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4;
@@ -383,7 +392,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     down = null;
   };
   cvs.addEventListener('pointerup', up); cvs.addEventListener('pointercancel', up);
-  cvs.addEventListener('pointerleave', () => { if (torchOn) torchU.uTorchPos.value.set(0, -1e4, 0); });
+  cvs.addEventListener('pointerleave', () => { if (torchOn) { torchU.uTorchPos.value.set(0, -1e4, 0); kick(1); } });
   cvs.addEventListener('dblclick', e => { const p = pickAny(e); if (!p) return; const dir = camera.position.clone().sub(controls.target).normalize(); tweenTo(p.clone().add(dir.multiplyScalar(Math.max(W, H) * .55)), p, 1); });
 
   function tweenTo(pos, tgt, dur) { tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, t: 0, dur: dur || 1.1 }; }
@@ -400,21 +409,24 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
   const clock = new THREE.Clock();
   function update(dt) {
     const s = F.P.scene; time += dt;
-    uvT += ((uvOn ? 1 : 0) - uvT) * damp(dt, 4.5);
-    const df = flipTarget - flipCur; flipCur += df * damp(dt, 6.5); if (Math.abs(df) < 1e-3) flipCur = flipTarget; flipG.rotation.y = flipCur;
+    busy = !!tween; uvT += ((uvOn ? 1 : 0) - uvT) * damp(dt, 4.5); if (Math.abs((uvOn ? 1 : 0) - uvT) < 1e-3) uvT = uvOn ? 1 : 0; else busy = true;
+    const df = flipTarget - flipCur; flipCur += df * damp(dt, 6.5); if (Math.abs(df) < 1e-3) flipCur = flipTarget; else busy = true; flipG.rotation.y = flipCur;
     const fl = Math.sin(Math.min(1, Math.abs(flipTarget - flipCur) / Math.PI) * Math.PI), sz = Math.max(W, H);
-    let py, rx;
+    let py, rx; const bobGoal = s.float && s.pose !== 'desk' && s.pose !== 'stand' && s.pose !== 'lanyard' ? 1 : 0;
+    bobK += (bobGoal - bobK) * damp(dt, 3); if (Math.abs(bobGoal - bobK) < 1e-3) bobK = bobGoal; else busy = true;
     if (s.pose === 'desk') { py = (flexMode ? -flexMinZ : TH / 2) + .06 + fl * W * .55; rx = -Math.PI / 2; }
     else if (s.pose === 'stand') { py = H / 2 + 5 + fl * 6; rx = -.12; }
     else if (s.pose === 'lanyard') { py = H / 2 + 34 + fl * 4; rx = 0; }
-    else { py = 13 + sz * .08 + (s.float ? Math.sin(time * 1.1) * 1.3 : 0) + fl * sz * .14; rx = -Math.PI / 2; }
+    else { py = 13 + sz * .08 + fl * sz * .14; rx = -Math.PI / 2; }
     if (expOn) py += sz * .15;
-    poseY += (py - poseY) * damp(dt, 7); pose.position.y = poseY; orient.rotation.x += (rx - orient.rotation.x) * damp(dt, 5);
-    orient.rotation.z += ((s.pose === 'lanyard' ? Math.sin(time * .9) * .035 : 0) - orient.rotation.z) * damp(dt, 4);
+    if (Math.abs(py - poseY) > 1e-3 || Math.abs(rx - orient.rotation.x) > 1e-4) busy = true;
+    poseY += (py - poseY) * damp(dt, 7); pose.position.y = poseY + Math.sin(time * 1.1) * 1.3 * bobK; orient.rotation.x += (rx - orient.rotation.x) * damp(dt, 5);
+    const rz = s.pose === 'lanyard' ? Math.sin(time * .9) * .035 : 0; if (s.pose !== 'lanyard') { if (Math.abs(orient.rotation.z) < 1e-4) orient.rotation.z = 0; else busy = true; }
+    orient.rotation.z += (rz - orient.rotation.z) * damp(dt, 4);
     if (spinOn && !filming) pose.rotation.y += dt * .5;
     if (filming) { filming.t += dt; pose.rotation.y = filming.yaw0 + (Math.min(1, filming.t / filming.dur)) * Math.PI * 2; if (filming.t >= filming.dur) filming = null; }
-    tiltK += (((tiltOn || filming) && s.pose !== 'lanyard' ? 1 : 0) - tiltK) * damp(dt, 3);
-    expT += ((expOn ? 1 : 0) - expT) * damp(dt, 4); if (Math.abs(expT - (expOn ? 1 : 0)) < 1e-3) expT = expOn ? 1 : 0;
+    tiltK += (((tiltOn || filming) && s.pose !== 'lanyard' ? 1 : 0) - tiltK) * damp(dt, 3); if (!tiltOn && !filming) { if (tiltK < 1e-3) tiltK = 0; else busy = true; }
+    expT += ((expOn ? 1 : 0) - expT) * damp(dt, 4); if (Math.abs(expT - (expOn ? 1 : 0)) < 1e-3) expT = expOn ? 1 : 0; else busy = true;
     tiltG.rotation.x = tiltK * Math.sin(time * 1.15) * .16 - expT * .5; tiltG.rotation.y = tiltK * Math.sin(time * .8) * .27 + expT * .6;
     const showExp = expT > .002;
     if (body) body.visible = !showExp; if (flexF) flexF.visible = flexB.visible = !showExp;
@@ -434,7 +446,7 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     if (torchOn) { torch.position.copy(torchU.uTorchPos.value).add(tmp.set(0, 75, 10)); torch.target.position.copy(torchU.uTorchPos.value); }
     const eg = (F.P.front.some(e => e.glow > 0) || F.P.back.some(e => e.glow > 0)) ? 1.3 * (F.P.card.glowInt ?? 1) : 0, gb = Math.max(glowBase, eg); for (const m of [matF, matB]) { const G = m.userData.mapG, want = (uvT > .01 || !G) ? (m.userData.mapX || null) : G; if (m.emissiveMap !== want) { const had = !!m.emissiveMap; m.emissiveMap = want; if (had !== !!want) m.needsUpdate = true; } m.emissiveIntensity = Math.max(uvT * 2.6, m.emissiveMap ? gb : 0); }
     for (const hm of [holoMatF, holoMatB]) { hm.uniforms.uTime.value = time; hm.uniforms.uLightDir.value.copy(lightDir); hm.uniforms.uLevel.value = 1 - .9 * uvT; }
-    bloom.strength = s.bloom * .65 + uvT * .55; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
+    bloom.strength = s.bloom * .65 + uvT * .55; bloom.enabled = bloom.strength > .004; dustMat.uniforms.uTime.value = time; dustMat.uniforms.uLevel.value = 1 - uvT * .85; finish.uniforms.uTime.value = time;
     const upright = s.pose === 'stand' || s.pose === 'lanyard', lift = Math.max(.1, poseY - (upright ? H / 2 : 0)); blobG.position.set(center.x - lightDir.x / Math.max(.2, lightDir.y) * lift * .45, .25, center.z - lightDir.z / Math.max(.2, lightDir.y) * lift * .45); blobG.rotation.y = pose.rotation.y;
     if (upright) blob.scale.set(W * 1.25, TH + 16, 1); else { const sp = 1.32 + lift * .012; blob.scale.set(W * sp, H * sp, 1); }
     blobMat.opacity = blobBase * Math.max(.25, 1 - lift / 90) * (1 - uvT * .6); blobG.visible = !voidMode;
@@ -443,8 +455,31 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
     if (showExp && expT > .25) { const r = renderer.domElement.getBoundingClientRect(); const zs = [exp[0].position.z, exp[1].position.z, 0, exp[3].position.z]; labels.forEach((d, i) => { if (i === 0 && !exp[0].visible) { d.style.display = 'none'; return; } tmp.set(W / 2 + 3, H / 2 - 4, zs[i]); cardG.localToWorld(tmp); tmp.project(camera); d.style.display = 'block'; d.style.opacity = Math.min(1, (expT - .25) * 2); d.style.transform = `translate(${(tmp.x * .5 + .5) * r.width}px, ${(-tmp.y * .5 + .5) * r.height}px) translate(6px,-50%)`; }); }
     else labels.forEach(d => d.style.display = 'none');
   }
-  function frame(dt) { update(dt); controls.update(); composer.render(dt); }
-  renderer.setAnimationLoop(() => { const dt = Math.min(clock.getDelta(), .05); if (active) frame(dt); });
+  function frame(dt) { update(dt); controls.update(); renderer.shadowMap.needsUpdate = true; composer.render(dt); }
+  /* A still scene draws nothing. Camera moves, flips and other short transitions draw at the display's own rate; spin, tilt,
+     sweeps and recordings at up to 60 fps; ambient motion (the hover bob, the lanyard's sway, drifting dust) at 30 fps.
+     The shadow map is only redrawn when the card, the light or the geometry changes, not when the camera orbits. */
+  const menuEl = document.getElementById('mainMenu'), shKey = new Float64Array(19);
+  let lastDraw = -1e9, wasMoving = true;
+  function shadowMoved() {
+    cardG.updateWorldMatrix(true, false); const e = cardG.matrixWorld.elements, p = key.position; let m = false;
+    for (let i = 0; i < 16; i++) if (Math.abs(e[i] - shKey[i]) > 1e-6) { m = true; shKey[i] = e[i]; }
+    if (Math.abs(p.x - shKey[16]) + Math.abs(p.y - shKey[17]) + Math.abs(p.z - shKey[18]) > 1e-4) { m = true; shKey[16] = p.x; shKey[17] = p.y; shKey[18] = p.z; }
+    return m;
+  }
+  renderer.shadowMap.autoUpdate = false;
+  renderer.setAnimationLoop((now) => {
+    const dt = Math.min(clock.getDelta(), .05); if (!active) return;
+    update(dt); const camMoved = controls.update();
+    const moving = busy || camMoved || !!(down && down.drag);
+    if (wasMoving && !moving) need = Math.max(need, 1); wasMoving = moving;   // one last frame once everything has settled
+    const s = F.P.scene, covered = menuEl && !menuEl.hidden;
+    const gap = moving || need > 0 ? 0 : (spinOn || tiltOn || filming || sweepT >= 0) ? 1000 / 60 : !covered && (bobK > 0 || s.pose === 'lanyard' || dust.visible) ? 1000 / 30 : -1;
+    if (gap < 0 || now - lastDraw < gap - 4) return;
+    lastDraw = now; if (need > 0) need--;
+    if (shadowDirty || shadowMoved()) { renderer.shadowMap.needsUpdate = true; shadowDirty = false; }
+    composer.render(dt);
+  });
 
   /* ---------- outputs ---------- */
   async function snapshot(v) { const out = await snapCanvas(v); return await new Promise(r => out.toBlob(r, 'image/png')); }
@@ -475,10 +510,10 @@ c *= mix(1.0, 1.0 - smoothstep(0.08, 0.85, r2 * 2.1), uVig); float n = h(floor(v
 
   F.attachView({
     setCard, setScene, setMaps, resize, camPreset, snapshot, snapshotPair, record,
-    setUV(on) { uvOn = !!on; }, setTorch(on) { torchOn = !!on; if (!on) torchU.uTorchPos.value.set(0, -1e4, 0); cvs.style.cursor = on ? 'crosshair' : ''; },
-    flipTo(sd, instant) { flipTarget = sd === 'back' ? Math.PI : 0; if (instant) flipCur = flipTarget; },
+    setUV(on) { uvOn = !!on; kick(1); }, setTorch(on) { torchOn = !!on; if (!on) torchU.uTorchPos.value.set(0, -1e4, 0); cvs.style.cursor = on ? 'crosshair' : ''; kick(2); },
+    flipTo(sd, instant) { flipTarget = sd === 'back' ? Math.PI : 0; if (instant) flipCur = flipTarget; kick(2); },
     toggle(a) { if (a === 'spin') return spinOn = !spinOn; if (a === 'tilt') return tiltOn = !tiltOn; if (a === 'explode') return expOn = !expOn; return false; },
-    sweep() { sweepT = 0; }, setActive(on) { active = !!on; clock.getDelta(); }
+    sweep() { sweepT = 0; kick(1); }, setActive(on) { active = !!on; clock.getDelta(); if (on) kick(3); }
   });
 }
 try { start(); } catch (e) { console.error(e); window.Forge && window.Forge.viewFailed((e && e.message) || 'WebGL is unavailable'); }

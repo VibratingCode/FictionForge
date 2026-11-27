@@ -32,13 +32,14 @@ const SP_OK = (() => { try { return 'letterSpacing' in document.createElement('c
 const FONTS = { 'Inter': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
 const SYS_FONTS = new Set(['Georgia', 'Arial']);
 const fontAsked = new Set();
+const GEN = { v: 0 };   // bumped whenever a font or an image finishes loading, so caches drawn without it are redrawn
 function fstack(n) { return `"${n}", ${FONTS[n] || 'sans-serif'}`; }
 function wantFont(n, w, it) {
   if (!document.fonts || SYS_FONTS.has(n)) return;
   const spec = `${it ? 'italic ' : ''}${w || 400} 40px "${n}"`;
   if (fontAsked.has(spec)) return; fontAsked.add(spec);
   try { if (document.fonts.check(spec)) return; } catch (e) { }
-  document.fonts.load(spec).then(f => { if (f && f.length) invalidate(['front', 'back']); }).catch(() => { });
+  document.fonts.load(spec).then(f => { if (f && f.length) { GEN.v++; invalidate(['front', 'back']); } }).catch(() => { });
 }
 function setFont(c, n, w, px, it) { wantFont(n, w, it); c.font = `${it ? 'italic ' : ''}${w || 400} ${Math.max(.5, px)}px ${fstack(n)}`; }
 function setSp(c, px) { if (SP_OK) c.letterSpacing = (px || 0) + 'px'; }
@@ -149,7 +150,7 @@ const imgs = new Map();
 function getImg(id) {
   if (!id) return null; const src = P.assets[id]; if (!src) return null;
   let r = imgs.get(id);
-  if (!r) { r = { img: new Image(), ok: false }; r.img.onload = () => { r.ok = true; invalidate(['front', 'back']); }; r.img.src = src; imgs.set(id, r); }
+  if (!r) { r = { img: new Image(), ok: false }; r.img.onload = () => { r.ok = true; GEN.v++; invalidate(['front', 'back']); }; r.img.src = src; imgs.set(id, r); }
   return r.ok ? r.img : null;
 }
 
@@ -295,11 +296,14 @@ def('photo', 'Photo', { w: 22, h: 28, asset: null, fit: 'cover', zoom: 1, offX: 
     if (look === 'color' && !mono && el.saturate !== 1) f += `saturate(${el.saturate ?? 1}) `;
     if (el.contrast !== 1 || ov.laser) f += `contrast(${(el.contrast || 1) * (ov.laser ? 1.12 : 1)}) `; if (el.brightness !== 1) f += `brightness(${el.brightness}) `;
     if (mono && ov.laser && lum(ov.color) > .5) f += 'invert(1) ';
-    if (img) {
-      if (el.lines > 0 && !ov.uv) lineScreen(c, img, el, mono ? ov.color : (look === 'duo' ? el.tint : '#141414'));
-      else if (el.halftone > 0 && !ov.uv) halftone(c, img, el, mono ? ov.color : (look === 'duo' ? el.tint : '#141414'), look === 'color' && !mono);
-      else { if (BLUR_OK && f) c.filter = f; drawFit(c, img, el); c.filter = 'none'; }
-    } else { if (BLUR_OK && f) c.filter = f; if (el.ph === 'silhouette') placeholder(c, el, mono); else portrait(c, el); c.filter = 'none'; }
+    if (ov.part !== 'over') {
+      if (img) {
+        if (el.lines > 0 && !ov.uv) lineScreen(c, img, el, mono ? ov.color : (look === 'duo' ? el.tint : '#141414'));
+        else if (el.halftone > 0 && !ov.uv) halftone(c, img, el, mono ? ov.color : (look === 'duo' ? el.tint : '#141414'), look === 'color' && !mono);
+        else { if (BLUR_OK && f) c.filter = f; drawFit(c, img, el); c.filter = 'none'; }
+      } else { if (BLUR_OK && f) c.filter = f; if (el.ph === 'silhouette') placeholder(c, el, mono); else portrait(c, el); c.filter = 'none'; }
+    }
+    if (ov.part === 'img') { c.restore(); return; }
     if (look === 'duo' && !mono) { c.globalCompositeOperation = 'screen'; c.fillStyle = hexA(el.tint, .55); c.fillRect(-w / 2, -h / 2, w, h); c.globalCompositeOperation = 'multiply'; c.fillStyle = el.tint; c.fillRect(-w / 2, -h / 2, w, h); }
     if (ov.uv) { c.globalCompositeOperation = 'multiply'; c.fillStyle = ov.color; c.fillRect(-w / 2, -h / 2, w, h); }
     if (ov.laser && mono && !img) { c.globalCompositeOperation = lum(ov.color) > .5 ? 'screen' : 'multiply'; c.fillStyle = ov.color; c.globalAlpha = .45; c.fillRect(-w / 2, -h / 2, w, h); }
@@ -711,14 +715,77 @@ function cv(side, tier, key, w, h) {
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; c._gen = (c._gen || 0) + 1; }
   return c;
 }
-function prep(c, fill) { const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, c.width, c.height); if (fill) { x.fillStyle = fill; x.fillRect(0, 0, c.width, c.height); } return x; }
+/* substrate texture is identical from render to render: build it once per size and reuse it */
+const SUB_CACHE = new Map();
+function paintSubstrate(x, ch, k, w, h, fill) {
+  const C = P.card, key = [ch, w, h, fill, C.sub, C.seed, C.w, C.h, C.mode || ''].join('|'); let s = SUB_CACHE.get(key);
+  if (s) { SUB_CACHE.delete(key); SUB_CACHE.set(key, s); }
+  else { s = document.createElement('canvas'); s.width = w; s.height = h; const c = s.getContext('2d'); c.fillStyle = fill; c.fillRect(0, 0, w, h); subTex(c, ch, k); SUB_CACHE.set(key, s); while (SUB_CACHE.size > 8) SUB_CACHE.delete(SUB_CACHE.keys().next().value); }
+  x.drawImage(s, 0, 0);
+}
+const _relief = { c: null };
+function prep(c, fill) { c._ver = (c._ver || 0) + 1; const x = c.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, c.width, c.height); if (fill) { x.fillStyle = fill; x.fillRect(0, 0, c.width, c.height); } return x; }
 function clipCard(x, k) { x.save(); cardPath(x, k); x.clip('evenodd'); }
+/* Expensive elements are drawn once into a bitmap and reused while their settings stay the same: moving, rotating or
+   re-ordering them, or editing anything else on the card, costs a single image draw. Elements that read their position or the
+   card outline are never cached, and any element that blends against what is beneath it is detected and drawn directly. */
+const ELC = { map: new Map(), px: 0, max: 28e6, entry: 6e6, no: new Set(), off: false };
+const CACHE_T = new Set(['photo', 'guilloche', 'pattern', 'halftone', 'sigil', 'tree', 'mark', 'glyph', 'seal', 'stamp', 'frame', 'flag', 'shape', 'safety', 'picto', 'stripes', 'rays', 'nfpa']);
+const BOXED_T = new Set(['pattern', 'halftone', 'rays', 'stripes']);   // these clip themselves to their own box
+const _GCO = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'globalCompositeOperation');
+function elMargin(el) {
+  const fx = (el.shadow || 0) * 2.5 + (el.glow || 0) * 3 + (el.strokeW || 0) * 2 + (el.outlineW || 0) * 2 + (el.border || 0) * 2 + (el.bevel || 0);
+  if (BOXED_T.has(el.type)) return .4 + (el.lw || 0) + fx;
+  if (el.type === 'guilloche') return (el.mode === 'field' ? .12 * el.h : .4) + (el.lw || 0) + fx;
+  return 1.5 + Math.max(el.w, el.h) * .06 + (el.lineW || 0) * 2 + fx;
+}
+/* The bitmap holds the element already rotated and is placed on whole device pixels, with the sub-pixel offset drawn into it,
+   so a cached element is exactly as sharp as one drawn directly. Opacity and multiply or screen printing are drawn into the
+   bitmap the same way they would hit the card (multiply onto white, screen onto black), so overlaps darken exactly as before. */
+function elBitmap(t, el, ov, k, tx, ty, ga, gco) {
+  const { x, y, rot, opacity, name, locked, visible, id, _mirror, blend, finish, relief, ...rest } = el, C = P.card;
+  const m = elMargin(el), hw = el.w / 2 + m, hh = el.h / 2 + m, a = (rot || 0) * Math.PI / 180, ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a));
+  let ax0 = -(hw * ca + hh * sa), ax1 = -ax0, ay0 = -(hw * sa + hh * ca), ay1 = -ay0;
+  ax0 = Math.max(ax0, -x); ay0 = Math.max(ay0, -y); ax1 = Math.min(ax1, C.w - x); ay1 = Math.min(ay1, C.h - y);   // nothing outside the card is ever seen
+  if (ax1 <= ax0 || ay1 <= ay0) return 'skip';
+  const L = tx + (x + ax0) * k, Tp = ty + (y + ay0) * k, ix = Math.floor(L), iy = Math.floor(Tp), fx = L - ix, fy = Tp - iy;
+  const bw = Math.ceil((ax1 - ax0) * k + fx), bh = Math.ceil((ay1 - ay0) * k + fy); if (bw < 2 || bh < 2 || bw * bh > ELC.entry) return null;
+  const key = JSON.stringify([rest, ov, Math.round(k * 1e4), rot || 0, _mirror ? 1 : 0, Math.round(ax0 * 100), Math.round(ay0 * 100), Math.round(ax1 * 100), Math.round(ay1 * 100), Math.round(fx * 4), Math.round(fy * 4), Math.round(ga * 1000), gco, C.seed, C.w, C.h, GEN.v, rest.asset ? !!getImg(rest.asset) : 0]);
+  if (ELC.no.has(key)) return null;
+  let ent = ELC.map.get(key);
+  if (ent) { ELC.map.delete(key); ELC.map.set(key, ent); }
+  else {
+    const cv = document.createElement('canvas'); cv.width = bw; cv.height = bh; const x2 = cv.getContext('2d'); let bad = false;
+    if (gco !== 'source-over') { x2.fillStyle = gco === 'multiply' ? '#fff' : '#000'; x2.fillRect(0, 0, bw, bh); _GCO.set.call(x2, gco); }
+    x2.globalAlpha = ga;
+    Object.defineProperty(x2, 'globalCompositeOperation', { get() { return _GCO.get.call(this); }, set(v) { if (v !== 'source-over' && v !== gco) bad = true; _GCO.set.call(this, v); } });
+    x2.translate(fx - ax0 * k, fy - ay0 * k); if (rot) x2.rotate(a); if (_mirror) x2.scale(-1, 1); x2.scale(k, k);
+    try { t.draw(x2, el, ov, k); } catch (err) { console.warn('draw failed', el.type, err); }
+    if (bad) { ELC.no.add(key); return null; }
+    ent = { cv, px: bw * bh }; ELC.map.set(key, ent); ELC.px += ent.px;
+    while (ELC.px > ELC.max && ELC.map.size > 1) { const [k0, e0] = ELC.map.entries().next().value; ELC.map.delete(k0); ELC.px -= e0.px; }
+  }
+  return { cv: ent.cv, dx: ix - tx, dy: iy - ty };
+}
 function drawEl(c, el, k, ov) {
-  const t = T[el.type]; if (!t) return;
+  const t = T[el.type]; if (!t) return; ov = ov || { ch: 'A', color: null };
+  if (!ELC.off && CACHE_T.has(el.type) && !(el.type === 'photo' && ov.ch === 'H')) {
+    const M = c.getTransform(), gco = c.globalCompositeOperation;
+    if (M.a === 1 && M.d === 1 && M.b === 0 && M.c === 0 && (gco === 'source-over' || gco === 'multiply' || gco === 'screen')) {
+      const split = el.type === 'photo' && ((ov.ch === 'A' && (ov.color == null || ov.laser)) || (ov.ch === 'X' && ov.uv));   // cache the photograph, draw its overlays live
+      const ga = c.globalAlpha, ent = elBitmap(t, el, split ? { ...ov, part: 'img' } : ov, k, M.e, M.f, ga, gco);
+      if (ent === 'skip') return;
+      if (ent) { c.globalAlpha = 1; c.drawImage(ent.cv, ent.dx, ent.dy); c.globalAlpha = ga; if (split) drawDirect(t, c, el, k, { ...ov, part: 'over' }); return; }
+    }
+  }
+  drawDirect(t, c, el, k, ov);
+}
+function drawDirect(t, c, el, k, ov) {
   c.save(); c.translate(el.x * k, el.y * k); if (el.rot) c.rotate(el.rot * Math.PI / 180); if (el._mirror) c.scale(-1, 1); c.scale(k, k);
-  try { t.draw(c, el, ov || { ch: 'A', color: null }, k); } catch (e) { console.warn('draw failed', el.type, e); }
+  try { t.draw(c, el, ov, k); } catch (e) { console.warn('draw failed', el.type, e); }
   c.restore();
 }
+Forge.ELC = ELC;
 /* Full-card background artwork (underprints, tint panels) is printed as transparent process ink: it multiplies onto the
    material and only partly hides its metal, gloss and clarity, so changing the material visibly changes the card. */
 const TINT_TYPES = new Set(['pattern', 'guilloche', 'rect', 'ellipse', 'shape']);
@@ -737,10 +804,20 @@ function renderSide(side, tier, opts) {
   const clear = S.clear > 0, fl = fluorOf(), lamOn = C.holoLam !== 'none' && (side === 'front' || C.holoLamBack);
   const elGlow = els.some(e => e.glow > 0), need = { T: clear || wins.length > 0, X: elGlow || !!S.glow || !!fl || C.uvFibers > 0 || els.some(e => e.finish === 'uv'), O: lamOn || !!S.holoBase || els.some(e => e.finish === 'holo'), M: S.metal > 0 || els.some(e => e.finish === 'foil' || e.finish === 'holo' || e.finish === 'window') };
   const out = { side, tier, pw, ph, need };
+  /* Nothing that affects this side changed: hand back the last result untouched (and nothing is uploaded to the 3D view).
+     Only colours changed: redraw the colour channel and keep relief, gloss, metal, clarity, glow and holo as they are. */
+  const pool = (chans[side] || (chans[side] = {}))[tier] || (chans[side][tier] = {});
+  let keyA = null, keyN = null;
+  if (!opts || opts.peek) {
+    const base = JSON.stringify([C, S, pw, ph, GEN.v]); keyA = base + JSON.stringify([els, wins]);
+    if (pool._keyA === keyA && pool._out) return pool._out;
+    if (opts) return null;   // peek: only report a result that is still current, never draw
+    keyN = base + JSON.stringify([els, wins], inkFree);
+  }
 
   /* albedo */
   const A = cv(side, tier, 'A', pw, ph), a = prep(A); clipCard(a, k);
-  const art = !!(opts && opts.art); if (!art) { a.fillStyle = clear ? '#ffffff' : baseColor(); a.fillRect(0, 0, pw, ph); subTex(a, 'A', k); }
+  const art = !!(opts && opts.art); if (!art) paintSubstrate(a, 'A', k, pw, ph, clear ? '#ffffff' : baseColor());
   let tgt = a, E = null;
   if (clear && !art) { E = cv(side, tier, 'E', pw, ph); tgt = prep(E); clipCard(tgt, k); }
   const owin = wins.filter(w => w._mirror);
@@ -755,19 +832,21 @@ function renderSide(side, tier, opts) {
   if (clear) { tgt.restore(); a.drawImage(E, 0, 0); out.E = E; }
   age(a, 'A', k, side);
   a.restore(); out.A = A;
-  if (opts && opts.albedoOnly) return out;
+  if (opts && opts.albedoOnly) { pool._keyA = null; return out; }
+  if (keyN && pool._keyN === keyN && pool._opt) { Object.assign(out, pool._opt); pool._keyA = keyA; pool._out = out; return out; }
 
   /* height */
-  const Hc = cv(side, tier, 'H', hw, hh), h = prep(Hc, '#808080'); clipCard(h, kh); subTex(h, 'H', kh);
-  for (const el of els) {
-    const r = el.relief || 0; if (!r) continue;
-    h.save(); h.globalAlpha = Math.min(1, Math.abs(r)) * (el.opacity ?? 1); if (BLUR_OK) h.filter = `blur(${Math.max(.6, .07 * kh).toFixed(2)}px)`;
-    drawEl(h, el, kh, { ch: 'H', color: r > 0 ? '#ffffff' : '#000000', rel: r }); h.restore();
+  const Hc = cv(side, tier, 'H', hw, hh), h = prep(Hc); clipCard(h, kh); paintSubstrate(h, 'H', kh, hw, hh, '#808080');
+  const relEls = els.filter(el => el.relief);
+  if (relEls.length) {   // draw every raised or recessed element sharp onto one layer, then blur that layer once
+    const L = _relief.c || (_relief.c = document.createElement('canvas')); if (L.width !== hw || L.height !== hh) { L.width = hw; L.height = hh; } const l = prep(L);
+    for (const el of relEls) { const r = el.relief; l.save(); l.globalAlpha = Math.min(1, Math.abs(r)) * (el.opacity ?? 1); drawEl(l, el, kh, { ch: 'H', color: r > 0 ? '#ffffff' : '#000000', rel: r }); l.restore(); }
+    h.save(); if (BLUR_OK) h.filter = `blur(${Math.max(.6, .07 * kh).toFixed(2)}px)`; h.drawImage(L, 0, 0); h.restore();
   }
   age(h, 'H', kh, side); h.restore(); out.H = Hc;
 
   /* roughness */
-  const Rc = cv(side, tier, 'R', hw, hh), r = prep(Rc, gray(S.rough)); clipCard(r, kh); subTex(r, 'R', kh);
+  const Rc = cv(side, tier, 'R', hw, hh), r = prep(Rc); clipCard(r, kh); paintSubstrate(r, 'R', kh, hw, hh, gray(S.rough));
   for (const w of owin) drawEl(r, w, kh, { ch: 'R', color: gray(.02) });
   for (const el of els) { const v = roughFor(el.finish); if (v == null) continue; r.save(); r.globalAlpha = el.finish === 'window' ? 1 : (el.opacity ?? 1) * (tintLayer(el) ? .3 : 1); drawEl(r, el, kh, { ch: 'R', color: gray(v) }); r.restore(); }
   r.restore(); out.R = Rc;
@@ -806,9 +885,13 @@ function renderSide(side, tier, opts) {
     for (const el of els) { if (S.holoBase && el.finish !== 'holo' && coverage(el)) { o.save(); o.globalAlpha = (el.opacity ?? 1) * .9 * (tintLayer(el) ? .4 : 1); drawEl(o, el, kh, { ch: 'O', color: 'rgb(0,0,255)' }); o.restore(); continue; } if (el.finish !== 'holo') continue; const i = Math.round(clamp(el.holoInt ?? 1, 0, 1) * (el.opacity ?? 1) * 255), p = Math.round((el.holoPat | 0) * 255 / 7); drawEl(o, el, kh, { ch: 'O', color: `rgb(${i},${p},255)` }); }
     o.restore(); out.O = Oc;
   }
+  pool._opt = { H: out.H, R: out.R, M: out.M, T: out.T, G: out.G, X: out.X, O: out.O };
+  if (opts) pool._keyA = pool._keyN = null; else { pool._keyA = keyA; pool._keyN = keyN; pool._out = out; }
   return out;
 }
-Forge.renderSide = renderSide;
+/* element colours only matter to the colour channel (glow and UV colours excepted) */
+const inkFree = (k, v) => typeof v === 'string' && v.length < 24 && !/glow|uv/i.test(k) && /^(#[0-9a-f]{3}|#[0-9a-f]{6}|rgb\(|hsl\()/i.test(v) && !/^#[0-9a-f]{4}$|^#[0-9a-f]{8}$/i.test(v) ? '\u2022' : v;
+Forge.renderSide = renderSide; Forge.GEN = GEN;
 
 /* ---------- substrate textures ---------- */
 let _leather = null;
@@ -879,36 +962,55 @@ function strokeCrease(c, cr, k, mir) {
   c.beginPath(); c.moveTo((x - dx) * k, (cr.y - dy) * k); c.quadraticCurveTo((x + cr.b * cr.L * Math.sin(a)) * k, (cr.y - cr.b * cr.L * Math.cos(a)) * k, (x + dx) * k, (cr.y + dy) * k); c.stroke();
 }
 function foldLines(c, k, styles) { const C = P.card, segs = []; if (C.foldV > 0) segs.push([C.w / 2, 0, C.w / 2, C.h, C.foldV]); if (C.foldH > 0) segs.push([0, C.h / 2, C.w, C.h / 2, C.foldH]); for (const [x0, y0, x1, y1, s] of segs) for (const st of styles) { c.save(); st(c); c.globalAlpha *= s; c.beginPath(); c.moveTo(x0 * k, y0 * k); c.lineTo(x1 * k, y1 * k); c.stroke(); c.restore(); } }
-function age(c, ch, k, side) {
-  const C = P.card; if (!(C.age > 0 || C.creases > 0 || C.foldV > 0 || C.foldH > 0 || C.stains > 0 || C.wear > 0 || C.fade > 0 || C.crumple > 0)) return;
-  const W = C.w * k, Hh = C.h * k, mir = side === 'back', R = rng(C.seed * 31 + (mir ? 7 : 1)), cl = creaseList(), kq = k * wearScale();
-  c.save();
+/* wear and age: multiply, screen and paint-over layers built once (at up to 2048 px) and composited in three draws */
+const AGE_CACHE = new Map();
+function ageLayers(ch, side, W, Hh, k) {
+  const C = P.card, key = [ch, side, Math.round(W), Math.round(Hh), C.w, C.h, C.r, C.shape, C.slot, C.seed, C.age, C.creases, C.foldV, C.foldH, C.stains, C.wear, C.fade, C.crumple, baseColor(), C.mode || ''].join('|');
+  let L = AGE_CACHE.get(key); if (L) { AGE_CACHE.delete(key); AGE_CACHE.set(key, L); return L; }
+  const q = Math.min(1, 2048 / Math.max(W, Hh)), lw = Math.max(2, Math.round(W * q)), lh = Math.max(2, Math.round(Hh * q)), kl = k * q, kq = kl * wearScale();
+  const mk = fill => { const cv = document.createElement('canvas'); cv.width = lw; cv.height = lh; const x = cv.getContext('2d'); if (fill) { x.fillStyle = fill; x.fillRect(0, 0, lw, lh); } return x; };
+  const mir = side === 'back', R = rng(C.seed * 31 + (mir ? 7 : 1)), cl = creaseList(); L = {};
   if (ch === 'A') {
-    if (C.fade > 0) { c.globalCompositeOperation = 'screen'; c.fillStyle = hexA(baseColor(), C.fade * .5); c.fillRect(0, 0, W, Hh); }
-    if (C.age > 0) { c.globalCompositeOperation = 'multiply'; c.fillStyle = `rgba(232,208,150,${.5 * C.age})`; c.fillRect(0, 0, W, Hh); c.globalAlpha = .45 * C.age; c.fillStyle = pat(c, 'mottle', 30 * kq); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
+    const m = mk('#ffffff'), s = mk('#000000'), o = mk(null); let useS = false, useO = false; m.globalCompositeOperation = 'multiply';
+    if (C.fade > 0) { s.fillStyle = hexA(baseColor(), C.fade * .5); s.fillRect(0, 0, lw, lh); useS = true; }
+    if (C.age > 0) { m.fillStyle = `rgba(232,208,150,${.5 * C.age})`; m.fillRect(0, 0, lw, lh); m.globalAlpha = .45 * C.age; m.fillStyle = pat(m, 'mottle', 30 * kq); m.fillRect(0, 0, lw, lh); m.globalAlpha = 1; }
     if (C.stains > 0) {
-      c.globalCompositeOperation = 'multiply'; const n = 1 + Math.round(C.stains * 4), s = C.stains;
+      const n = 1 + Math.round(C.stains * 4), st = C.stains;
       for (let i = 0; i < n; i++) {
-        const x = R() * W, y = R() * Hh, rad = (5 + R() * 13) * kq; let g;
-        if (R() < .55) { g = c.createRadialGradient(x, y, rad * .55, x, y, rad); g.addColorStop(0, 'rgba(170,120,60,0)'); g.addColorStop(.8, `rgba(160,110,55,${.12 * s})`); g.addColorStop(.95, `rgba(120,75,35,${.42 * s})`); g.addColorStop(1, 'rgba(120,75,35,0)'); }
-        else { g = c.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, `rgba(150,105,60,${.28 * s})`); g.addColorStop(.7, `rgba(160,115,65,${.14 * s})`); g.addColorStop(1, 'rgba(160,115,65,0)'); }
-        c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill();
+        const x = R() * lw, y = R() * lh, rad = (5 + R() * 13) * kq; let g;
+        if (R() < .55) { g = m.createRadialGradient(x, y, rad * .55, x, y, rad); g.addColorStop(0, 'rgba(170,120,60,0)'); g.addColorStop(.8, `rgba(160,110,55,${.12 * st})`); g.addColorStop(.95, `rgba(120,75,35,${.42 * st})`); g.addColorStop(1, 'rgba(120,75,35,0)'); }
+        else { g = m.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, `rgba(150,105,60,${.28 * st})`); g.addColorStop(.7, `rgba(160,115,65,${.14 * st})`); g.addColorStop(1, 'rgba(160,115,65,0)'); }
+        m.fillStyle = g; m.beginPath(); m.arc(x, y, rad, 0, Math.PI * 2); m.fill();
       }
     }
     if (C.wear > 0) {
-      c.globalCompositeOperation = 'multiply'; c.lineWidth = 4 * kq * C.wear; if (BLUR_OK) c.filter = `blur(${(2.5 * kq).toFixed(1)}px)`; c.strokeStyle = `rgba(110,85,55,${.55 * C.wear})`; cardPath(c, k); c.stroke(); c.filter = 'none';
-      c.globalCompositeOperation = 'source-over'; c.fillStyle = hexA(baseColor(), .92); const n = Math.round(260 * C.wear);
-      for (let i = 0; i < n; i++) { const e = R() * 4 | 0, t = R(), d = Math.pow(R(), 3) * 2.2 * kq / k; let x, y; if (e === 0) { x = t * C.w; y = d; } else if (e === 1) { x = t * C.w; y = C.h - d; } else if (e === 2) { x = d; y = t * C.h; } else { x = C.w - d; y = t * C.h; } c.globalAlpha = .15 + R() * .5; c.beginPath(); c.arc(x * k, y * k, (.04 + R() * .2) * kq, 0, Math.PI * 2); c.fill(); }
-      c.globalAlpha = 1;
+      m.lineWidth = 4 * kq * C.wear; if (BLUR_OK) m.filter = `blur(${(2.5 * kq).toFixed(1)}px)`; m.strokeStyle = `rgba(110,85,55,${.55 * C.wear})`; cardPath(m, kl); m.stroke(); m.filter = 'none';
+      o.fillStyle = hexA(baseColor(), .92); const n = Math.round(260 * C.wear); useO = true;
+      for (let i = 0; i < n; i++) { const e2 = R() * 4 | 0, t = R(), d = Math.pow(R(), 3) * 2.2 * wearScale(); let x, y; if (e2 === 0) { x = t * C.w; y = d; } else if (e2 === 1) { x = t * C.w; y = C.h - d; } else if (e2 === 2) { x = d; y = t * C.h; } else { x = C.w - d; y = t * C.h; } o.globalAlpha = .15 + R() * .5; o.beginPath(); o.arc(x * kl, y * kl, (.04 + R() * .2) * kq, 0, Math.PI * 2); o.fill(); }
+      o.globalAlpha = 1;
     }
-    c.globalCompositeOperation = 'multiply'; c.lineWidth = .18 * kq; for (const cr of cl) { c.strokeStyle = `rgba(90,75,60,${.24 * cr.s})`; strokeCrease(c, cr, k, mir); }
-    c.globalCompositeOperation = 'screen'; c.lineWidth = .12 * kq; for (const cr of cl) { c.strokeStyle = `rgba(255,255,255,${.28 * cr.s})`; c.save(); c.translate(.15 * k, .15 * k); strokeCrease(c, cr, k, mir); c.restore(); }
-    foldLines(c, k, [x => { x.globalCompositeOperation = 'multiply'; if (BLUR_OK) x.filter = `blur(${(1.2 * kq).toFixed(1)}px)`; x.strokeStyle = 'rgba(120,100,80,.38)'; x.lineWidth = 1.6 * kq; }, x => { x.globalCompositeOperation = 'multiply'; x.filter = 'none'; x.strokeStyle = 'rgba(80,65,50,.55)'; x.lineWidth = .14 * kq; }]);
+    m.lineWidth = .18 * kq; for (const cr of cl) { m.strokeStyle = `rgba(90,75,60,${.24 * cr.s})`; strokeCrease(m, cr, kl, mir); }
+    if (cl.length) { useS = true; s.globalCompositeOperation = 'screen'; s.lineWidth = .12 * kq; for (const cr of cl) { s.strokeStyle = `rgba(255,255,255,${.28 * cr.s})`; s.save(); s.translate(.15 * kl, .15 * kl); strokeCrease(s, cr, kl, mir); s.restore(); } }
+    foldLines(m, kl, [x => { x.globalCompositeOperation = 'multiply'; if (BLUR_OK) x.filter = `blur(${(1.2 * kq).toFixed(1)}px)`; x.strokeStyle = 'rgba(120,100,80,.38)'; x.lineWidth = 1.6 * kq; }, x => { x.globalCompositeOperation = 'multiply'; x.filter = 'none'; x.strokeStyle = 'rgba(80,65,50,.55)'; x.lineWidth = .14 * kq; }]);
+    L.M = m.canvas; if (useS) L.S = s.canvas; if (useO) L.O = o.canvas;
   } else if (ch === 'H') {
-    const cm = Math.max(C.crumple, C.age * .5); if (cm > 0) { c.globalAlpha = .5 * cm; c.fillStyle = pat(c, 'mottle', 12 * kq); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
-    if (BLUR_OK) c.filter = `blur(${(.5 * kq).toFixed(1)}px)`; for (const cr of cl) { c.lineWidth = .35 * kq; c.strokeStyle = `rgba(0,0,0,${.55 * cr.s})`; strokeCrease(c, cr, k, mir); } c.filter = 'none';
-    foldLines(c, k, [x => { if (BLUR_OK) x.filter = `blur(${(.8 * k).toFixed(1)}px)`; x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 1.4 * k; }, x => { x.filter = 'none'; x.strokeStyle = 'rgba(0,0,0,.85)'; x.lineWidth = .35 * k; }]);
+    const o = mk(null), cm = Math.max(C.crumple, C.age * .5);
+    if (cm > 0) { o.globalAlpha = .5 * cm; o.fillStyle = pat(o, 'mottle', 12 * kq); o.fillRect(0, 0, lw, lh); o.globalAlpha = 1; }
+    if (BLUR_OK) o.filter = `blur(${(.5 * kq).toFixed(1)}px)`; for (const cr of cl) { o.lineWidth = .35 * kq; o.strokeStyle = `rgba(0,0,0,${.55 * cr.s})`; strokeCrease(o, cr, kl, mir); } o.filter = 'none';
+    foldLines(o, kl, [x => { if (BLUR_OK) x.filter = `blur(${(.8 * kl).toFixed(1)}px)`; x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 1.4 * kl; }, x => { x.filter = 'none'; x.strokeStyle = 'rgba(0,0,0,.85)'; x.lineWidth = .35 * kl; }]);
+    L.O = o.canvas;
   }
+  AGE_CACHE.set(key, L); while (AGE_CACHE.size > 8) AGE_CACHE.delete(AGE_CACHE.keys().next().value);
+  return L;
+}
+function age(c, ch, k, side) {
+  const C = P.card; if (!(C.age > 0 || C.creases > 0 || C.foldV > 0 || C.foldH > 0 || C.stains > 0 || C.wear > 0 || C.fade > 0 || C.crumple > 0)) return;
+  if (ch !== 'A' && ch !== 'H') return;
+  const W = C.w * k, Hh = C.h * k, L = ageLayers(ch, side, W, Hh, k);
+  c.save(); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+  if (L.M) { c.globalCompositeOperation = 'multiply'; c.drawImage(L.M, 0, 0, W, Hh); }
+  if (L.O) { c.globalCompositeOperation = 'source-over'; c.drawImage(L.O, 0, 0, W, Hh); }
+  if (L.S) { c.globalCompositeOperation = 'screen'; c.drawImage(L.S, 0, 0, W, Hh); }
   c.restore();
 }
 
@@ -945,24 +1047,29 @@ Forge.backdrop = function (kind) {
 
 /* ---------- scheduler ---------- */
 const last = { front: null, back: null }, stale = { front: false, back: false }, dirty = { front: false, back: false };
-let rafQ = false, liveQ = false, hiT = null, view = null;
+let rafQ = false, liveQ = false, hiT = null, view = null, fullMs = 220;
 function invalidate(sides, live) {
   for (const s of sides || ['front', 'back']) dirty[s] = true;
   liveQ = liveQ || !!live; if (!rafQ) { rafQ = true; requestAnimationFrame(flush); }
 }
 function flush() {
-  rafQ = false; const quick = Forge.quick && P.card.res > 768, pre = quick || (liveQ && P.card.res > 1024); liveQ = false;
+  rafQ = false; const quick = Forge.quick && P.card.res > 768, pre = quick || P.card.res > 1536 || (liveQ && P.card.res > 1024); liveQ = false;
   for (const s of ['front', 'back']) {
     if (!dirty[s]) continue; dirty[s] = false;
-    const t0 = performance.now(); const r = renderSide(s, quick ? 'q' : pre ? 'p' : 'f'); r.ms = performance.now() - t0; last[s] = r; stale[s] = pre;
-    if (view) view.setMaps(r);
+    const t0 = performance.now(), tier = quick ? 'q' : pre ? 'p' : 'f';
+    let r = tier !== 'f' && renderSide(s, 'f', { peek: true }), st = false;   // nothing changed since the full-detail render: keep showing it
+    if (!r) { r = renderSide(s, tier); st = pre; }
+    const same = r === last[s]; if (!same) r.ms = performance.now() - t0; last[s] = r; stale[s] = st;
+    if (view && !same) view.setMaps(r);
   }
   Forge.ui && Forge.ui.drawFlat(); Forge.ui && Forge.ui.hud();
-  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, 1100);
+  clearTimeout(hiT); if (stale.front || stale.back) hiT = setTimeout(hiPass, Math.max(250, Math.min(1100, fullMs * 5)));   // fast machines get full detail sooner
 }
-function hiPass() {
+function hiPass() {   // one side per task so the page stays responsive; the side being looked at goes first
   if (rafQ) { hiT = setTimeout(hiPass, 200); return; }
-  for (const s of ['front', 'back']) { if (!stale[s]) continue; stale[s] = false; const r = renderSide(s, 'f'); last[s] = r; if (view) view.setMaps(r); }
+  const vis = (Forge.ui && Forge.ui.curSide && Forge.ui.curSide()) || 'front', s = stale[vis] ? vis : stale.front ? 'front' : stale.back ? 'back' : null; if (!s) return;
+  stale[s] = false; const t0 = performance.now(), r = renderSide(s, 'f'), same = r === last[s]; if (!same) { r.ms = performance.now() - t0; fullMs = fullMs * .5 + r.ms * .5; } last[s] = r; if (view && !same) view.setMaps(r);
   Forge.ui && Forge.ui.drawFlat(); Forge.ui && Forge.ui.hud();
+  if (stale.front || stale.back) hiT = setTimeout(hiPass, 120);
 }
 Forge.invalidate = invalidate; Forge.last = last;

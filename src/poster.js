@@ -101,15 +101,25 @@ let PT_ART = false;
     }
     _subTexP(c, ch, k);
   };
-  /* weathering that sits on top of the printed design: rust eats the paint, wood seams and concrete show through */
+  /* weathering that sits on top of the printed design (rust eats the paint, wood seams and concrete show through), built once per size */
+  const POST_CACHE = new Map();
+  function postLayers(ch, k) {
+    const C = P.card, S = sub(), tex = S.tex2 || S.tex, W = Math.round(C.w * k), Hh = Math.round(C.h * k), key = [ch, tex, W, Hh, C.w, C.h, C.seed].join('|');
+    let L = POST_CACHE.get(key); if (L) { POST_CACHE.delete(key); POST_CACHE.set(key, L); return L; }
+    L = {}; const T = TEXN, mk = fill => { const cv = document.createElement('canvas'); cv.width = W; cv.height = Hh; const x = cv.getContext('2d'); if (fill) { x.fillStyle = fill; x.fillRect(0, 0, W, Hh); } return x; };
+    if (ch === 'A') {
+      if (tex === 'rust') { const o = mk(), po = ptn(o, k), lo = lay(o, W, Hh); lo(po(PTEX.rust(), 150, .3), 'source-over', .42); lo(po(PTEX.rust(), 60, -1.1), 'source-over', .12); L.O = o.canvas; }
+      else if (tex === 'planks') { const m = mk('#ffffff'), o = mk(); lay(m, W, Hh)(ptn(m, k)(PTEX.grain(), 110, 0, 3.2, 1), 'multiply', .28); seams(o, k, '#1e1208', .8, 2.2); L.M = m.canvas; L.O = o.canvas; }
+      else if (tex === 'concrete') { const m = mk('#ffffff'), s = mk('#000000'), pm = ptn(m, k), lm = lay(m, W, Hh), ps = ptn(s, k), ls = lay(s, W, Hh); lm(pm(PTEX.specks(), 40), 'multiply', .4); lm(pm(PTEX.pores(), 60, 1.4), 'multiply', .35); lm(pm(T.clouds(), 22, 1.1), 'multiply', .12); ls(ps(PTEX.lights(), 34, .7), 'screen', .2); ls(ps(T.clouds(), 22, 1.1), 'screen', .06); L.M = m.canvas; L.S = s.canvas; }
+      else if (tex === 'aged') { const m = mk('#ffffff'), pm = ptn(m, k), lm = lay(m, W, Hh); lm(pm(PTEX.foxing(), 70, .2), 'multiply', .55); lm(pm(T.clouds(), 95, .4), 'multiply', .1); edgeShade(m, k, '#8a6a3a', .2, Math.min(C.w, C.h) * .1); L.M = m.canvas; }
+      else if (tex === 'newsprint') { const m = mk('#ffffff'); lay(m, W, Hh)(ptn(m, k)(PTEX.specks(), 26), 'multiply', .2); L.M = m.canvas; }
+    } else if (ch === 'H' && tex === 'planks') { const o = mk(); seams(o, k, '#000000', .8, 3); L.O = o.canvas; }
+    POST_CACHE.set(key, L); while (POST_CACHE.size > 6) POST_CACHE.delete(POST_CACHE.keys().next().value);
+    return L;
+  }
   function postTex(c, ch, k) {
-    if (PT_ART) return; const C = P.card, S = sub(), tex = S.tex2 || S.tex, W = C.w * k, Hh = C.h * k, pt = ptn(c, k), layer = lay(c, W, Hh), T = TEXN;
-    if (ch !== 'A') { if (tex === 'planks' && ch === 'H') seams(c, k, '#000000', .8, 3); return; }
-    if (tex === 'rust') { layer(pt(PTEX.rust(), 150, .3), 'source-over', .42); layer(pt(PTEX.rust(), 60, -1.1), 'source-over', .12); }
-    else if (tex === 'planks') { layer(pt(PTEX.grain(), 110, 0, 3.2, 1), 'multiply', .28); seams(c, k, '#1e1208', .8, 2.2); }
-    else if (tex === 'concrete') { layer(pt(PTEX.specks(), 40), 'multiply', .4); layer(pt(PTEX.pores(), 60, 1.4), 'multiply', .35); layer(pt(T.clouds(), 22, 1.1), 'soft-light', .3); layer(pt(PTEX.lights(), 34, .7), 'screen', .2); }
-    else if (tex === 'aged') { layer(pt(PTEX.foxing(), 70, .2), 'multiply', .55); layer(pt(T.clouds(), 95, .4), 'multiply', .1); edgeShade(c, k, '#8a6a3a', .2, Math.min(C.w, C.h) * .1); }
-    else if (tex === 'newsprint') layer(pt(PTEX.specks(), 26), 'multiply', .2);
+    if (PT_ART) return; const L = postLayers(ch, k); if (!L.M && !L.O && !L.S) return;
+    c.save(); if (L.M) { c.globalCompositeOperation = 'multiply'; c.drawImage(L.M, 0, 0); } if (L.O) { c.globalCompositeOperation = 'source-over'; c.drawImage(L.O, 0, 0); } if (L.S) { c.globalCompositeOperation = 'screen'; c.drawImage(L.S, 0, 0); } c.restore();
   }
   const _ageP = age;
   age = function (c, ch, k, side) { postTex(c, ch, k); _ageP(c, ch, k, side); };

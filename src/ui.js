@@ -28,8 +28,40 @@ function redo() { if (hist.i >= hist.stack.length - 1) return; hist.i++; restore
 function restoreState(s) { const o = JSON.parse(s); P.card = o.card; P.scene = o.scene; P.front = o.front; P.back = o.back; setSel(selIds.filter(id => sideOf(id))); refreshAll(); updUndo(); autosave(); updStatus(); }
 function updUndo() { $('#undo').disabled = hist.i <= 0; $('#redo').disabled = hist.i >= hist.stack.length - 1; }
 let saveT = null, draftT = null;
+/* Photos live in IndexedDB and the design itself in localStorage, so autosave writes a few kilobytes instead of megabytes
+   (and no longer runs out of room once a design has a couple of photos). A photo is only left out of the localStorage copy
+   once IndexedDB has confirmed it is written; until then it stays inline, so nothing can be lost. */
+const AS = { db: null, saved: new Set() };
+AS.ready = new Promise(res => { try { const r = indexedDB.open('fforge.assets', 1); r.onupgradeneeded = () => r.result.createObjectStore('a'); r.onsuccess = () => { AS.db = r.result; res(AS.db); }; r.onerror = () => res(null); r.onblocked = () => res(null); } catch (e) { res(null); } });
+function asTx(mode, fn) { return AS.ready.then(db => { if (!db) throw new Error('IndexedDB unavailable'); return new Promise((res, rej) => { const tx = db.transaction('a', mode), box = fn(tx.objectStore('a')); tx.oncomplete = () => res(box); tx.onerror = tx.onabort = () => rej(tx.error); }); }); }
+async function storeAssets() {
+  const todo = Object.entries(P.assets || {}).filter(([id, v]) => !AS.saved.has(id) && typeof v === 'string' && v.length > 2048); if (!todo.length) return;
+  try { await asTx('readwrite', st => { for (const [id, v] of todo) st.put(v, id); }); for (const [id] of todo) AS.saved.add(id); } catch (e) { }
+}
+function packState() {
+  const inline = {}; for (const [id, v] of Object.entries(P.assets || {})) if (!AS.saved.has(id)) inline[id] = v;
+  return JSON.stringify({ P: { ...P, assets: inline }, assetIds: Object.keys(P.assets || {}), meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() });
+}
+function writeSave() { try { localStorage.setItem(saveKey(), packState()); return true; } catch (e) { return false; } }
+async function restoreAssets(ids, target) {
+  const want = (ids || []).filter(id => !(target.assets && target.assets[id])); if (!want.length) return;
+  try {
+    const got = await asTx('readonly', st => { const box = {}; for (const id of want) { const rq = st.get(id); rq.onsuccess = () => { if (rq.result) box[id] = rq.result; }; } return box; });
+    if (target !== P) return; let n = 0; for (const id in got) { P.assets[id] = got[id]; AS.saved.add(id); n++; }
+    if (n) { invalidate(); thumbCache.clear(); }
+  } catch (e) { }
+}
+function gcAssets() {   // forget stored photos that no saved design refers to any more
+  const keep = new Set(Object.keys(P.assets || {}));
+  for (const m of Object.keys(MODES)) { try { const o = JSON.parse(localStorage.getItem(MODES[m].key) || 'null'); if (o) { (o.assetIds || []).forEach(id => keep.add(id)); Object.keys((o.P && o.P.assets) || {}).forEach(id => keep.add(id)); } } catch (e) { } }
+  asTx('readwrite', st => { const rq = st.getAllKeys(); rq.onsuccess = () => { for (const k of rq.result) if (!keep.has(k)) { st.delete(k); AS.saved.delete(k); } }; }).catch(() => { });
+}
 function autosave() {
-  clearTimeout(saveT); saveT = setTimeout(() => { const pack = { P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() }; try { localStorage.setItem(saveKey(), JSON.stringify(pack)); localStorage.setItem('idforge.mode', appMode); } catch (e) { try { localStorage.setItem('idforge.v2', JSON.stringify({ ...pack, P: { ...P, assets: {} } })); } catch (e2) { } } }, 1000);
+  clearTimeout(saveT); saveT = setTimeout(async () => {
+    await storeAssets();
+    if (!writeSave()) { try { localStorage.setItem(saveKey(), JSON.stringify({ ...JSON.parse(packState()), P: { ...P, assets: {} } })); } catch (e2) { } }
+    try { localStorage.setItem('idforge.mode', appMode); } catch (e) { }
+  }, 1000);
   clearTimeout(draftT); draftT = setTimeout(() => Lib.saveDraft(), 4000);
 }
 let appMode = 'card';
@@ -41,7 +73,7 @@ const MODES = {
 const modeOfFmt = v => v.logo ? 'logo' : v.poster ? 'poster' : 'card';
 const saveKey = (m = appMode) => (MODES[m] || MODES.card).key;
 function loadSaved() {
-  try { const sm = localStorage.getItem('idforge.mode'); appMode = MODES[sm] ? sm : 'card'; const s = localStorage.getItem(saveKey()); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
+  try { const sm = localStorage.getItem('idforge.mode'); appMode = MODES[sm] ? sm : 'card'; const s = localStorage.getItem(saveKey()); if (!s) return 0; const o = JSON.parse(s); if (!o || !o.P || !o.P.card) return 0; P = normalize(o.P); restoreAssets(o.assetIds, P); if (o.meta) docMeta = { id: o.meta.id || null, name: o.meta.name || '', savedAt: 0, savedSnap: o.meta.savedSnap || null }; return o.ts || 1; } catch (e) { return 0; }
 }
 
 /* ---------- storage: account library (db + assets) or this browser (IndexedDB) ---------- */
@@ -189,10 +221,10 @@ function setModeUI(m) {
 }
 function switchMode(m) {
   if (m === appMode) return;
-  try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { }
+  writeSave(); storeAssets();
   let o = null; try { o = JSON.parse(localStorage.getItem(saveKey(m)) || 'null'); } catch (e) { }
   setModeUI(m); imgs.clear(); setSel([]); side = 'front';
-  if (o && o.P && o.P.card) { P = normalize(o.P); P.card.mode = m; docMeta = { id: o.meta?.id || null, name: o.meta?.name || '', savedAt: 0, savedSnap: o.meta?.savedSnap || null }; }
+  if (o && o.P && o.P.card) { P = normalize(o.P); P.card.mode = m; restoreAssets(o.assetIds, P); docMeta = { id: o.meta?.id || null, name: o.meta?.name || '', savedAt: 0, savedSnap: o.meta?.savedSnap || null }; }
   else { applyTemplate(MODES[m].tpl); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; }
   refreshAll(); pushHist(); updStatus(); if (view) setTimeout(() => view.camPreset(P.scene.pose === 'stand' || P.scene.pose === 'lanyard' ? 'hero' : 'front'), 60);
   toast(`${MODES[m].hello} · your other designs are kept for when you switch back`);
@@ -566,6 +598,7 @@ ui.paintCard = function (g, r, X, Y, CW, CH, path, o = {}) {
     else { const q = g.createLinearGradient(X, Y, X + CW, Y + CH); q.addColorStop(0, `rgba(255,255,255,${S.clear ? .55 : .38})`); q.addColorStop(.5, 'rgba(255,255,255,.05)'); q.addColorStop(1, 'rgba(0,0,0,.45)'); g.strokeStyle = q; g.lineWidth = lw; g.stroke(); }
     g.restore(); }
 };
+ui.curSide = () => side; ui.view = () => view;
 ui.drawFlat = function () {
   if (viewMode === '3d' || !fv.w) return; const C = P.card, S = sub(), r = last[side];
   fx.setTransform(fv.d, 0, 0, fv.d, 0, 0);
@@ -853,15 +886,16 @@ function init() {
     if (e.key === '[' && el) return reorder(el, -1);
     if (e.key.startsWith('Arrow') && selIds.length) { e.preventDefault(); const st = e.shiftKey ? 2 : .25; for (const s of selEls()) { if (s.locked) continue; if (e.key === 'ArrowLeft') s.x -= st; if (e.key === 'ArrowRight') s.x += st; if (e.key === 'ArrowUp') s.y -= st; if (e.key === 'ArrowDown') s.y += st; } liveEdit(); commit(500); }
   });
-  window.addEventListener('beforeunload', () => { try { localStorage.setItem(saveKey(), JSON.stringify({ P, meta: { id: docMeta.id, name: docMeta.name, savedSnap: docMeta.savedSnap }, ts: Date.now() })); } catch (e) { } });
+  window.addEventListener('beforeunload', () => { writeSave(); });
+  setTimeout(gcAssets, 15000);
   bindLayers(); bindFlat();
   Lib.localTs = loadSaved(); if (!Lib.localTs) applyTemplate(MODES[appMode].tpl); setModeUI((P.card && P.card.mode) || appMode);
   hist.stack = [snapState()]; hist.i = 0; updUndo();
   refreshAll(); updStatus();
   new ResizeObserver(() => flatLayout()).observe(stage);
   window.addEventListener('load', () => { fontAsked.clear(); invalidate(); });
-  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => invalidate());
-  setTimeout(() => { if (document.fonts) Promise.allSettled(Object.keys(FONTS).filter(f => !SYS_FONTS.has(f)).flatMap(f => [400, 700].map(w => document.fonts.load(`${w} 24px "${f}"`)))).then(() => { fontAsked.clear(); thumbCache.clear(); presetThumbs.clear(); invalidate(); }); }, 2500);
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { GEN.v++; invalidate(); });
+  setTimeout(() => { if (document.fonts) Promise.allSettled(Object.keys(FONTS).filter(f => !SYS_FONTS.has(f)).flatMap(f => [400, 700].map(w => document.fonts.load(`${w} 24px "${f}"`)))).then(() => { fontAsked.clear(); thumbCache.clear(); presetThumbs.clear(); GEN.v++; invalidate(); }); }, 2500);
   setTimeout(() => Lib.init(), 0);
   if (!/[?&#]nomenu/.test(location.href)) openMenu(true);
   setTimeout(() => { if (!view && !$('#loading').classList.contains('gone')) Forge.viewFailed('The 3D engine took too long to load'); }, 20000);
