@@ -6,7 +6,7 @@
 <title>Fiction Forge · ID cards, faction emblems and posters</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300..900&family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&family=Courier+Prime:wght@400;700&family=Special+Elite&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,600&family=Playfair+Display:wght@400..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Oswald:wght@300..700&family=Archivo+Black&family=UnifrakturMaguntia&family=Homemade+Apple&family=Caveat:wght@400..700&family=Anton&family=Black+Ops+One&family=Alfa+Slab+One&family=Rye&family=Stardos+Stencil:wght@400;700&family=Saira+Stencil+One&family=Big+Shoulders+Display:wght@400..900&family=Staatliches&family=Abril+Fatface&family=Russo+One&family=Teko:wght@300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300..900&family=Montserrat:wght@400..900&family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&family=Courier+Prime:wght@400;700&family=Special+Elite&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,600&family=Playfair+Display:wght@400..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Oswald:wght@300..700&family=Archivo+Black&family=UnifrakturMaguntia&family=Homemade+Apple&family=Caveat:wght@400..700&family=Anton&family=Black+Ops+One&family=Alfa+Slab+One&family=Rye&family=Stardos+Stencil:wght@400;700&family=Saira+Stencil+One&family=Big+Shoulders+Display:wght@400..900&family=Staatliches&family=Abril+Fatface&family=Russo+One&family=Teko:wght@300..700&display=swap" rel="stylesheet">
 <style>
 /* VOICE: exacting and a little decadent: a security-printing proof bench after hours
    IDEA: an engraver's light table; the card sits under a lamp, inks and burins ranged left and right
@@ -314,7 +314,7 @@ const BLUR_OK = (() => { try { const c = document.createElement('canvas').getCon
 const SP_OK = (() => { try { return 'letterSpacing' in document.createElement('canvas').getContext('2d'); } catch (e) { return false; } })();
 
 /* ---------- fonts ---------- */
-const FONTS = { 'Inter': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
+const FONTS = { 'Inter': 'system-ui, sans-serif', 'Montserrat': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
 const SYS_FONTS = new Set(['Georgia', 'Arial']);
 const fontAsked = new Set();
 const GEN = { v: 0 };   // bumped whenever a font or an image finishes loading, so caches drawn without it are redrawn
@@ -1015,14 +1015,15 @@ function clipCard(x, k) { x.save(); cardPath(x, k); x.clip('evenodd'); }
    re-ordering them, or editing anything else on the card, costs a single image draw. Elements that read their position or the
    card outline are never cached, and any element that blends against what is beneath it is detected and drawn directly. */
 const ELC = { map: new Map(), px: 0, max: 28e6, entry: 6e6, no: new Set(), off: false };
-const CACHE_T = new Set(['photo', 'guilloche', 'pattern', 'halftone', 'sigil', 'tree', 'mark', 'glyph', 'seal', 'stamp', 'frame', 'flag', 'shape', 'safety', 'picto', 'stripes', 'rays', 'nfpa']);
+const CACHE_T = new Set(['photo', 'guilloche', 'pattern', 'halftone', 'sigil', 'tree', 'mark', 'glyph', 'seal', 'stamp', 'frame', 'flag', 'shape', 'safety', 'picto', 'stripes', 'rays', 'nfpa', 'textblock', 'infocard', 'arrow']);
 const BOXED_T = new Set(['pattern', 'halftone', 'rays', 'stripes']);   // these clip themselves to their own box
 const _GCO = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'globalCompositeOperation');
-function elMargin(el) {
-  const fx = (el.shadow || 0) * 2.5 + (el.glow || 0) * 3 + (el.strokeW || 0) * 2 + (el.outlineW || 0) * 2 + (el.border || 0) * 2 + (el.bevel || 0);
-  if (BOXED_T.has(el.type)) return .4 + (el.lw || 0) + fx;
-  if (el.type === 'guilloche') return (el.mode === 'field' ? .12 * el.h : .4) + (el.lw || 0) + fx;
-  return 1.5 + Math.max(el.w, el.h) * .06 + (el.lineW || 0) * 2 + fx;
+function elMargin(el) {   // how far an element may paint outside its box (only numeric settings count: some types use these names for colours)
+  const n = v => typeof v === 'number' && isFinite(v) ? Math.max(0, v) : 0;
+  const fx = n(el.shadow) * 2.5 + n(el.glow) * 3 + n(el.strokeW) * 2 + n(el.outlineW) * 2 + n(el.border) * 2 + n(el.bw) + n(el.bevel);
+  if (BOXED_T.has(el.type)) return .4 + n(el.lw) + fx;
+  if (el.type === 'guilloche') return (el.mode === 'field' ? .12 * el.h : .4) + n(el.lw) + fx;
+  return 1.5 + Math.max(el.w, el.h) * .06 + n(el.lineW) * 2 + n(el.lw) + fx;
 }
 /* The bitmap holds the element already rotated and is placed on whole device pixels, with the sub-pixel offset drawn into it,
    so a cached element is exactly as sharp as one drawn directly. Opacity and multiply or screen printing are drawn into the
@@ -1034,7 +1035,7 @@ function elBitmap(t, el, ov, k, tx, ty, ga, gco) {
   ax0 = Math.max(ax0, -x); ay0 = Math.max(ay0, -y); ax1 = Math.min(ax1, C.w - x); ay1 = Math.min(ay1, C.h - y);   // nothing outside the card is ever seen
   if (ax1 <= ax0 || ay1 <= ay0) return 'skip';
   const L = tx + (x + ax0) * k, Tp = ty + (y + ay0) * k, ix = Math.floor(L), iy = Math.floor(Tp), fx = L - ix, fy = Tp - iy;
-  const bw = Math.ceil((ax1 - ax0) * k + fx), bh = Math.ceil((ay1 - ay0) * k + fy); if (bw < 2 || bh < 2 || bw * bh > ELC.entry) return null;
+  const bw = Math.ceil((ax1 - ax0) * k + fx), bh = Math.ceil((ay1 - ay0) * k + fy); if (!(bw >= 2 && bh >= 2) || bw * bh > ELC.entry) return null;
   const key = JSON.stringify([rest, ov, Math.round(k * 1e4), rot || 0, _mirror ? 1 : 0, Math.round(ax0 * 100), Math.round(ay0 * 100), Math.round(ax1 * 100), Math.round(ay1 * 100), Math.round(fx * 4), Math.round(fy * 4), Math.round(ga * 1000), gco, C.seed, C.w, C.h, GEN.v, rest.asset ? !!getImg(rest.asset) : 0]);
   if (ELC.no.has(key)) return null;
   let ent = ELC.map.get(key);
@@ -2333,6 +2334,273 @@ def('nfpa', 'Hazard diamond', { w: 40, h: 40, health: 3, fire: 2, react: 1, spec
   }, 'M12 2l10 10-10 10L2 12z M7 7l10 10 M17 7L7 17');
 
 Forge.makeEl = makeEl; Forge.normalize = normalize; Forge.POSTER_SUBS = POSTER_SUBS;
+
+/* ================= infographic posters: rich text blocks, info cards, arrows and pictograms ================= */
+/* Rich text markup, shared by text blocks and info cards:
+     - point        a bullet point ("• point" and "* point" work too); wrapped lines hang under the text
+     1. point       a numbered point
+     *words*        highlight colour
+     **words**      bold
+     ||             on a line of its own: carry on in the next column
+   A blank line leaves a gap. Text is measured at a fixed reference size, so line breaks are the same at every resolution. */
+const RT = { cache: new Map(), m: document.createElement('canvas').getContext('2d'), w: new Map() };
+const BULLETS = [['dot', 'Dot'], ['square', 'Square'], ['dash', 'Dash'], ['tick', 'Tick'], ['arrow', 'Arrow'], ['star', 'Star'], ['none', 'None']];
+const VALIGNS = [['top', 'Top'], ['middle', 'Middle'], ['bottom', 'Bottom']];
+
+function rtParse(src, upper) {
+  const out = [];
+  for (let line of String(src ?? '').replace(/\r/g, '').split('\n')) {
+    if (line.trim() === '||') { out.push({ brk: true }); continue; }
+    let bullet = null, m;
+    if ((m = line.match(/^\s*(?:[-•▪]|\*(?=\s))\s+/))) { bullet = 'b'; line = line.slice(m[0].length); }
+    else if ((m = line.match(/^\s*(\d{1,3}[.)])\s+/))) { bullet = m[1]; line = line.slice(m[0].length); }
+    const runs = []; let b = false, h = false, cur = '';
+    const push = () => { if (cur) runs.push({ t: upper ? cur.toUpperCase() : cur, b, h }); cur = ''; };
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '\\' && line[i + 1] === '*') { cur += '*'; i++; continue; }
+      if (ch === '*' && line[i + 1] === '*') { push(); b = !b; i++; continue; }
+      if (ch === '*') { push(); h = !h; continue; }
+      cur += ch;
+    }
+    push(); out.push({ bullet, runs });
+  }
+  return out;
+}
+function rtWidth(o, t, bold) {   // width of t at a 100 px reference size, cached per font and weight
+  const wt = bold ? o.bweight : o.weight, key = `${o.font}|${wt}|${o.italic ? 1 : 0}|${o.track || 0}|${t}`; let v = RT.w.get(key);
+  if (v == null) {
+    const m = RT.m; setFont(m, o.font, wt, 100, o.italic); setSp(m, (o.track || 0) * 100); v = m.measureText(t).width;
+    if (RT.w.size > 20000) RT.w.clear(); RT.w.set(key, v);
+  }
+  return v;
+}
+/* o: { text, font, weight, bweight, size, w, h, lineH, para, track, upper, italic, cols, cgap, indent, fit } in millimetres */
+function rtLayout(o) {
+  const key = JSON.stringify([o.text, o.font, o.weight, o.bweight, o.size, o.w, o.h, o.lineH, o.para, o.track, o.upper, o.italic, o.cols, o.cgap, o.indent, o.fit, GEN.v]);
+  let L = RT.cache.get(key); if (L) { RT.cache.delete(key); RT.cache.set(key, L); return L; }
+  const P = rtParse(o.text, o.upper);
+  const lay = size => {
+    const n = Math.max(1, Math.min(3, Math.round(o.cols || 1))), gap = n > 1 ? (o.cgap ?? size * 2) : 0, cw = Math.max(1, (o.w - gap * (n - 1)) / n);
+    const lh = size * (o.lineH || 1.25), ind = (o.indent ?? 1.25) * size, pg = (o.para ?? .3) * size, mw = (t, b) => rtWidth(o, t, b) / 100 * size;
+    let over = false; const paras = [];
+    for (const p of P) {
+      if (p.brk) { paras.push(p); continue; }
+      const x0 = p.bullet ? (p.bullet === 'b' ? ind : Math.max(ind, mw(p.bullet + ' ', true))) : 0, maxW = cw - x0, lines = [];
+      let segs = [], x = 0, sp = 0;
+      for (const r of p.runs) for (const t of r.t.split(/(\s+)/)) {
+        if (!t) continue;
+        if (/^\s+$/.test(t)) { if (segs.length) sp = mw(' ', r.b); continue; }
+        const ww = mw(t, r.b);
+        if (segs.length && x + sp + ww > maxW + 1e-6) { lines.push({ segs, w: x }); segs = []; x = 0; }
+        else x += segs.length ? sp : 0;
+        if (ww > maxW + 1e-6) over = true;
+        segs.push({ t, x, b: r.b, h: r.h }); x += ww; sp = 0;
+      }
+      lines.push({ segs, w: x });
+      paras.push({ lines, bullet: p.bullet, x0, height: lines.length * lh });
+    }
+    let cols;
+    if (paras.some(p => p.brk)) { cols = [[]]; for (const p of paras) { if (p.brk) { if (cols.length < n) cols.push([]); continue; } cols[cols.length - 1].push(p); } }
+    else if (n === 1) cols = [paras];
+    else {   // balance the points across the columns
+      const tot = paras.reduce((s, p) => s + p.height + pg, 0) - pg, target = tot / n; cols = [[]]; let acc = 0;
+      for (const p of paras) { if (acc > 0 && acc + p.height / 2 > target && cols.length < n) { cols.push([]); acc = 0; } cols[cols.length - 1].push(p); acc += p.height + pg; }
+    }
+    const colH = cols.map(c => c.reduce((s, p, i) => s + p.height + (i ? pg : 0), 0));
+    return { cols, colH, H: Math.max(0, ...colH), cw, gap, lh, size, pg, ind, over };
+  };
+  L = lay(o.size);
+  if (o.fit && (L.H > o.h + 1e-6 || L.over)) {   // shrink until it fits the box
+    let lo = .15, hi = 1;
+    for (let i = 0; i < 12; i++) { const mid = (lo + hi) / 2, t = lay(o.size * mid); if (t.H > o.h + 1e-6 || t.over) hi = mid; else lo = mid; }
+    L = lay(o.size * lo);
+  }
+  RT.cache.set(key, L); while (RT.cache.size > 300) RT.cache.delete(RT.cache.keys().next().value);
+  return L;
+}
+function rtBullet(c, kind, x, y, s, col) {   // vector bullets, so they look the same in every font
+  c.fillStyle = col; c.strokeStyle = col; c.beginPath();
+  switch (kind) {
+    case 'square': c.rect(x - s * .15, y - s * .15, s * .3, s * .3); c.fill(); break;
+    case 'dash': c.rect(x - s * .24, y - s * .055, s * .48, s * .11); c.fill(); break;
+    case 'tick': c.lineWidth = s * .13; c.lineCap = 'round'; c.lineJoin = 'round'; c.moveTo(x - s * .26, y); c.lineTo(x - s * .07, y + s * .2); c.lineTo(x + s * .28, y - s * .24); c.stroke(); break;
+    case 'arrow': c.moveTo(x - s * .16, y - s * .24); c.lineTo(x + s * .24, y); c.lineTo(x - s * .16, y + s * .24); c.closePath(); c.fill(); break;
+    case 'star': for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? s * .12 : s * .29; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fill(); break;
+    default: c.arc(x, y, s * .16, 0, Math.PI * 2); c.fill();
+  }
+}
+/* draw a layout with its box's top-left corner at (left, top), in the element's millimetre space */
+function rtDraw(c, L, o, ov, k, left, top, col) {
+  const y0 = top + (o.valign === 'middle' ? (o.h - L.H) / 2 : o.valign === 'bottom' ? o.h - L.H : 0), px = L.size * k;
+  c.save(); c.scale(1 / k, 1 / k); c.textBaseline = 'middle'; c.textAlign = 'left'; let cur = null;
+  const font = b => { if (cur === b) return; cur = b; setFont(c, o.font, b ? o.bweight : o.weight, px, o.italic); setSp(c, (o.track || 0) * px); };
+  L.cols.forEach((colm, ci) => {
+    const cx = left + ci * (L.cw + L.gap); let y = y0;
+    for (const p of colm) {
+      p.lines.forEach((ln, li) => {
+        const ly = y + li * L.lh + L.lh / 2; let ox = cx + p.x0;
+        if (!p.bullet && o.align === 'center') ox = cx + (L.cw - ln.w) / 2; else if (!p.bullet && o.align === 'right') ox = cx + L.cw - ln.w;
+        if (li === 0 && p.bullet) {
+          if (p.bullet === 'b') { if (o.bullet !== 'none') { c.save(); c.scale(k, k); rtBullet(c, o.bullet, cx + L.size * .3, ly + L.size * .02, L.size, fillOf(ov, col.bullet)); c.restore(); } }
+          else { font(true); c.fillStyle = fillOf(ov, col.bullet); c.fillText(p.bullet, cx * k, ly * k); }
+        }
+        for (const s of ln.segs) { font(s.b); c.fillStyle = fillOf(ov, s.h ? col.hi : col.text); c.fillText(s.t, (ox + s.x) * k, ly * k); }
+      });
+      y += p.height + L.pg;
+    }
+  });
+  c.restore();
+}
+const RICH_DEF = { font: 'Inter', weight: 600, bweight: 800, size: 2.4, color: '#1a1a1a', hi: '#d50000', bcolor: '#1a1a1a', bullet: 'dot', align: 'left', valign: 'top', lineH: 1.3, para: .3, track: 0, upper: false, italic: false, cols: 1, cgap: 4, indent: 1.25, fit: true };
+const RICH_P = [['font', 'Font', 'font'], ['weight', 'Weight', 'select', WEIGHTS], ['bweight', 'Weight of **bold**', 'select', WEIGHTS], ['size', 'Size (mm)', 'range', { min: .3, max: 20, step: .05 }], ['color', 'Colour', 'color'], ['hi', 'Colour of *highlights*', 'color'],
+  ['bullet', 'Bullets', 'select', BULLETS], ['bcolor', 'Bullet colour', 'color', null, e => e.bullet !== 'none'], ['align', 'Align', 'select', ALIGNS], ['valign', 'Vertical', 'select', VALIGNS], ['lineH', 'Line height', 'range', { min: .7, max: 2.5, step: .01 }],
+  ['para', 'Space between points (em)', 'range', { min: 0, max: 2, step: .05 }], ['track', 'Tracking (em)', 'range', { min: -.1, max: 1, step: .01 }], ['upper', 'Uppercase', 'check'], ['italic', 'Italic', 'check'],
+  ['cols', 'Columns', 'range', { min: 1, max: 3, step: 1 }], ['cgap', 'Column gap (mm)', 'range', { min: 0, max: 30, step: .1 }, e => e.cols > 1], ['fit', 'Shrink to fit the box', 'check']];
+const richOf = (el, w, h, o = {}) => ({ text: el.text, font: el.font, weight: el.weight, bweight: el.bweight, size: el.size, w, h, lineH: el.lineH, para: el.para, track: el.track, upper: el.upper, italic: el.italic, cols: el.cols, cgap: el.cgap, indent: el.indent, fit: el.fit, align: el.align, valign: el.valign, bullet: el.bullet, ...o });
+
+def('textblock', 'Text block', { w: 40, h: 18, text: '- Wraps to fit its box\n- *Highlight* words with asterisks\n- **Bold** with double asterisks', ...RICH_DEF },
+  [['text', 'Text  (- bullet · *highlight* · **bold** · || next column)', 'area'], ...RICH_P],
+  function (c, el, ov, k) {
+    const o = richOf(el, el.w, el.h), L = rtLayout(o);
+    rtDraw(c, L, o, ov, k, -el.w / 2, -el.h / 2, { text: el.color, hi: el.hi, bullet: el.bcolor });
+  }, 'M4 6h2M9 6h11M4 12h2M9 12h11M4 18h2M9 18h7');
+
+/* ---------- info card: a header bar, a numbered step, a gradient panel or a plain box, each with rich body text ---------- */
+const CARD_STYLES = [['header', 'Header bar'], ['step', 'Numbered step'], ['panel', 'Gradient panel'], ['plain', 'Plain box']];
+def('infocard', 'Info card', {
+  w: 40, h: 26, style: 'header', title: 'EXTREME HEAT', text: '- Days reach *50 °C*\n- Work outside at night\n- Drink water every 20 min', icon: 'ig_thermo', num: '1',
+  fill: '#ffffff', fill2: '#e8a33d', gangle: 0, head: '#d50000', border: '#d50000', bw: .45, radius: 1, pad: 1.8, headH: 0, badge: '#1b4f8a', badgeText: '#ffffff', badgeR: 0,
+  tfont: 'Montserrat', tweight: 900, tsize: 2.6, tcolor: '#ffffff', iconColor: '#ffffff', tupper: true, ttrack: .02, talign: 'left',
+  ...RICH_DEF, size: 2
+}, [['style', 'Style', 'select', CARD_STYLES], ['title', 'Title', 'text'], ['text', 'Body  (- bullet · *highlight* · **bold** · || next column)', 'area'], ['icon', 'Icon', 'select', [['', 'None'], ...ICON_OPTS]], ['num', 'Number', 'text', null, e => e.style === 'step'],
+  ['§', 'Box'], ['fill', 'Fill', 'color'], ['fill2', 'Gradient to', 'color', null, e => e.style === 'panel'], ['gangle', 'Gradient angle', 'range', { min: 0, max: 360, step: 1 }, e => e.style === 'panel'], ['head', 'Header colour', 'color', null, e => e.style === 'header'],
+  ['border', 'Border colour', 'color'], ['bw', 'Border (mm)', 'range', { min: 0, max: 4, step: .05 }], ['radius', 'Corner (mm)', 'range', { min: 0, max: 20, step: .1 }], ['pad', 'Padding (mm)', 'range', { min: 0, max: 12, step: .1 }],
+  ['headH', 'Header height (mm, 0 = auto)', 'range', { min: 0, max: 30, step: .1 }, e => e.style === 'header'], ['badge', 'Badge colour', 'color', null, e => e.style === 'step'], ['badgeText', 'Number colour', 'color', null, e => e.style === 'step'], ['badgeR', 'Badge size (mm, 0 = auto)', 'range', { min: 0, max: 20, step: .1 }, e => e.style === 'step'],
+  ['§', 'Title'], ['tfont', 'Font', 'font'], ['tweight', 'Weight', 'select', WEIGHTS], ['tsize', 'Size (mm)', 'range', { min: .3, max: 20, step: .05 }], ['tcolor', 'Colour', 'color'], ['iconColor', 'Icon colour', 'color', null, e => !!e.icon], ['talign', 'Align', 'select', ALIGNS, e => e.style !== 'step'], ['ttrack', 'Tracking (em)', 'range', { min: -.1, max: 1, step: .01 }], ['tupper', 'Uppercase', 'check'],
+  ['§', 'Body'], ...RICH_P],
+  function (c, el, ov, k) {
+    const w = el.w, h = el.h, r = Math.min(el.radius || 0, w / 2, h / 2), bw = Math.max(0, el.bw || 0), pad = Math.max(0, el.pad ?? 1.5) + bw, st = el.style || 'header', ts = Math.max(.1, el.tsize || 2);
+    const outline = () => { c.beginPath(); rr(c, -w / 2, -h / 2, w, h, r); };
+    /* box */
+    let fill = fillOf(ov, el.fill);
+    if (st === 'panel' && ov.color == null) { const a = (el.gangle || 0) * Math.PI / 180, dx = Math.cos(a) * w / 2, dy = Math.sin(a) * h / 2, g = c.createLinearGradient(-dx, -dy, dx, dy); g.addColorStop(0, el.fill); g.addColorStop(1, el.fill2); fill = g; }
+    if (el.fill !== 'transparent') { outline(); c.fillStyle = fill; c.fill(); }
+    const titleText = el.tupper ? String(el.title || '').toUpperCase() : String(el.title || '');
+    const title = (x, y, maxW, align) => {
+      if (!titleText) return; c.save(); c.scale(1 / k, 1 / k); c.textBaseline = 'alphabetic'; c.textAlign = align; c.fillStyle = fillOf(ov, el.tcolor);
+      const f = fitText(c, titleText, el.tfont, el.tweight, ts * k, Math.max(1, maxW * k), false, el.ttrack || 0), sx = align === 'center' ? (SP_OK ? (el.ttrack || 0) * f.size / 2 : 0) : 0;
+      textMid(c, titleText, x * k + sx, y * k); c.restore();
+    };
+    const col = { text: el.color, hi: el.hi, bullet: el.bcolor }, bx = -w / 2 + pad, bwid = w - pad * 2;
+    if (st === 'header' || st === 'step') {
+      let bodyTop;
+      if (st === 'header') {
+        const hh = el.headH > 0 ? el.headH : ts * 2.15;
+        c.save(); outline(); c.clip(); c.fillStyle = fillOf(ov, el.head); c.fillRect(-w / 2, -h / 2, w, hh); c.restore();
+        let tx = bx, tw = bwid; const is = Math.min(hh * .62, ts * 1.35);
+        if (el.icon) { drawIconAt(c, el.icon, tx + is / 2, -h / 2 + hh / 2, is, fillOf(ov, el.iconColor), k); tx += is + ts * .55; tw -= is + ts * .55; }
+        const al = el.talign || 'left'; title(al === 'center' ? tx + tw / 2 : al === 'right' ? tx + tw : tx, -h / 2 + hh / 2, tw, al);
+        bodyTop = -h / 2 + hh + Math.max(bw, pad * .45);
+      } else {
+        const br = el.badgeR > 0 ? el.badgeR : Math.min(w, h) * .11, cy = -h / 2 + pad + br;
+        c.beginPath(); c.arc(0, cy, br, 0, Math.PI * 2); c.fillStyle = fillOf(ov, el.badge); c.fill();
+        if (el.num) { c.save(); c.scale(1 / k, 1 / k); c.textAlign = 'center'; c.fillStyle = fillOf(ov, el.badgeText); fitText(c, String(el.num), el.tfont, el.tweight, br * 1.15 * k, br * 1.5 * k, false, 0); textMid(c, String(el.num), 0, cy * k); c.restore(); }
+        else if (el.icon) drawIconAt(c, el.icon, 0, cy, br * 1.2, fillOf(ov, el.badgeText), k);
+        const ty = cy + br + ts * 1.05; title(0, ty, bwid, 'center');
+        bodyTop = ty + (titleText ? ts * .95 : -ts * .5);
+      }
+      const bh = h / 2 - pad * .85 - bodyTop;
+      if (el.text && bh > 0) { const o = richOf(el, bwid, bh, st === 'step' && el.align === 'left' ? { align: 'center' } : {}); rtDraw(c, rtLayout(o), o, ov, k, bx, bodyTop, col); }
+    } else {   // gradient panel or plain box: icon, title and body stacked as one group
+      const al = el.talign || (st === 'panel' ? 'center' : 'left'), iconH = el.icon ? ts * 1.6 : 0, titleH = titleText ? ts * 1.45 : 0;
+      const o = richOf(el, bwid, Math.max(.1, h - pad * 2 - iconH - titleH), { valign: 'top' }), L = el.text ? rtLayout(o) : { H: 0 };
+      const gh = iconH + titleH + L.H, top = el.valign === 'middle' ? -gh / 2 : el.valign === 'bottom' ? h / 2 - pad - gh : -h / 2 + pad;
+      if (el.icon) { const is = ts * 1.35; drawIconAt(c, el.icon, al === 'center' ? 0 : al === 'right' ? w / 2 - pad - is / 2 : bx + is / 2, top + is / 2, is, fillOf(ov, el.iconColor), k); }
+      if (titleText) title(al === 'center' ? 0 : al === 'right' ? w / 2 - pad : bx, top + iconH + ts * .55, bwid, al);
+      if (el.text) rtDraw(c, L, o, ov, k, bx, top + iconH + titleH, col);
+    }
+    if (bw > 0) { c.beginPath(); rr(c, -w / 2 + bw / 2, -h / 2 + bw / 2, w - bw, h - bw, Math.max(0, r - bw / 2)); c.lineWidth = bw; c.strokeStyle = fillOf(ov, el.border); c.stroke(); }
+  }, 'M4 5h16v14H4zM4 9h16M7 13h6M7 16h8');
+
+/* ---------- arrow ---------- */
+const ARROW_KINDS = [['line', 'Line, open head'], ['solid', 'Line, solid head'], ['block', 'Block'], ['chevron', 'Chevron'], ['double', 'Double-headed'], ['curve', 'Curved']];
+def('arrow', 'Arrow', { w: 12, h: 6, kind: 'line', color: '#1b4f8a', lw: .9, head: .5, dash: 0 },
+  [['kind', 'Style', 'select', ARROW_KINDS], ['color', 'Colour', 'color'], ['lw', 'Thickness (mm)', 'range', { min: .05, max: 6, step: .05 }, e => e.kind !== 'block'], ['head', 'Head size', 'range', { min: .1, max: 1, step: .01 }], ['dash', 'Dash (mm)', 'range', { min: 0, max: 6, step: .05 }, e => e.kind === 'line' || e.kind === 'solid' || e.kind === 'curve' || e.kind === 'double']],
+  function (c, el, ov) {
+    const w = el.w, h = el.h, lw = Math.max(.02, Math.min(el.lw || .5, h)), col = fillOf(ov, el.color), hl = Math.max(lw, Math.min(w * .7, h * (el.head ?? .5) * 1.6)), hy = h / 2 * Math.min(1, (el.head ?? .5) * 1.6), x1 = w / 2 - lw * .6;
+    c.strokeStyle = col; c.fillStyle = col; c.lineWidth = lw; c.lineCap = 'round'; c.lineJoin = 'round';
+    const dash = on => c.setLineDash(on && el.dash > 0 ? [el.dash, el.dash * .8] : []);
+    const openHead = (x, d) => { c.beginPath(); c.moveTo(x - d * hl, -hy + lw / 2); c.lineTo(x, 0); c.lineTo(x - d * hl, hy - lw / 2); c.stroke(); };
+    const solidHead = (x, d) => { c.beginPath(); c.moveTo(x + d * lw * .6, 0); c.lineTo(x - d * hl, -hy); c.lineTo(x - d * hl, hy); c.closePath(); c.fill(); };
+    switch (el.kind) {
+      case 'block': { const t = h * Math.max(.18, .5 - (el.head ?? .5) * .3), hx = w / 2 - Math.min(w * .6, h * (el.head ?? .5) * 1.4); c.beginPath(); [[-w / 2, -t / 2], [hx, -t / 2], [hx, -h / 2], [w / 2, 0], [hx, h / 2], [hx, t / 2], [-w / 2, t / 2]].forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill(); break; }
+      case 'chevron': { c.beginPath(); c.moveTo(-w / 2 + lw / 2, -h / 2 + lw / 2); c.lineTo(w / 2 - lw / 2, 0); c.lineTo(-w / 2 + lw / 2, h / 2 - lw / 2); c.stroke(); break; }
+      case 'double': { dash(true); c.beginPath(); c.moveTo(-w / 2 + hl * .5, 0); c.lineTo(w / 2 - hl * .5, 0); c.stroke(); dash(false); solidHead(w / 2 - lw * .6, 1); solidHead(-w / 2 + lw * .6, -1); break; }
+      case 'curve': { dash(true); const bend = h * .9; c.beginPath(); c.moveTo(-w / 2 + lw / 2, h / 2 - lw / 2); c.quadraticCurveTo(0, h / 2 - bend * 1.6, w / 2 - hl * .7, -h / 2 + hy); c.stroke(); dash(false); c.save(); c.translate(w / 2 - lw * .6, -h / 2 + hy); c.rotate(Math.atan2(h * .9, w) * .55); solidHead(0, 1); c.restore(); break; }
+      case 'solid': { dash(true); c.beginPath(); c.moveTo(-w / 2 + lw / 2, 0); c.lineTo(x1 - hl * .5, 0); c.stroke(); dash(false); solidHead(x1, 1); break; }
+      default: { dash(true); c.beginPath(); c.moveTo(-w / 2 + lw / 2, 0); c.lineTo(x1 - lw * .2, 0); c.stroke(); dash(false); openHead(x1, 1); }
+    }
+    c.setLineDash([]);
+  }, 'M3 12h16M13 6l6 6-6 6');
+
+/* ---------- infographic pictograms (original, generic symbols drawn in the 100 × 100 icon box) ---------- */
+ICON_CATS.push('Infographic');
+(() => {
+  const I = (id, label, f) => { ICONS[id] = { cat: 'Infographic', label, f }; };
+  I('ig_thermo', 'Thermometer', g => { g.rect(39, 6, 22, 66, 11); g.circ(50, 76, 18); g.cut(() => { g.rect(45, 12, 10, 58, 5); g.circ(50, 76, 12); }); g.rect(46.5, 38, 7, 34, 3); g.circ(50, 76, 8.5); for (const y of [20, 32, 44]) g.line([[67, y], [77, y]], 4); });
+  I('ig_drop', 'Water drop', g => { g.path('M 50 5 C 50 5 17 45 17 65 C 17 83 31 95 50 95 C 69 95 83 83 83 65 C 83 45 50 5 50 5 Z'); g.cut(() => g.spath('M 33 64 C 32 74 38 82 47 84', 5.5)); });
+  I('ig_storm', 'Sandstorm', g => { [[8, 90, 14], [16, 84, 28], [24, 76, 42], [32, 70, 56], [40, 64, 70], [45, 60, 84]].forEach(([a, b, y], i) => g.line([[a + i * 1.5, y], [b + i * 1.5, y]], 8.5)); });
+  I('ig_wind', 'Wind', g => { g.spath('M 8 36 L 60 36 C 72 36 79 29 77 20 C 75 11 62 10 59 19', 7); g.spath('M 8 54 L 78 54 C 89 54 95 62 92 71 C 89 80 76 80 73 72', 7); g.spath('M 8 72 L 46 72', 7); });
+  I('ig_lungs', 'Lungs', g => { g.line([[50, 6], [50, 40]], 7); g.line([[50, 38], [40, 50]], 5.5); g.line([[50, 38], [60, 50]], 5.5); g.mirror(() => g.path('M 42 30 C 30 26 16 40 12 62 C 9 82 17 94 31 91 C 41 89 44 81 44 69 L 44 52 Z')); g.cut(() => { g.line([[50, 42], [42, 52]], 2); g.line([[50, 42], [58, 52]], 2); }); });
+  I('ig_plant', 'Sprout', g => { g.spath('M 50 92 L 50 46', 6); g.path('M 49 60 C 30 62 15 50 13 28 C 34 26 48 38 49 60 Z'); g.path('M 51 48 C 54 27 68 14 89 14 C 89 37 75 50 51 48 Z'); g.rect(26, 88, 48, 7, 3.5); });
+  I('ig_warn', 'Warning triangle (outline)', g => { g.spath('M 50 11 L 92 86 L 8 86 Z', 7.5); g.rect(45.5, 34, 9, 30, 4.5); g.circ(50, 74, 5.5); });
+  I('ig_check', 'Tick', g => g.line([[15, 54], [39, 78], [87, 25]], 13));
+  I('ig_checkc', 'Tick in circle', g => { g.circ(50, 50, 45); g.cut(() => g.line([[27, 52], [43, 68], [74, 35]], 10)); });
+  I('ig_xmark', 'Cross mark', g => { g.line([[22, 22], [78, 78]], 14); g.line([[78, 22], [22, 78]], 14); });
+  I('ig_info', 'Information', g => { g.circ(50, 50, 45); g.cut(() => { g.circ(50, 27, 7); g.rect(43.5, 40, 13, 38, 3); }); });
+  I('ig_question', 'Question', g => { g.circ(50, 50, 45); g.cut(() => { g.spath('M 36 38 C 36 26 44 20 51 20 C 60 20 66 27 66 35 C 66 46 52 48 52 60', 9); g.circ(52, 74, 6); }); });
+  I('ig_clock', 'Clock', g => { g.circS(50, 50, 40, 8); g.line([[50, 25], [50, 52], [67, 62]], 7); });
+  I('ig_calendar', 'Calendar', g => { g.rect(10, 18, 80, 74, 8); g.cut(() => g.rect(18, 40, 64, 44, 3)); g.rect(25, 7, 9, 20, 4); g.rect(66, 7, 9, 20, 4); for (const [x, y] of [[24, 47], [44, 47], [64, 47], [24, 65], [44, 65]]) g.rect(x, y, 12, 11, 2); });
+  I('ig_house', 'Shelter', g => { g.poly([[50, 8], [95, 47], [83, 47], [83, 91], [17, 91], [17, 47], [5, 47]]); g.cut(() => g.rect(41, 61, 18, 30, 2)); });
+  I('ig_tent', 'Tent', g => { g.poly([[50, 10], [95, 88], [5, 88]]); g.cut(() => g.poly([[50, 47], [67, 88], [33, 88]])); });
+  I('ig_radio', 'Radio', g => { g.rect(29, 30, 42, 64, 8); g.rect(35, 5, 8, 28, 3); g.cut(() => { for (const y of [45, 54, 63]) g.line([[39, y], [61, y]], 3.5); g.circ(50, 80, 5.5); }); });
+  I('ig_siren', 'Siren', g => { g.path('M 26 74 L 26 50 C 26 36 37 26 50 26 C 63 26 74 36 74 50 L 74 74 Z'); g.rect(15, 77, 70, 14, 3); g.line([[50, 4], [50, 15]], 6); g.line([[19, 14], [26, 22]], 6); g.line([[81, 14], [74, 22]], 6); g.line([[5, 42], [15, 44]], 6); g.line([[95, 42], [85, 44]], 6); g.cut(() => g.spath('M 38 66 L 38 51 C 38 45 42 40 47 38', 5)); });
+  I('ig_cup', 'Cup of water', g => { g.poly([[18, 14], [82, 14], [73, 93], [27, 93]]); g.cut(() => g.spath('M 25 38 C 35 31 43 45 50 38 C 57 31 65 45 75 38', 5.5)); });
+  I('ig_food', 'Rations', g => { for (const x of [23, 31, 39]) g.line([[x, 8], [x, 32]], 4.5); g.path('M 19 30 L 43 30 C 43 41 38 47 35 47 L 35 93 L 27 93 L 27 47 C 24 47 19 41 19 30 Z'); g.path('M 61 54 L 61 8 C 76 13 81 33 78 54 Z'); g.rect(61, 50, 9, 43, 4); });
+  I('ig_med', 'Medical cross', g => { g.rect(35, 8, 30, 84, 5); g.rect(8, 35, 84, 30, 5); });
+  I('ig_heart', 'Health', g => { g.path('M 50 90 C 20 70 6 52 6 34 C 6 19 17 9 30 9 C 39 9 46 14 50 22 C 54 14 61 9 70 9 C 83 9 94 19 94 34 C 94 52 80 70 50 90 Z'); g.cut(() => g.line([[16, 46], [34, 46], [41, 32], [50, 60], [58, 40], [63, 46], [84, 46]], 5)); });
+  I('ig_pin', 'Location pin', g => { g.path('M 50 96 C 50 96 16 58 16 38 C 16 18 31 6 50 6 C 69 6 84 18 84 38 C 84 58 50 96 50 96 Z'); g.cut(() => g.circ(50, 38, 13)); });
+  I('ig_person', 'Person', g => { g.circ(50, 23, 15); g.path('M 21 95 L 25 57 C 27 46 36 42 50 42 C 64 42 73 46 75 57 L 79 95 Z'); });
+  I('ig_people', 'Group', g => {
+    g.circ(66, 28, 12); g.path('M 45 86 C 45 64 53 52 66 52 C 79 52 88 64 88 86 Z');
+    g.cut(() => { g.circ(37, 35, 18); g.path('M 6 100 C 6 72 18 56 37 56 C 56 56 68 72 68 100 Z'); });
+    g.circ(37, 35, 14); g.path('M 11 96 C 11 73 21 60 37 60 C 53 60 63 73 63 96 Z');
+  });
+  I('ig_idcard', 'ID card', g => { g.rect(6, 20, 88, 60, 8); g.cut(() => { g.circ(30, 43, 9); g.path('M 16 71 C 16 61 22 56 30 56 C 38 56 44 61 44 71 Z'); g.rect(52, 36, 32, 6, 3); g.rect(52, 50, 24, 6, 3); g.rect(52, 64, 28, 6, 3); }); });
+  I('ig_bed', 'Rest', g => { g.rect(6, 28, 9, 62, 3); g.rect(6, 62, 88, 14, 3); g.rect(85, 62, 9, 28, 3); g.rect(20, 47, 22, 13, 6); g.rect(45, 45, 49, 17, 5); });
+  I('ig_cactus', 'Cactus', g => { g.rect(41, 10, 18, 84, 9); g.spath('M 41 58 L 30 58 C 23 58 21 53 21 46 L 21 32', 12); g.spath('M 59 47 L 70 47 C 77 47 79 42 79 35 L 79 23', 12); g.rect(22, 88, 56, 7, 3.5); });
+  I('ig_dunes', 'Desert dunes', g => { g.circ(70, 29, 13); g.path('M 4 70 C 22 51 40 51 58 67 C 70 57 84 55 96 63 L 96 92 L 4 92 Z'); g.cut(() => g.spath('M 4 81 C 26 65 50 70 67 82', 4)); });
+  I('ig_scorpion', 'Scorpion', g => {
+    g.ell(50, 60, 11.5, 16); g.circ(50, 78, 8.5);
+    for (const [x, y, r] of [[50, 42, 6.5], [51.5, 33, 6], [55.5, 25, 5.5], [61.5, 19, 5], [68.5, 15.5, 4.5]]) g.circ(x, y, r);
+    g.path('M 71 10.5 C 80 10 86 16 83 25 C 81 21 78 19 74 19 Z');
+    g.mirror(() => { g.line([[43, 76], [32, 84]], 5.5); g.path('M 33 81 C 22 74 11 80 12 92 C 18 86 23 86 27 88 C 24 91 23 94 25 97 C 31 94 35 89 35 84 Z');
+      for (const [y, d] of [[50, -9], [56, -3], [62, 3], [68, 9]]) g.line([[40, y], [27, y + d * .55], [19, y + d * 1.25]], 3.6); });
+  });
+  I('ig_bug', 'Insect', g => { g.ell(50, 60, 21, 28); g.circ(50, 27, 11); g.cut(() => g.line([[50, 36], [50, 88]], 3.2)); g.mirror(() => { for (const y of [47, 60, 73]) g.line([[31, y], [13, y - 7]], 4.5); g.line([[44, 19], [36, 7]], 3.5); }); });
+  I('ig_shield', 'Safety shield', g => { g.path('M 50 6 L 86 18 L 86 46 C 86 70 70 86 50 94 C 30 86 14 70 14 46 L 14 18 Z'); g.cut(() => g.line([[31, 50], [45, 64], [70, 36]], 9)); });
+  I('ig_battery', 'Battery', g => { g.rect(6, 29, 78, 42, 7); g.rect(86, 41, 8, 18, 3); g.cut(() => g.rect(13, 36, 64, 28, 3)); for (const x of [17, 36, 55]) g.rect(x, 40, 16, 20, 2); });
+  I('ig_bulb', 'Idea', g => { g.path('M 50 6 C 30 6 17 21 17 39 C 17 53 27 61 31 70 L 69 70 C 73 61 83 53 83 39 C 83 21 70 6 50 6 Z'); g.rect(33, 74, 34, 7, 3); g.rect(37, 85, 26, 8, 4); });
+  I('ig_speech', 'Speech bubble', g => g.path('M 15 12 L 85 12 C 90 12 94 16 94 21 L 94 61 C 94 66 90 70 85 70 L 41 70 L 21 89 L 24 70 L 15 70 C 10 70 6 66 6 61 L 6 21 C 6 16 10 12 15 12 Z'));
+  I('ig_list', 'Checklist', g => { for (const y of [12, 41, 70]) { g.rect(8, y, 19, 19, 3); g.rect(37, y + 6, 55, 8, 4); } g.cut(() => { g.line([[12, 21], [16, 26], [23, 16]], 3.5); g.line([[12, 50], [16, 55], [23, 45]], 3.5); }); });
+  I('ig_arrow', 'Arrow', g => g.poly([[7, 39], [55, 39], [55, 18], [94, 50], [55, 82], [55, 61], [7, 61]]));
+  I('ig_sunhot', 'Heat', g => { g.circ(50, 38, 17); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, c = Math.cos(a), s = Math.sin(a); g.line([[50 + c * 26, 38 + s * 26], [50 + c * 35, 38 + s * 35]], 6); } for (const x of [26, 50, 74]) g.spath(`M ${x - 6} 96 C ${x - 12} 90 ${x} 84 ${x - 6} 78`, 5); });
+  I('ig_water', 'Water ration', g => { g.rect(30, 6, 40, 12, 3); g.path('M 34 18 L 66 18 L 66 26 C 76 30 80 38 80 48 L 80 86 C 80 91 76 95 71 95 L 29 95 C 24 95 20 91 20 86 L 20 48 C 20 38 24 30 34 26 Z'); g.cut(() => g.path('M 50 44 C 50 44 38 58 38 66 C 38 73 43 78 50 78 C 57 78 62 73 62 66 C 62 58 50 44 50 44 Z')); });
+  I('ig_goggles', 'Goggles', g => { g.rect(6, 34, 88, 34, 14); g.cut(() => { g.rect(14, 41, 30, 20, 9); g.rect(56, 41, 30, 20, 9); }); g.rect(44, 46, 12, 10, 2); });
+  for (const [id, v] of Object.entries(ICONS)) if (v.cat === 'Infographic') ICON_OPTS.push([id, `Infographic · ${v.label}`]);
+})();
+Forge.rtLayout = rtLayout;
 
 /* ================= ID Forge — templates ================= */
 function makeEl(type, props) {
@@ -4203,6 +4471,167 @@ const POSTER_WORDS = (() => {
 Forge.POSTER_WORDS = POSTER_WORDS;
 Forge.TEMPLATES = TEMPLATES; Forge.renderThumb = renderThumb;
 
+/* ================= poster mode: infographic parts and templates ================= */
+POSTER_CATS.splice(1, 0, 'Infographic');
+(() => {   /* a 5:8 sheet, the shape of a phone-friendly infographic */
+  const cu = FORMATS.custom; delete FORMATS.custom;
+  FORMATS.ps_info = { label: 'Infographic · 5:8 · 300 × 480', w: 300, h: 480, r: 0, thick: .2, poster: true, slot: 'none' };
+  FORMATS.ps_info916 = { label: 'Infographic · 9:16 · 270 × 480', w: 270, h: 480, r: 0, thick: .2, poster: true, slot: 'none' };
+  FORMATS.custom = cu;
+})();
+(() => {
+  const add = (name, make, o = {}) => COMPONENTS.push({ cat: 'Infographic', name, mode: 'poster', make, ...o });
+  const S = C => Math.min(C.w, C.h * .8) / 300;   // components are drawn for a 300 mm wide sheet and scaled to the poster
+  const HEAD = { font: 'Inter', weight: 700, bweight: 800, size: 5.4, color: '#111111', hi: '#d50000', bcolor: '#111111', bullet: 'dot', lineH: 1.25, para: .38, valign: 'top', align: 'left', fit: true };
+  const card = (s, o) => ({ type: 'infocard', name: (o.title || 'Info card').slice(0, 28), style: 'header', fill: '#ffffff', bw: 1 * s, radius: 2 * s, pad: 4.2 * s, headH: 15 * s, tfont: 'Montserrat', tweight: 900, tsize: 7 * s, tcolor: '#ffffff', iconColor: '#ffffff', tupper: true, ttrack: .02, ...HEAD, size: 5.4 * s, ...o });
+  const step = (s, o) => ({ type: 'infocard', name: 'Step ' + (o.num || ''), style: 'step', icon: '', fill: '#ffffff', border: '#1b4f8a', badge: '#1b4f8a', badgeText: '#ffffff', bw: 1 * s, radius: 2 * s, pad: 3 * s, badgeR: 7.75 * s, tfont: 'Montserrat', tweight: 900, tsize: 6.8 * s, tcolor: '#111111', tupper: true, ttrack: .01,
+    font: 'Inter', weight: 600, bweight: 800, size: 5.2 * s, color: '#222222', hi: '#1b4f8a', bcolor: '#222222', bullet: 'none', lineH: 1.3, para: .3, align: 'center', valign: 'top', fit: true, ...o });
+  const panel = (s, o) => ({ type: 'infocard', name: (o.title || 'Panel').slice(0, 28), style: 'panel', icon: '', talign: 'center', bw: 0, radius: 0, pad: 4 * s, gangle: 0, tfont: 'Montserrat', tweight: 900, tsize: 11 * s, tcolor: '#ffffff', tupper: true, ttrack: .01,
+    font: 'Inter', weight: 700, bweight: 800, size: 6 * s, color: '#ffffff', hi: '#ffe066', bcolor: '#ffffff', bullet: 'none', lineH: 1.22, para: .3, align: 'center', valign: 'middle', fit: true, ...o });
+  const tb = (s, text, x, y, w, h, o = {}) => ({ type: 'textblock', name: o.name || text.replace(/[*\-•|]/g, '').trim().split('\n')[0].slice(0, 28), text, x, y, w, h, ...HEAD, size: 5.4 * s, ...o });
+  const tx = (text, x, y, w, h, o = {}) => ({ type: 'text', name: o.name || text.slice(0, 28), text, x, y, w, h, font: 'Montserrat', weight: 900, size: h * .8, color: '#111111', align: 'center', fit: true, lineH: 1, ...o });
+  const arrow = (s, x, y, o = {}) => ({ type: 'arrow', name: 'Arrow', x, y, w: 9 * s, h: 6 * s, kind: 'line', color: '#1b4f8a', lw: 1.3 * s, head: .55, ...o });
+  const box = (x, y, w, h, fill, o = {}) => ({ type: 'rect', name: o.name || 'Band', x, y, w, h, fill, radius: 0, ...o });
+  const icon = (id, x, y, sz, color, o = {}) => ({ type: 'glyph', name: (ICONS[id] || {}).label || id, icon: id, x, y, w: sz, h: sz, color, ...o });
+
+  /* ---------- info cards ---------- */
+  const CARDS = [
+    ['Info card · red header', 'ig_thermo', 'EXTREME HEAT', '#d50000', '#ffffff', '- Days reach *50 °C*. Nights fall to about 20 °C\n- Outdoor work happens at night\n- Drink a cup of water every 15–20 min'],
+    ['Info card · black header', 'ig_drop', 'CHECK THE WET-BULB', '#111111', '#5ab3f0', '- Combines heat *and* humidity\n- 31 °C or higher: *stop all outdoor work*\n- Readings are posted at every airlock'],
+    ['Info card · amber header', 'ig_storm', 'SANDSTORMS', '#b8641c', '#ffffff', '- Siren with *3 long blasts* = storm coming\n- Get to shelter right away\n- Caught outside? Get low, cover your face, radio in'],
+    ['Info card · lungs (black)', 'ig_lungs', 'SAND & DUST', '#111111', '#f48fb1', '- Respirator & sealed goggles outside\n- Hot sand burns: boots & gloves always\n- Never go outside alone'],
+    ['Info card · purple header', 'ig_scorpion', 'WILDLIFE', '#5b2c83', '#e0b991', '- Don\'t touch, eat or collect *any* native plant or animal\n- Shake out boots before putting them on'],
+    ['Info card · blue header', 'ig_info', 'GOOD TO KNOW', '#1b4f8a', '#ffffff', '- Meals are served at *06:00* and *18:00*\n- Lights out at 22:00\n- Ask any warden for help'],
+    ['Info card · green header', 'ig_plant', 'GREENHOUSES', '#2e7d32', '#ffffff', '- Wash hands before entering\n- Never take seeds outside\n- Report wilting plants *at once*'],
+    ['Info card · orange header', 'ig_siren', 'ALARMS', '#e65100', '#ffffff', '- One long tone: *shelter in place*\n- Pulsing tone: go to your muster point\n- All clear: three short tones'],
+  ];
+  for (const [n, ic, title, head, icol, text] of CARDS) add(n, C => { const s = S(C); return [card(s, { title, icon: ic, head, border: head, iconColor: icol, text, x: C.w / 2, y: C.h / 2, w: 136 * s, h: 50 * s })]; });
+  add('Info card · wide, two columns', C => { const s = S(C); return [card(s, { title: 'DANGEROUS WILDLIFE & PLANTS', icon: 'ig_scorpion', head: '#5b2c83', border: '#5b2c83', iconColor: '#e0b991', cols: 2, cgap: 10 * s,
+    text: '- Don\'t touch, eat or collect *any* native plant or animal\n- Many can sting, bite, cut or poison, even small ones\n||\n- Shake out boots, gloves & gear before putting them on\n- Stung, bitten or cut? *Go to medical right away*', x: C.w / 2, y: C.h / 2, w: 277 * s, h: 51 * s })]; });
+  add('Do and don\'t pair', C => { const s = S(C); return [
+    card(s, { title: 'DO', icon: 'ig_checkc', head: '#2e7d32', border: '#2e7d32', bullet: 'tick', bcolor: '#2e7d32', hi: '#2e7d32', text: '- Carry water at all times\n- Check in at every airlock\n- Wear your badge where it shows', x: C.w / 2 - 70 * s, y: C.h / 2, w: 134 * s, h: 48 * s }),
+    card(s, { title: 'DON\'T', icon: 'ig_xmark', head: '#c62828', border: '#c62828', bullet: 'dash', bcolor: '#c62828', text: '- Go outside alone\n- Touch native plants or animals\n- Prop open a pressure door', x: C.w / 2 + 70 * s, y: C.h / 2, w: 134 * s, h: 48 * s })]; });
+
+  /* ---------- steps ---------- */
+  add('Numbered step card', C => { const s = S(C); return [step(s, { num: '1', title: 'THAW OUT', text: 'Rest in recovery. Drink water. Move slowly.', x: C.w / 2, y: C.h / 2, w: 58 * s, h: 71 * s })]; });
+  add('Numbered step · final (green)', C => { const s = S(C); return [step(s, { num: '4', title: 'START WORK', text: 'Begin your journey as a colony worker!', border: '#2e7d32', badge: '#2e7d32', fill: '#eef8ee', x: C.w / 2, y: C.h / 2, w: 58 * s, h: 71 * s })]; });
+  const stepRow = (C, items) => {
+    const s = S(C), n = items.length, cw = 58 * s, gap = 15 * s, tot = n * cw + (n - 1) * gap, x0 = C.w / 2 - tot / 2 + cw / 2, y = C.h / 2, out = [];
+    items.forEach(([title, text], i) => { const last = i === n - 1; out.push(step(s, { num: String(i + 1), title, text, x: x0 + i * (cw + gap), y, w: cw, h: 71 * s, ...(last ? { border: '#2e7d32', badge: '#2e7d32', fill: '#eef8ee' } : {}) })); if (!last) out.push(arrow(s, x0 + i * (cw + gap) + cw / 2 + gap / 2, y)); });
+    return out;
+  };
+  add('Step row · four steps with arrows', C => stepRow(C, [['THAW OUT', 'Rest in recovery. Drink water. Move slowly.'], ['MEDICAL', 'Get your health check & heat clearance.'], ['ADMIN', 'Get your job assignment, ID & quarters.'], ['START WORK', 'Begin your journey as a colony worker!']]));
+  add('Step row · three steps with arrows', C => stepRow(C, [['ARRIVE', 'Collect your kit at the main hangar.'], ['LEARN', 'Two days of safety training.'], ['SETTLE IN', 'Move into your quarters and meet your crew.']]));
+
+  /* ---------- panels ---------- */
+  add('Before → after panels', C => { const s = S(C), y = C.h / 2, w = 133 * s, h = 42.5 * s; return [
+    panel(s, { title: 'TODAY', text: 'A scorching desert. 50 °C days, sandstorms, no open water.', fill: '#c64516', fill2: '#eaa645', x: C.w / 2 - 11.25 * s - w / 2, y, w, h }),
+    box(C.w / 2, y, 22.5 * s, h, '#111111', { name: 'Arrow strip' }), arrow(s, C.w / 2, y, { w: 13 * s, h: 9 * s, lw: 2.2 * s, color: '#f7c600', head: .6 }),
+    panel(s, { title: 'TOMORROW', text: 'A green, living world like Earth, built by your hands.', fill: '#1d7a3c', fill2: '#3aa2cc', gangle: 340, x: C.w / 2 + 11.25 * s + w / 2, y, w, h })]; });
+  for (const [n, a, b, t] of [['Gradient panel · sunset', '#c64516', '#eaa645', 'TODAY'], ['Gradient panel · living world', '#1d7a3c', '#3aa2cc', 'TOMORROW'], ['Gradient panel · night shift', '#1a1f4e', '#5b3c9e', 'NIGHT SHIFT'], ['Gradient panel · ocean', '#0b4f6c', '#20a4c4', 'THE SEA'], ['Gradient panel · warning', '#8e0000', '#e53935', 'ALERT']])
+    add(n, C => { const s = S(C); return [panel(s, { title: t, text: 'A short line or two of text goes here.', fill: a, fill2: b, x: C.w / 2, y: C.h / 2, w: 133 * s, h: 42.5 * s })]; });
+  add('Big number callout', C => { const s = S(C); return [{ ...panel(s, { title: '50 °C', text: 'Daytime high on the surface', fill: '#fff4e0', fill2: '#ffe0b2', tcolor: '#c64516', color: '#5d4037', tsize: 16 * s, size: 5.6 * s, bw: 1 * s, border: '#c64516', radius: 3 * s, x: C.w / 2, y: C.h / 2, w: 90 * s, h: 50 * s }), name: 'Big number' }]; });
+
+  /* ---------- text ---------- */
+  add('Bullet list', C => { const s = S(C); return [tb(s, '- First point, with a *highlighted* word\n- Second point\n- **Bold** third point that wraps onto a second line', C.w / 2, C.h / 2, 130 * s, 40 * s)]; });
+  add('Two-column bullet list', C => { const s = S(C); return [tb(s, '- Respirator & goggles outside\n- Boots & gloves always\n- Never go out alone\n- Check the wet-bulb reading\n- Report injuries *at once*\n- Drink before you are thirsty', C.w / 2, C.h / 2, 270 * s, 32 * s, { cols: 2, cgap: 12 * s, name: 'Two-column list' })]; });
+  add('Checklist with ticks', C => { const s = S(C); return [tb(s, '- Badge and ID\n- Respirator, tested\n- Two litres of water\n- Radio, charged', C.w / 2, C.h / 2, 110 * s, 40 * s, { bullet: 'tick', bcolor: '#2e7d32', name: 'Checklist' })]; });
+  add('Numbered list', C => { const s = S(C); return [tb(s, '1. Stop what you are doing\n2. Put on your respirator\n3. Walk to the nearest shelter\n4. Wait for the all-clear', C.w / 2, C.h / 2, 120 * s, 44 * s, { bcolor: '#1b4f8a', name: 'Numbered list' })]; });
+  add('Headline · two colours', C => { const s = S(C); return [tb(s, 'WELCOME TO\nPROJECT\n*DUNEWRIGHT*', C.w / 2, C.h / 2, 268 * s, 72 * s, { font: 'Montserrat', weight: 900, bweight: 900, size: 25 * s, lineH: .92, para: 0, align: 'center', valign: 'middle', color: '#111111', hi: '#1b5e9e', bullet: 'none', name: 'Headline' })]; });
+  add('Kicker line with stars', C => { const s = S(C); return [tx('★ WELCOME, COLONIST! ★', C.w / 2, C.h / 2, 170 * s, 11 * s, { size: 8.6 * s, spacing: .16, color: '#b8860b', name: 'Kicker' })]; });
+  add('Section heading · warning icons', C => { const s = S(C), y = C.h / 2; return [tx('PLANET CAUTIONS', C.w / 2, y, 108 * s, 12 * s, { size: 10.2 * s }), icon('ig_warn', C.w / 2 - 61 * s, y, 10 * s, '#111111'), icon('ig_warn', C.w / 2 + 61 * s, y, 10 * s, '#111111')]; });
+  add('Section heading · plain', C => { const s = S(C); return [tx('YOUR FIRST STEPS', C.w / 2, C.h / 2, 160 * s, 12 * s, { size: 10.2 * s })]; });
+  add('Section heading · with rules', C => { const s = S(C), y = C.h / 2; return [tx('GOOD TO KNOW', C.w / 2, y, 100 * s, 12 * s, { size: 10 * s }), { type: 'line', name: 'Rule', x: C.w / 2 - 92 * s, y, w: 70 * s, h: 2 * s, color: '#111111', lw: 1.2 * s }, { type: 'line', name: 'Rule', x: C.w / 2 + 92 * s, y, w: 70 * s, h: 2 * s, color: '#111111', lw: 1.2 * s }]; });
+
+  /* ---------- bands ---------- */
+  add('Welcome header band', C => { const s = S(C), h = 102 * s, y = h / 2 + C.h * .02; return [
+    box(C.w / 2, y, C.w, h, '#16508c', { fill2: '#1c66aa', grad: true, angle: 90, name: 'Header band' }),
+    tx('★ WELCOME, COLONIST! ★', C.w / 2, y - h * .38, 170 * s, 11 * s, { size: 8.6 * s, spacing: .16, color: '#f7c600', name: 'Kicker' }),
+    tb(s, 'WELCOME TO\nPROJECT\n*DUNEWRIGHT*', C.w / 2, y + h * .02, 268 * s, 70 * s, { font: 'Montserrat', weight: 900, bweight: 900, size: 25 * s, lineH: .92, para: 0, align: 'center', valign: 'middle', color: '#ffffff', hi: '#f7c600', bullet: 'none', name: 'Headline' }),
+    tx('You\'ve arrived at the start of something great. Thank you for being part of it.', C.w / 2, y + h * .41, 272 * s, 9 * s, { font: 'Inter', weight: 700, size: 6.6 * s, color: '#ffffff', name: 'Subtitle' })]; });
+  add('Footer band with slogan', C => { const s = S(C), h = 25 * s, y = C.h - h / 2 - C.h * .015; return [box(C.w / 2, y, C.w, h, '#111111', { name: 'Footer band' }),
+    tx('BUILD THE FUTURE • STAY SAFE DOING IT', C.w / 2, y - h * .13, 230 * s, 10 * s, { size: 9 * s, color: '#f7c600', name: 'Slogan' }),
+    tx('Project Dunewright • Colony Administration', C.w / 2, y + h * .26, 200 * s, 6 * s, { font: 'Inter', weight: 500, size: 4.8 * s, color: '#ffffff', name: 'Footer credit' })]; });
+  add('Hazard stripe bands · top and bottom', C => { const s = S(C), h = 6.8 * s; return [
+    { type: 'stripes', name: 'Hazard band (top)', x: C.w / 2, y: h / 2 + 5.5 * s, w: C.w - 11 * s, h, band: h * .8, color: '#111111', color2: '#f7c600' },
+    { type: 'stripes', name: 'Hazard band (bottom)', x: C.w / 2, y: C.h - h / 2 - 5.5 * s, w: C.w - 11 * s, h, band: h * .8, color: '#111111', color2: '#f7c600' }]; });
+  add('Icon facts row', C => { const s = S(C), y = C.h / 2, items = [['ig_sunhot', '50 °C', 'days'], ['ig_drop', '4 L', 'water a day'], ['ig_wind', '120 km/h', 'storm winds'], ['crescent', '20 °C', 'nights']], out = [];
+    items.forEach(([id, big, small], i) => { const x = C.w / 2 + (i - 1.5) * 66 * s, col = ['#c64516', '#1b6fb3', '#b8641c', '#3949ab'][i];
+      out.push({ type: 'ellipse', name: 'Icon disc', x, y: y - 10 * s, w: 30 * s, h: 30 * s, fill: col }, icon(id, x, y - 10 * s, 17 * s, '#ffffff'), tx(big, x, y + 12 * s, 60 * s, 9 * s, { size: 8 * s, color: col }), tx(small, x, y + 20 * s, 60 * s, 6 * s, { font: 'Inter', weight: 600, size: 4.6 * s, color: '#333333' })); });
+    return out; });
+  for (const [n, kind, o] of [['Arrow · line', 'line', {}], ['Arrow · solid head', 'solid', {}], ['Arrow · block', 'block', { w: 16, h: 9 }], ['Arrow · double-headed', 'double', { w: 18 }], ['Arrow · curved', 'curve', { w: 16, h: 9 }], ['Chevron', 'chevron', { w: 6, h: 9 }]])
+    add(n, C => { const s = S(C); return [arrow(s, C.w / 2, C.h / 2, { kind, ...o, w: (o.w || 12) * s, h: (o.h || 7) * s, lw: 1.6 * s })]; });
+
+  /* ================= templates ================= */
+  const TPI = (id, name, fmt, card, scene, front) => TEMPLATES.push({ id, name, mode: 'poster', build: () => { const f = FORMATS[fmt]; return { card: { mode: 'poster', fmt, w: f.w, h: f.h, r: f.r, shape: 'rect', thick: f.thick, slot: 'none', lam: 'none', ink: 'satin', res: 4096, ...card }, scene: { env: 'softbox', backdrop: 'concrete', pose: 'stand', ...scene }, front: front(f.w, f.h).map(o => { const { type, ...rest } = o; return E(type, rest); }), back: [] }; } });
+
+  /* Welcome to Project Dunewright: a colony orientation sheet (laid out on a 1200 × 1920 grid, a quarter of a millimetre per unit) */
+  TPI('ps_dunewright', 'Welcome to Project Dunewright · colony orientation', 'ps_info', { sub: 'poster_gloss', wear: 0, age: 0, tintOn: true, tint: '#ffffff' }, { env: 'softbox', backdrop: 'concrete' }, (W, H) => {
+    const s = 1, u = v => v * .25, Y = '#f7c600', BLUE = '#1b4f8a';
+    const hdr = (title, ic, head, icol, text, x0, y0, x1, y1, o = {}) => card(s, { title, icon: ic, head, border: head, iconColor: icol, text, x: u((x0 + x1) / 2), y: u((y0 + y1) / 2), w: u(x1 - x0), h: u(y1 - y0), ...o });
+    const stp = (n, title, text, cx, o = {}) => step(s, { num: n, title, text, x: u(cx), y: u(857.5), w: u(232), h: u(285), ...o });
+    return [
+      box(u(11), H / 2, u(22), H, Y, { name: 'Frame (left)', locked: true }), box(W - u(11), H / 2, u(22), H, Y, { name: 'Frame (right)', locked: true }),
+      box(W / 2, u(11), W, u(22), Y, { name: 'Frame (top)', locked: true }), box(W / 2, H - u(11), W, u(22), Y, { name: 'Frame (bottom)', locked: true }),
+      box(u(600), u(252.5), u(1156), u(409), '#16508c', { fill2: '#1c66aa', grad: true, angle: 90, name: 'Header band' }),
+      box(u(600), u(1820), u(1156), u(100), '#111111', { name: 'Footer band' }),
+      { type: 'stripes', name: 'Hazard band (top)', x: u(600), y: u(35), w: u(1156), h: u(26), band: 5.2, color: '#111111', color2: Y },
+      { type: 'stripes', name: 'Hazard band (bottom)', x: u(600), y: u(1884), w: u(1156), h: u(28), band: 5.2, color: '#111111', color2: Y },
+      tx('★ WELCOME, COLONIST! ★', u(600), u(97), u(680), u(44), { size: 8.6, spacing: .16, color: Y, name: 'Kicker' }),
+      tb(s, 'WELCOME TO\nPROJECT\n*DUNEWRIGHT*', u(600), u(262), u(1072), u(290), { font: 'Montserrat', weight: 900, bweight: 900, size: 25, lineH: .9, para: 0, align: 'center', valign: 'middle', color: '#ffffff', hi: Y, bullet: 'none', name: 'Headline' }),
+      tx('You\'ve arrived at the start of something great. Thank you for being part of it.', u(600), u(420), u(1090), u(36), { font: 'Inter', weight: 700, size: 6.6, color: '#ffffff', name: 'Subtitle' }),
+      panel(s, { title: 'TODAY', text: 'A scorching desert. 180°F days, sandstorms, no open water.', fill: '#c64516', fill2: '#eaa645', x: u(288.5), y: u(542), w: u(533), h: u(170) }),
+      box(u(600), u(542), u(90), u(170), '#111111', { name: 'Arrow strip' }),
+      arrow(s, u(600), u(542), { w: 13, h: 9, lw: 2.2, color: Y, head: .6 }),
+      panel(s, { title: 'TOMORROW', text: 'A green, living world like Earth — built by your hands.', fill: '#1d7a3c', fill2: '#3aa2cc', gangle: 340, x: u(911.5), y: u(542), w: u(533), h: u(170) }),
+      tx('YOUR FIRST STEPS', u(600), u(675), u(640), u(48), { size: 10.2, name: 'Steps heading' }),
+      stp('1', 'THAW OUT', 'Rest in recovery. Drink water. Move slowly.', 162),
+      arrow(s, u(308), u(857)),
+      stp('2', 'MEDICAL', 'Get your health check & heat clearance.', 454),
+      arrow(s, u(600), u(857)),
+      stp('3', 'ADMIN', 'Get your job assignment, ID & quarters.', 746),
+      arrow(s, u(892), u(857)),
+      stp('4', 'START WORK', 'Begin your journey as a Dunewright worker!', 1038, { border: '#2e7d32', badge: '#2e7d32', fill: '#eef8ee' }),
+      tx('PLANET CAUTIONS', u(600), u(1068), u(432), u(48), { size: 10.2, name: 'Cautions heading' }),
+      icon('ig_warn', u(356), u(1068), 10, '#111111'), icon('ig_warn', u(844), u(1068), 10, '#111111'),
+      hdr('EXTREME HEAT', 'ig_thermo', '#d50000', '#ffffff', '- Days reach *180°F*. Nights drop to about 70°F\n- Outdoor work happens at night\n- Drink 1 cup of water every 15–20 min', 46, 1103, 590, 1288),
+      hdr('CHECK THE WET-BULB', 'ig_drop', '#111111', '#5ab3f0', '- Combines heat *and* humidity\n- 88°F or higher: *stop all outdoor work*\n- Readings are posted at every airlock', 610, 1103, 1155, 1288),
+      hdr('SANDSTORMS', 'ig_storm', '#b8641c', '#ffffff', '- Siren with *3 long blasts* = storm coming\n- Get to shelter right away\n- Caught outside? Get low, cover your face, radio in', 46, 1308, 590, 1523),
+      hdr('SAND & DUST', 'ig_lungs', '#111111', '#f48fb1', '- Respirator & sealed goggles outside\n- Hot sand burns — boots & gloves always\n- Never go outside alone', 610, 1308, 1155, 1523),
+      hdr('DANGEROUS WILDLIFE & PLANTS', 'ig_scorpion', '#5b2c83', '#e0b991', '- Don\'t touch, eat or collect *any* native plant or animal\n- Many can sting, bite, cut or poison — even small ones\n||\n- Shake out boots, gloves & gear before putting them on\n- Stung, bitten or cut? *Go to medical right away*', 46, 1543, 1155, 1748, { cols: 2, cgap: 10 }),
+      tx('BUILD THE FUTURE • STAY SAFE DOING IT', u(600), u(1807), u(920), u(40), { size: 9, color: Y, name: 'Slogan' }),
+      tx('Project Dunewright • Colony Administration', u(600), u(1846), u(800), u(24), { font: 'Inter', weight: 500, size: 4.8, color: '#ffffff', name: 'Footer credit' }),
+    ];
+  });
+
+  /* Outpost Kestrel: a polar research station's arrival sheet, to show the same parts in another palette */
+  TPI('ps_kestrel', 'Outpost Kestrel · polar station arrival guide', 'ps_info', { sub: 'poster_gloss', wear: 0, age: 0, tintOn: true, tint: '#ffffff' }, { env: 'white', backdrop: 'concrete' }, (W, H) => {
+    const s = 1, NAVY = '#0d2b45', ICE = '#e8f4fb', ORANGE = '#ff6d00', TEAL = '#00838f';
+    return [
+      box(W / 2, H / 2, W, H, ICE, { name: 'Background', locked: true }),
+      box(W / 2, 62, W, 124, NAVY, { fill2: '#16456e', grad: true, angle: 90, name: 'Header band' }),
+      icon('snowflake', W / 2, 22, 16, '#9fd6f2'),
+      tx('OUTPOST KESTREL · 78° SOUTH', W / 2, 40, 200, 10, { font: 'Inter', weight: 800, size: 6.4, spacing: .2, color: '#9fd6f2', name: 'Kicker' }),
+      tb(s, 'COLD IS THE\n*FIRST HAZARD*', W / 2, 74, 270, 52, { font: 'Montserrat', weight: 900, bweight: 900, size: 22, lineH: .95, para: 0, align: 'center', valign: 'middle', color: '#ffffff', hi: ORANGE, bullet: 'none', name: 'Headline' }),
+      tx('Read this before you leave the hangar. Your crew is counting on you.', W / 2, 111, 260, 8, { font: 'Inter', weight: 600, size: 5.6, color: '#d6ecf8', name: 'Subtitle' }),
+      ...[['ig_thermo', '−52 °C', 'winter low'], ['ig_wind', '160 km/h', 'katabatic winds'], ['ig_clock', '24 h', 'darkness in June'], ['ig_people', '41', 'people on station']].flatMap(([id, big, small], i) => { const x = 39 + i * 74, y = 150, col = [TEAL, '#3949ab', '#5e35b1', ORANGE][i];
+        return [{ type: 'ellipse', name: 'Icon disc', x, y, w: 26, h: 26, fill: col }, icon(id, x, y, 15, '#ffffff'), tx(big, x, y + 21, 66, 9, { size: 8, color: NAVY }), tx(small, x, y + 29, 66, 6, { font: 'Inter', weight: 600, size: 4.4, color: '#455a64' })]; }),
+      tx('ON ARRIVAL', W / 2, 202, 120, 11, { size: 9.4, color: NAVY, name: 'Steps heading' }),
+      ...[['KIT UP', 'Collect your thermal layers and goggles.'], ['BRIEFING', 'Two hours of cold-safety training.'], ['BUDDY UP', 'Meet the partner you go outside with.']].flatMap(([title, text], i) => { const x = 50 + i * 100, last = i === 2;
+        return [step(s, { num: String(i + 1), title, text, x, y: 240, w: 80, h: 58, border: last ? TEAL : NAVY, badge: last ? TEAL : NAVY, fill: last ? '#e0f7fa' : '#ffffff', tsize: 6.4, size: 5, badgeR: 7 }), ...(last ? [] : [arrow(s, x + 50, 240, { color: NAVY })])]; }),
+      tx('STATION RULES', W / 2, 288, 130, 11, { size: 9.4, color: NAVY, name: 'Rules heading' }),
+      icon('ig_warn', W / 2 - 60, 288, 9, ORANGE), icon('ig_warn', W / 2 + 60, 288, 9, ORANGE),
+      card(s, { title: 'FROSTBITE', icon: 'ig_thermo', head: TEAL, border: TEAL, hi: '#d84315', text: '- Cover *every* inch of skin outside\n- Numb or white skin: *come inside now*\n- Warm hands slowly, never with fire', x: 79, y: 324, w: 138, h: 50 }),
+      card(s, { title: 'WHITEOUT', icon: 'ig_wind', head: NAVY, border: NAVY, hi: '#d84315', text: '- Stop and hold the guide rope\n- Radio your position *every 5 min*\n- Never walk without a line', x: 221, y: 324, w: 138, h: 50 }),
+      card(s, { title: 'DO', icon: 'ig_checkc', head: '#2e7d32', border: '#2e7d32', bullet: 'tick', bcolor: '#2e7d32', hi: '#2e7d32', text: '- Sign out at the door board\n- Carry a charged radio\n- Drink warm water often', x: 79, y: 384, w: 138, h: 50 }),
+      card(s, { title: 'DON\'T', icon: 'ig_xmark', head: '#c62828', border: '#c62828', bullet: 'dash', bcolor: '#c62828', text: '- Go outside alone, ever\n- Touch metal with bare skin\n- Prop open an outer door', x: 221, y: 384, w: 138, h: 50 }),
+      box(W / 2, 457, W, 46, NAVY, { name: 'Footer band' }),
+      tx('NOBODY GOES OUT ALONE', W / 2, 452, 230, 11, { size: 9.6, color: '#ffffff', name: 'Slogan' }),
+      tx('Outpost Kestrel · Polar Survey Directorate · a fictional station', W / 2, 466, 220, 6, { font: 'Inter', weight: 500, size: 4.4, color: '#9fd6f2', name: 'Footer credit' }),
+    ];
+  });
+})();
+
 /* ================= optional render profiler (off unless Forge.PROF.on = true) ================= */
 const PROF = { on: false, t: {}, n: {} };
 Forge.PROF = PROF;
@@ -4412,10 +4841,10 @@ ui.changed = (final) => { elChanged(!final); if (final) renderInspector(); };
 function liveEdit() { invalidate([sideOf(selId) || side], true); syncInputs(); ui.drawFlat(); }
 function fmtOpts() { return Object.entries(FORMATS).filter(([k, v]) => k === 'custom' || modeOfFmt(v) === appMode).map(([k, v]) => [k, v.label]); }
 function subOpts() { return (appMode === 'poster' ? POSTER_SUBS : Object.keys(SUBS).filter(k => !SUBS[k].poster)).map(k => [k, SUBS[k].label]); }
-const ADD_ORDER = { card: ['text', 'field', 'photo', 'shape', 'rect', 'ellipse', 'line', 'frame', 'guilloche', 'pattern', 'seal', 'holo', 'flag', 'micro', 'qr', 'barcode', 'matrix', 'mrz', 'sign', 'chip', 'stamp'], poster: ['text', 'safety', 'picto', 'stripes', 'rays', 'nfpa', 'glyph', 'photo', 'rect', 'ellipse', 'shape', 'line', 'frame', 'pattern', 'halftone', 'stamp', 'seal', 'flag', 'qr', 'barcode'] };
+const ADD_ORDER = { card: ['text', 'textblock', 'field', 'photo', 'shape', 'rect', 'ellipse', 'line', 'frame', 'guilloche', 'pattern', 'seal', 'holo', 'flag', 'micro', 'qr', 'barcode', 'matrix', 'mrz', 'sign', 'chip', 'stamp'], poster: ['text', 'textblock', 'infocard', 'arrow', 'safety', 'picto', 'stripes', 'rays', 'nfpa', 'glyph', 'photo', 'rect', 'ellipse', 'shape', 'line', 'frame', 'pattern', 'halftone', 'stamp', 'seal', 'flag', 'qr', 'barcode'] };
 function renderAddGrid() { const grid = $('#addGrid'); if (!grid) return; const order = (ADD_ORDER[appMode] || ADD_ORDER.card).filter(t => T[t]); grid.innerHTML = order.map(t => `<button type="button" data-t="${t}" title="Add ${T[t].label.toLowerCase()}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${T[t].icon}"/></svg>${T[t].label}</button>`).join(''); }
 /* sizes that grow with the canvas when a poster changes format or takes a card-sized component */
-const SIZE_KEYS = ['w', 'h', 'size', 'strokeW', 'lw', 'outlineW', 'lineW', 'shadow', 'glow', 'radius', 'dash', 'cell', 'tsize', 'band', 'bw'];
+const SIZE_KEYS = ['w', 'h', 'size', 'strokeW', 'lw', 'outlineW', 'lineW', 'shadow', 'glow', 'radius', 'dash', 'cell', 'tsize', 'band', 'bw', 'pad', 'cgap', 'headH', 'badgeR'];
 const RANGE_BASE = new Map(), POSTER_NATIVE = new Set(['safety', 'picto', 'stripes', 'rays', 'nfpa']);
 function setRangeScale(f) {   // size sliders reach ten times further on posters
   for (const t of Object.values(T)) { if (POSTER_NATIVE.has(t.type)) continue; for (const p of t.props || []) { if (p[2] !== 'range' || !p[3] || !SIZE_KEYS.includes(p[0]) || (p[0] === 'lw' && (t.type === 'sigil' || t.type === 'pattern'))) continue; if (!RANGE_BASE.has(p)) RANGE_BASE.set(p, p[3].max); p[3].max = RANGE_BASE.get(p) * f; } }

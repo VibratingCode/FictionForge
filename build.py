@@ -2,7 +2,7 @@
 from pathlib import Path
 S = Path(__file__).parent / 'src'
 head = (S / 'head.html').read_text()
-parts = [(S / f).read_text() for f in ['engine.js', 'textures.js', 'qr.js', 'engine2.js', 'logo.js', 'poster_icons.js', 'logo2.js', 'poster.js', 'presets.js', 'layouts.js', 'stamps.js', 'logopresets.js', 'posterpresets.js', 'prof.js', 'ui.js']]
+parts = [(S / f).read_text() for f in ['engine.js', 'textures.js', 'qr.js', 'engine2.js', 'logo.js', 'poster_icons.js', 'logo2.js', 'poster.js', 'infographic.js', 'presets.js', 'layouts.js', 'stamps.js', 'logopresets.js', 'posterpresets.js', 'infopresets.js', 'prof.js', 'ui.js']]
 view = (S / 'view.mjs').read_text()
 cdn = 'https://cdn.jsdelivr.net/npm/three@0.170.0'
 # the import map and module preloads go in <head>, so three.js downloads while the editor script is still starting up

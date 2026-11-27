@@ -29,7 +29,7 @@ const BLUR_OK = (() => { try { const c = document.createElement('canvas').getCon
 const SP_OK = (() => { try { return 'letterSpacing' in document.createElement('canvas').getContext('2d'); } catch (e) { return false; } })();
 
 /* ---------- fonts ---------- */
-const FONTS = { 'Inter': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
+const FONTS = { 'Inter': 'system-ui, sans-serif', 'Montserrat': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
 const SYS_FONTS = new Set(['Georgia', 'Arial']);
 const fontAsked = new Set();
 const GEN = { v: 0 };   // bumped whenever a font or an image finishes loading, so caches drawn without it are redrawn
@@ -730,14 +730,15 @@ function clipCard(x, k) { x.save(); cardPath(x, k); x.clip('evenodd'); }
    re-ordering them, or editing anything else on the card, costs a single image draw. Elements that read their position or the
    card outline are never cached, and any element that blends against what is beneath it is detected and drawn directly. */
 const ELC = { map: new Map(), px: 0, max: 28e6, entry: 6e6, no: new Set(), off: false };
-const CACHE_T = new Set(['photo', 'guilloche', 'pattern', 'halftone', 'sigil', 'tree', 'mark', 'glyph', 'seal', 'stamp', 'frame', 'flag', 'shape', 'safety', 'picto', 'stripes', 'rays', 'nfpa']);
+const CACHE_T = new Set(['photo', 'guilloche', 'pattern', 'halftone', 'sigil', 'tree', 'mark', 'glyph', 'seal', 'stamp', 'frame', 'flag', 'shape', 'safety', 'picto', 'stripes', 'rays', 'nfpa', 'textblock', 'infocard', 'arrow']);
 const BOXED_T = new Set(['pattern', 'halftone', 'rays', 'stripes']);   // these clip themselves to their own box
 const _GCO = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'globalCompositeOperation');
-function elMargin(el) {
-  const fx = (el.shadow || 0) * 2.5 + (el.glow || 0) * 3 + (el.strokeW || 0) * 2 + (el.outlineW || 0) * 2 + (el.border || 0) * 2 + (el.bevel || 0);
-  if (BOXED_T.has(el.type)) return .4 + (el.lw || 0) + fx;
-  if (el.type === 'guilloche') return (el.mode === 'field' ? .12 * el.h : .4) + (el.lw || 0) + fx;
-  return 1.5 + Math.max(el.w, el.h) * .06 + (el.lineW || 0) * 2 + fx;
+function elMargin(el) {   // how far an element may paint outside its box (only numeric settings count: some types use these names for colours)
+  const n = v => typeof v === 'number' && isFinite(v) ? Math.max(0, v) : 0;
+  const fx = n(el.shadow) * 2.5 + n(el.glow) * 3 + n(el.strokeW) * 2 + n(el.outlineW) * 2 + n(el.border) * 2 + n(el.bw) + n(el.bevel);
+  if (BOXED_T.has(el.type)) return .4 + n(el.lw) + fx;
+  if (el.type === 'guilloche') return (el.mode === 'field' ? .12 * el.h : .4) + n(el.lw) + fx;
+  return 1.5 + Math.max(el.w, el.h) * .06 + n(el.lineW) * 2 + n(el.lw) + fx;
 }
 /* The bitmap holds the element already rotated and is placed on whole device pixels, with the sub-pixel offset drawn into it,
    so a cached element is exactly as sharp as one drawn directly. Opacity and multiply or screen printing are drawn into the
@@ -749,7 +750,7 @@ function elBitmap(t, el, ov, k, tx, ty, ga, gco) {
   ax0 = Math.max(ax0, -x); ay0 = Math.max(ay0, -y); ax1 = Math.min(ax1, C.w - x); ay1 = Math.min(ay1, C.h - y);   // nothing outside the card is ever seen
   if (ax1 <= ax0 || ay1 <= ay0) return 'skip';
   const L = tx + (x + ax0) * k, Tp = ty + (y + ay0) * k, ix = Math.floor(L), iy = Math.floor(Tp), fx = L - ix, fy = Tp - iy;
-  const bw = Math.ceil((ax1 - ax0) * k + fx), bh = Math.ceil((ay1 - ay0) * k + fy); if (bw < 2 || bh < 2 || bw * bh > ELC.entry) return null;
+  const bw = Math.ceil((ax1 - ax0) * k + fx), bh = Math.ceil((ay1 - ay0) * k + fy); if (!(bw >= 2 && bh >= 2) || bw * bh > ELC.entry) return null;
   const key = JSON.stringify([rest, ov, Math.round(k * 1e4), rot || 0, _mirror ? 1 : 0, Math.round(ax0 * 100), Math.round(ay0 * 100), Math.round(ax1 * 100), Math.round(ay1 * 100), Math.round(fx * 4), Math.round(fy * 4), Math.round(ga * 1000), gco, C.seed, C.w, C.h, GEN.v, rest.asset ? !!getImg(rest.asset) : 0]);
   if (ELC.no.has(key)) return null;
   let ent = ELC.map.get(key);
