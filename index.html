@@ -4230,7 +4230,7 @@ function openGallery() {
   const TL = TEMPLATES.filter(t => (t.mode || 'card') === appMode), noun = MODES[appMode].noun;
   showModal(`<h2>Start a new ${noun}</h2><p>${TL.length} fictional templates. Pick one; Undo brings your current ${noun} back.</p><div class="tgrid">${TL.map(t => { const [a, b] = t.name.split(' · '); return `<button class="tcard" data-x="tpl" data-id="${t.id}"><span class="tth" data-th="${t.id}"></span><b>${esc(a)}</b><small>${esc(b || '')}</small></button>`; }).join('')}</div><div class="mrow"><button class="btn" data-x="close">Close</button></div>`, (a, btn) => {
     if (a === 'close') closeModal();
-    if (a === 'tpl') { const id = btn.dataset.id, t = TEMPLATES.find(x => x.id === id); closeModal(); applyTemplate(id); imgs.clear(); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand') setTimeout(() => view && view.camPreset('hero'), 60); toast(`Loaded ${t.name.split(' ·')[0]}. Undo brings your previous card back.`); }
+    if (a === 'tpl') { const id = btn.dataset.id, t = TEMPLATES.find(x => x.id === id); closeModal(); applyTemplate(id); imgs.clear(); docMeta = { id: null, name: '', savedAt: 0, savedSnap: null }; refreshAll(); pushHist(); updStatus(); if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand' || appMode === 'poster') setTimeout(() => view && view.camPreset('hero'), 60); toast(`Loaded ${t.name.split(' ·')[0]}. Undo brings your previous card back.`); }
   });
   const slots = $$('[data-th]'); let i = 0;
   const step = () => { if (!$('#modal') || $('#modal').hidden || i >= slots.length) return; const s = slots[i++]; if (!s.isConnected) return; const id = s.dataset.th; let c = thumbCache.get(id); if (!c) { const t = TEMPLATES.find(x => x.id === id); c = renderThumb(t.build(), 300); thumbCache.set(id, c); } const cl = document.createElement('canvas'); cl.width = c.width; cl.height = c.height; cl.getContext('2d').drawImage(c, 0, 0); s.appendChild(cl); requestAnimationFrame(step); };
@@ -4747,7 +4747,7 @@ let autoFlat = false;
 Forge.attachView = function (v) {
   view = v; if (autoFlat) { autoFlat = false; setView('3d'); } v.setCard(); v.setScene(); v.flipTo(side, true); for (const s of ['front', 'back']) if (last[s]) v.setMaps(last[s]); v.setUV(uvOn);
   $('#loading').classList.add('gone'); ui.hud();
-  if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand') setTimeout(() => v.camPreset('hero'), 50);
+  if (P.scene.pose === 'lanyard' || P.scene.pose === 'stand' || appMode === 'poster') setTimeout(() => v.camPreset('hero'), 50);
 };
 Forge.viewFailed = function (msg) {
   if (view) return; autoFlat = true;
