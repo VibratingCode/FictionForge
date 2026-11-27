@@ -125,14 +125,17 @@ void main(){
   const pose = new THREE.Group(), orient = new THREE.Group(), tiltG = new THREE.Group(), flipG = new THREE.Group(), cardG = new THREE.Group();
   scene.add(pose); pose.add(orient); orient.add(tiltG); tiltG.add(flipG); flipG.add(cardG); orient.rotation.x = -Math.PI / 2;
   let W = 85.6, H = 53.98, TH = .76, flexMode = false, geoSig = '', body = null, flexF = null, flexB = null, holoF = null, holoB = null, flexMinZ = 0, exp = null;
+  /* posters are built at card scale (longest side ~150 mm) so the studio's lights, camera and shadows still fit; textures map by UV */
+  function geoC() { const C = F.P.card; if (C.mode !== 'poster') return C; const vs = Math.min(1, 150 / Math.max(C.w, C.h)); return { ...C, w: C.w * vs, h: C.h * vs, r: C.r * vs, thick: Math.max(.3, C.thick * vs), _vs: vs }; }
+  function slotsOf(C) { const S0 = F.slotDims(C), q = C._vs || 1; return { slot: { w: S0.slot.w * q, h: S0.slot.h * q, cy: S0.slot.cy * q }, hole: { r: S0.hole.r * q, cy: S0.hole.cy * q }, corner: { r: S0.corner.r * q, dx: S0.corner.dx * q, cy: S0.corner.cy * q } }; }
   function cardShape(C, inset) {
     const w = C.w, h = C.h, r = Math.max(.01, Math.min(C.r, w / 2, h / 2) - inset), x0 = -w / 2 + inset, y0 = -h / 2 + inset, x1 = w / 2 - inset, y1 = h / 2 - inset, s = new THREE.Shape();
     const pts = C.shape && C.shape !== 'rect' ? F.cardOutline(C.shape, w, h) : null;
     if (pts) { const kx = Math.max(.1, 1 - 2 * inset / w), ky = Math.max(.1, 1 - 2 * inset / h); pts.forEach(([px, py], i) => { const X = (px - w / 2) * kx, Y = (h / 2 - py) * ky; i ? s.lineTo(X, Y) : s.moveTo(X, Y); }); s.closePath(); }
     else { s.moveTo(x0 + r, y0); s.lineTo(x1 - r, y0); s.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false); s.lineTo(x1, y1 - r); s.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
     s.lineTo(x0 + r, y1); s.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false); s.lineTo(x0, y0 + r); s.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false); }
-    const SL = F.SLOT;
-    if (C.slot === 'slot2' || C.slot === 'corners') for (const sx of [-1, 1]) { const p = new THREE.Path(); p.absarc(sx * (w / 2 - SL.corner.dx), h / 2 - SL.corner.cy, SL.corner.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
+    const SL = slotsOf(C);
+    if (C.slot === 'slot2' || C.slot === 'corners' || C.slot === 'corners4') for (const sy of C.slot === 'corners4' ? [1, -1] : [1]) for (const sx of [-1, 1]) { const p = new THREE.Path(); p.absarc(sx * (w / 2 - SL.corner.dx), sy * (h / 2 - SL.corner.cy), SL.corner.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
     if (C.slot === 'slot' || C.slot === 'slot2') { const sw = SL.slot.w + inset * 2, sh = SL.slot.h + inset * 2, cy = h / 2 - SL.slot.cy, rr = sh / 2, p = new THREE.Path(); p.moveTo(-sw / 2 + rr, cy - sh / 2); p.lineTo(sw / 2 - rr, cy - sh / 2); p.absarc(sw / 2 - rr, cy, rr, -Math.PI / 2, Math.PI / 2, false); p.lineTo(-sw / 2 + rr, cy + sh / 2); p.absarc(-sw / 2 + rr, cy, rr, Math.PI / 2, Math.PI * 1.5, false); s.holes.push(p); }
     else if (C.slot === 'hole') { const p = new THREE.Path(); p.absarc(0, h / 2 - SL.hole.cy, SL.hole.r + inset, 0, Math.PI * 2, true); s.holes.push(p); }
     return s;
@@ -192,8 +195,8 @@ void main(){
   }
   function setCard() {
     const C = F.P.card, S = F.sub();
-    const sig = [C.w, C.h, C.r, C.thick, C.slot, !!S.flex, S.flex ? [C.curl, C.crumple, C.foldV, C.foldH].join(',') : ''].join('|');
-    if (sig !== geoSig) { geoSig = sig; rebuild(C, S); }
+    const sig = [C.w, C.h, C.r, C.thick, C.slot, C.mode || '', !!S.flex, S.flex ? [C.curl, C.crumple, C.foldV, C.foldH].join(',') : ''].join('|');
+    if (sig !== geoSig) { geoSig = sig; rebuild(geoC(), S); }
     const clear = S.clear > 0, atten = new THREE.Color(clear && C.tintOn && S.tintable ? C.tint : (S.atten || '#ffffff'));
     for (const m of [matF, matB]) {
       const refl = F.P.scene.refl ?? .55;
@@ -245,10 +248,10 @@ void main(){
     const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; tx.wrapT = THREE.RepeatWrapping; tx.anisotropy = maxAniso; return tx;
   }
   function buildLanyard() {
-    const C = F.P.card, s = F.P.scene, sig = [C.w, C.h, C.slot, C.shape, s.lanyardColor, s.lanyardText, s.lanyardStyle].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
+    const C = geoC(), s = F.P.scene, sig = [C.w, C.h, C.slot, C.shape, s.lanyardColor, s.lanyardText, s.lanyardStyle].join('|'); if (sig === lanyardSig) return; lanyardSig = sig;
     while (lanyardG.children.length) { const o = lanyardG.children.pop(); if (o.geometry) o.geometry.dispose(); }
     if (strapMat) { if (strapMat.map) strapMat.map.dispose(); strapMat.dispose(); }
-    const SL = F.SLOT, topY = C.slot === 'slot' || C.slot === 'slot2' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5, style = s.lanyardStyle || 'strap';
+    const SL = slotsOf(C), topY = C.slot === 'slot' || C.slot === 'slot2' ? C.h / 2 - SL.slot.cy : C.slot === 'hole' ? C.h / 2 - SL.hole.cy : C.h / 2 + 2.5, style = s.lanyardStyle || 'strap';
     if (style !== 'strap') {   // thin cord: through a clip at the slot, or looped through the two corner holes
       cordMat.color.set(s.lanyardColor || '#111114');
       const tube = (pts, r = .75) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))), 90, r, 10, false), cordMat); lanyardG.add(m); };

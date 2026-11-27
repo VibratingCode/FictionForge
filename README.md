@@ -1,6 +1,6 @@
-# ID Forge
+# Fiction Forge
 
-A three.js studio for designing **fictional** ID cards, badges and passes, from rough paper IDs to smoked-glass, translucent, holographic cards rendered in real time.
+A three.js studio for **fictional** props: ID cards and passes, faction emblems, and posters and signs, rendered in real time. A main menu at start-up (and the Menu button) switches between the three workshops; each keeps its own work.
 
 **Live site:** https://vibratingcode.github.io/FictionForge/
 
@@ -15,6 +15,15 @@ A three.js studio for designing **fictional** ID cards, badges and passes, from 
 - **Identity generator:** fills a card with a random fictional person. MRZ-style strips are decorative only.
 - **Rubber stamps:** 15 shapes (round, oval, box, date band, hexagon, octagon, shield, starburst, triangle, entry stamp, postmark, notched ticket, notary gear, banner), 26 icons, wear, uneven ink and double strikes.
 - **Faction logo maker:** a second mode (switch at the top) for emblems, with its own templates, presets and autosave. It includes 109 vector faction icons (beasts, weapons, celestial, arcane, tech, nature, royal and civic, industry, line symbols), adjustable geometric marks (concave starbursts, crescents, chevrons, diamond grids, notched triangles, horned marks, flame shards, radial blades), a procedural sigil generator, a tree-of-life generator, halftone fields, glow and outline-only styles, 32 emblems, 10 neon emblems and 12 flags. Emblem outlines include circle, shields, hexagon, octagon, diamond, banner, cog, starburst and flag, in brass, bronze, iron, enamel, leather, embroidered twill or slate.
+- **Posters and signs:** a third mode for workplace-safety signs and propaganda. It has 25 fictional templates:
+  - Safety signs: high voltage, anomalous zone, biohazard, radiation, PPE, restricted area, hostile fauna, days without incident, lockout tag, chemical store, eyewash and exit.
+  - Propaganda and notices: constructivist, dystopian, recruitment, space age, home front, resistance, curfew notice, wanted poster, art deco and neon.
+
+  Mode-specific features:
+  - **Elements:** signal-word headers (danger, warning, caution, notice and safety, in modern or classic style, with an optional second-language line), framed pictograms (warning triangle, prohibition, mandatory, safe condition, fire, chemical diamond and hazmat placard), hazard stripes with scuffing, adjustable sunbursts with swirl and fade, and a fire-diamond hazard rating.
+  - **Icons:** 66 new ones (hazards, safety gear and propaganda motifs).
+  - **Sizes and materials:** A-series, US and OSHA-size signs with four mounting holes. Materials include matte or gloss poster paper, newsprint, aged paper, painted or brushed aluminium, reflective sheeting, corrugated plastic, rusted tin (rust eats the print), wooden planks and concrete.
+  - **Words and export:** a slogan and warning generator, and a print-file export at 150 or 300 dpi.
 - **Fluorescent acrylic:** edge-lit acrylic in five colours. Laser engraving glows, and there are slot and corner-hole punches with cord, badge-clip or strap lanyards.
 - **Real QR codes** (versions 1–10, error correction levels L, M, Q and H) and Code 128 barcodes.
 - **Saving:** a design library stored in your browser (IndexedDB), autosave, and `.idforge.json` project files you can export and import.
@@ -22,7 +31,7 @@ A three.js studio for designing **fictional** ID cards, badges and passes, from 
 
 ## Fictional use only
 
-ID Forge contains no real government templates. The machine-readable zones (MRZ) are decorative text without valid check digits. Use it for games, film and TV props, worldbuilding, cosplay and design practice. Do not use it to imitate a real document.
+Fiction Forge contains no real government templates, and the poster mode uses invented agencies and generic pictograms. The machine-readable zones (MRZ) are decorative text without valid check digits. Use it for games, film and TV props, worldbuilding, cosplay and design practice. Do not use it to imitate a real document.
 
 ## Development
 

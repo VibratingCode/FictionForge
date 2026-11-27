@@ -29,7 +29,7 @@ const BLUR_OK = (() => { try { const c = document.createElement('canvas').getCon
 const SP_OK = (() => { try { return 'letterSpacing' in document.createElement('canvas').getContext('2d'); } catch (e) { return false; } })();
 
 /* ---------- fonts ---------- */
-const FONTS = { 'Inter': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Georgia': 'serif', 'Arial': 'sans-serif' };
+const FONTS = { 'Inter': 'system-ui, sans-serif', 'Space Grotesk': 'system-ui, sans-serif', 'IBM Plex Mono': 'ui-monospace, monospace', 'Share Tech Mono': 'ui-monospace, monospace', 'Courier Prime': '"Courier New", monospace', 'Special Elite': '"Courier New", monospace', 'Cinzel': 'Georgia, serif', 'Cormorant Garamond': 'Georgia, serif', 'Playfair Display': 'Georgia, serif', 'Instrument Serif': 'Georgia, serif', 'Orbitron': 'system-ui, sans-serif', 'Rajdhani': 'system-ui, sans-serif', 'Bebas Neue': 'Impact, sans-serif', 'Oswald': 'Impact, sans-serif', 'Archivo Black': 'Impact, sans-serif', 'UnifrakturMaguntia': 'Georgia, serif', 'Homemade Apple': 'cursive', 'Caveat': 'cursive', 'Anton': 'Impact, sans-serif', 'Black Ops One': 'Impact, sans-serif', 'Alfa Slab One': 'Georgia, serif', 'Rye': 'Georgia, serif', 'Stardos Stencil': 'Georgia, serif', 'Saira Stencil One': 'Impact, sans-serif', 'Big Shoulders Display': 'Impact, sans-serif', 'Staatliches': 'Impact, sans-serif', 'Abril Fatface': 'Georgia, serif', 'Russo One': 'system-ui, sans-serif', 'Teko': 'Impact, sans-serif', 'Georgia': 'serif', 'Arial': 'sans-serif' };
 const SYS_FONTS = new Set(['Georgia', 'Arial']);
 const fontAsked = new Set();
 function fstack(n) { return `"${n}", ${FONTS[n] || 'sans-serif'}`; }
@@ -180,14 +180,17 @@ function rr(c, x, y, w, h, r) {
   c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r); c.closePath();
 }
 const SLOT = { slot: { w: 12.7, h: 3.2, cy: 4.6 }, hole: { r: 2.5, cy: 5 }, corner: { r: 1.6, dx: 5, cy: 5 } };
+const SLOT_P = { slot: { w: 40, h: 8, cy: 14 }, hole: { r: 4.5, cy: 14 }, corner: { r: 2.8, dx: 12, cy: 12 } };   // sign and poster mounting holes
+function slotDims(C = P.card) { return C.mode === 'poster' ? SLOT_P : SLOT; }
 function cardPath(c, k) {
   const C = P.card, pts = C.shape && C.shape !== 'rect' ? cardOutline(C.shape, C.w, C.h) : null; c.beginPath();
   if (pts) { pts.forEach(([x, y], i) => i ? c.lineTo(x * k, y * k) : c.moveTo(x * k, y * k)); c.closePath(); } else rr(c, 0, 0, C.w * k, C.h * k, Math.min(C.r, C.w / 2, C.h / 2) * k);
-  if (C.slot === 'slot2' || C.slot === 'corners') { const s = SLOT.corner; for (const x of [s.dx, C.w - s.dx]) { c.moveTo((x + s.r) * k, s.cy * k); c.arc(x * k, s.cy * k, s.r * k, 0, Math.PI * 2); } }
-  if (C.slot === 'slot' || C.slot === 'slot2') { const s = SLOT.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
-  else if (C.slot === 'hole') { const s = SLOT.hole; c.moveTo((C.w / 2 + s.r) * k, s.cy * k); c.arc(C.w / 2 * k, s.cy * k, s.r * k, 0, Math.PI * 2); }
+  const SL = slotDims(C);
+  if (C.slot === 'slot2' || C.slot === 'corners' || C.slot === 'corners4') { const s = SL.corner; for (const y of C.slot === 'corners4' ? [s.cy, C.h - s.cy] : [s.cy]) for (const x of [s.dx, C.w - s.dx]) { c.moveTo((x + s.r) * k, y * k); c.arc(x * k, y * k, s.r * k, 0, Math.PI * 2); } }
+  if (C.slot === 'slot' || C.slot === 'slot2') { const s = SL.slot; rr(c, (C.w / 2 - s.w / 2) * k, (s.cy - s.h / 2) * k, s.w * k, s.h * k, s.h / 2 * k); }
+  else if (C.slot === 'hole') { const s = SL.hole; c.moveTo((C.w / 2 + s.r) * k, s.cy * k); c.arc(C.w / 2 * k, s.cy * k, s.r * k, 0, Math.PI * 2); }
 }
-Forge.SLOT = SLOT;
+Forge.SLOT = SLOT; Forge.slotDims = slotDims;
 function shapePath(c, shape, w, h) {
   c.beginPath(); const a = w / 2, b = h / 2;
   if (shape === 'rect') rr(c, -a, -b, w, h, Math.min(a, b) * .25);
@@ -727,8 +730,8 @@ function metalFor(f) { const S = sub(); if (f === 'foil' || f === 'holo') return
 function renderSide(side, tier, opts) {
   const C = P.card, S = sub(), Wm = C.w, Hm = C.h;
   const res = (opts && opts.res) || (tier === 'q' ? Math.min(768, C.res) : tier === 'p' ? Math.min(1536, C.res) : C.res);
-  const pw = Math.round(res), ph = Math.max(2, Math.round(res * Hm / Wm)), k = pw / Wm;
-  const hw = Math.max(512, Math.round(res / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
+  const tallP = C.mode === 'poster' && Hm > Wm, pw = Math.round(tallP ? res * Wm / Hm : res), ph = Math.max(2, Math.round(tallP ? res : res * Hm / Wm)), k = pw / Wm;   // posters: resolution means the long edge
+  const hw = Math.max(512, Math.round(pw / 2)), hh = Math.max(2, Math.round(hw * Hm / Wm)), kh = hw / Wm;
   const els = P[side].filter(e => e.visible !== false), other = side === 'front' ? 'back' : 'front';
   const wins = els.filter(e => e.finish === 'window').concat(P[other].filter(e => e.visible !== false && e.finish === 'window').map(e => ({ ...e, x: Wm - e.x, rot: -(e.rot || 0), _mirror: true })));
   const clear = S.clear > 0, fl = fluorOf(), lamOn = C.holoLam !== 'none' && (side === 'front' || C.holoLamBack);
@@ -869,7 +872,8 @@ function carbonTile(cellPx, ch) {
 }
 
 /* ---------- wear & age ---------- */
-function creaseList() { const C = P.card, R = rng(C.seed * 977 + 3), out = [], n = Math.round((C.creases || 0) * 12); for (let i = 0; i < n; i++) out.push({ x: R() * C.w, y: R() * C.h, a: R() * Math.PI, L: 8 + R() * 40, b: (R() - .5) * .3, s: .4 + R() * .6 }); return out; }
+function wearScale() { const C = P.card; return C.mode === 'poster' ? Math.max(1, Math.min(C.w, C.h) / 70) : 1; }   // wear features grow with big posters
+function creaseList() { const C = P.card, R = rng(C.seed * 977 + 3), out = [], n = Math.round((C.creases || 0) * 12), q = wearScale(); for (let i = 0; i < n; i++) out.push({ x: R() * C.w, y: R() * C.h, a: R() * Math.PI, L: (8 + R() * 40) * q, b: (R() - .5) * .3, s: .4 + R() * .6 }); return out; }
 function strokeCrease(c, cr, k, mir) {
   const C = P.card, a = mir ? Math.PI - cr.a : cr.a, x = mir ? C.w - cr.x : cr.x, dx = Math.cos(a) * cr.L / 2, dy = Math.sin(a) * cr.L / 2;
   c.beginPath(); c.moveTo((x - dx) * k, (cr.y - dy) * k); c.quadraticCurveTo((x + cr.b * cr.L * Math.sin(a)) * k, (cr.y - cr.b * cr.L * Math.cos(a)) * k, (x + dx) * k, (cr.y + dy) * k); c.stroke();
@@ -877,32 +881,32 @@ function strokeCrease(c, cr, k, mir) {
 function foldLines(c, k, styles) { const C = P.card, segs = []; if (C.foldV > 0) segs.push([C.w / 2, 0, C.w / 2, C.h, C.foldV]); if (C.foldH > 0) segs.push([0, C.h / 2, C.w, C.h / 2, C.foldH]); for (const [x0, y0, x1, y1, s] of segs) for (const st of styles) { c.save(); st(c); c.globalAlpha *= s; c.beginPath(); c.moveTo(x0 * k, y0 * k); c.lineTo(x1 * k, y1 * k); c.stroke(); c.restore(); } }
 function age(c, ch, k, side) {
   const C = P.card; if (!(C.age > 0 || C.creases > 0 || C.foldV > 0 || C.foldH > 0 || C.stains > 0 || C.wear > 0 || C.fade > 0 || C.crumple > 0)) return;
-  const W = C.w * k, Hh = C.h * k, mir = side === 'back', R = rng(C.seed * 31 + (mir ? 7 : 1)), cl = creaseList();
+  const W = C.w * k, Hh = C.h * k, mir = side === 'back', R = rng(C.seed * 31 + (mir ? 7 : 1)), cl = creaseList(), kq = k * wearScale();
   c.save();
   if (ch === 'A') {
     if (C.fade > 0) { c.globalCompositeOperation = 'screen'; c.fillStyle = hexA(baseColor(), C.fade * .5); c.fillRect(0, 0, W, Hh); }
-    if (C.age > 0) { c.globalCompositeOperation = 'multiply'; c.fillStyle = `rgba(232,208,150,${.5 * C.age})`; c.fillRect(0, 0, W, Hh); c.globalAlpha = .45 * C.age; c.fillStyle = pat(c, 'mottle', 30 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
+    if (C.age > 0) { c.globalCompositeOperation = 'multiply'; c.fillStyle = `rgba(232,208,150,${.5 * C.age})`; c.fillRect(0, 0, W, Hh); c.globalAlpha = .45 * C.age; c.fillStyle = pat(c, 'mottle', 30 * kq); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
     if (C.stains > 0) {
       c.globalCompositeOperation = 'multiply'; const n = 1 + Math.round(C.stains * 4), s = C.stains;
       for (let i = 0; i < n; i++) {
-        const x = R() * W, y = R() * Hh, rad = (5 + R() * 13) * k; let g;
+        const x = R() * W, y = R() * Hh, rad = (5 + R() * 13) * kq; let g;
         if (R() < .55) { g = c.createRadialGradient(x, y, rad * .55, x, y, rad); g.addColorStop(0, 'rgba(170,120,60,0)'); g.addColorStop(.8, `rgba(160,110,55,${.12 * s})`); g.addColorStop(.95, `rgba(120,75,35,${.42 * s})`); g.addColorStop(1, 'rgba(120,75,35,0)'); }
         else { g = c.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, `rgba(150,105,60,${.28 * s})`); g.addColorStop(.7, `rgba(160,115,65,${.14 * s})`); g.addColorStop(1, 'rgba(160,115,65,0)'); }
         c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill();
       }
     }
     if (C.wear > 0) {
-      c.globalCompositeOperation = 'multiply'; c.lineWidth = 4 * k * C.wear; if (BLUR_OK) c.filter = `blur(${(2.5 * k).toFixed(1)}px)`; c.strokeStyle = `rgba(110,85,55,${.55 * C.wear})`; cardPath(c, k); c.stroke(); c.filter = 'none';
+      c.globalCompositeOperation = 'multiply'; c.lineWidth = 4 * kq * C.wear; if (BLUR_OK) c.filter = `blur(${(2.5 * kq).toFixed(1)}px)`; c.strokeStyle = `rgba(110,85,55,${.55 * C.wear})`; cardPath(c, k); c.stroke(); c.filter = 'none';
       c.globalCompositeOperation = 'source-over'; c.fillStyle = hexA(baseColor(), .92); const n = Math.round(260 * C.wear);
-      for (let i = 0; i < n; i++) { const e = R() * 4 | 0, t = R(), d = Math.pow(R(), 3) * 2.2; let x, y; if (e === 0) { x = t * C.w; y = d; } else if (e === 1) { x = t * C.w; y = C.h - d; } else if (e === 2) { x = d; y = t * C.h; } else { x = C.w - d; y = t * C.h; } c.globalAlpha = .15 + R() * .5; c.beginPath(); c.arc(x * k, y * k, (.04 + R() * .2) * k, 0, Math.PI * 2); c.fill(); }
+      for (let i = 0; i < n; i++) { const e = R() * 4 | 0, t = R(), d = Math.pow(R(), 3) * 2.2 * kq / k; let x, y; if (e === 0) { x = t * C.w; y = d; } else if (e === 1) { x = t * C.w; y = C.h - d; } else if (e === 2) { x = d; y = t * C.h; } else { x = C.w - d; y = t * C.h; } c.globalAlpha = .15 + R() * .5; c.beginPath(); c.arc(x * k, y * k, (.04 + R() * .2) * kq, 0, Math.PI * 2); c.fill(); }
       c.globalAlpha = 1;
     }
-    c.globalCompositeOperation = 'multiply'; c.lineWidth = .18 * k; for (const cr of cl) { c.strokeStyle = `rgba(90,75,60,${.24 * cr.s})`; strokeCrease(c, cr, k, mir); }
-    c.globalCompositeOperation = 'screen'; c.lineWidth = .12 * k; for (const cr of cl) { c.strokeStyle = `rgba(255,255,255,${.28 * cr.s})`; c.save(); c.translate(.15 * k, .15 * k); strokeCrease(c, cr, k, mir); c.restore(); }
-    foldLines(c, k, [x => { x.globalCompositeOperation = 'multiply'; if (BLUR_OK) x.filter = `blur(${(1.2 * k).toFixed(1)}px)`; x.strokeStyle = 'rgba(120,100,80,.38)'; x.lineWidth = 1.6 * k; }, x => { x.globalCompositeOperation = 'multiply'; x.filter = 'none'; x.strokeStyle = 'rgba(80,65,50,.55)'; x.lineWidth = .14 * k; }]);
+    c.globalCompositeOperation = 'multiply'; c.lineWidth = .18 * kq; for (const cr of cl) { c.strokeStyle = `rgba(90,75,60,${.24 * cr.s})`; strokeCrease(c, cr, k, mir); }
+    c.globalCompositeOperation = 'screen'; c.lineWidth = .12 * kq; for (const cr of cl) { c.strokeStyle = `rgba(255,255,255,${.28 * cr.s})`; c.save(); c.translate(.15 * k, .15 * k); strokeCrease(c, cr, k, mir); c.restore(); }
+    foldLines(c, k, [x => { x.globalCompositeOperation = 'multiply'; if (BLUR_OK) x.filter = `blur(${(1.2 * kq).toFixed(1)}px)`; x.strokeStyle = 'rgba(120,100,80,.38)'; x.lineWidth = 1.6 * kq; }, x => { x.globalCompositeOperation = 'multiply'; x.filter = 'none'; x.strokeStyle = 'rgba(80,65,50,.55)'; x.lineWidth = .14 * kq; }]);
   } else if (ch === 'H') {
-    const cm = Math.max(C.crumple, C.age * .5); if (cm > 0) { c.globalAlpha = .5 * cm; c.fillStyle = pat(c, 'mottle', 12 * k); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
-    if (BLUR_OK) c.filter = `blur(${(.5 * k).toFixed(1)}px)`; for (const cr of cl) { c.lineWidth = .35 * k; c.strokeStyle = `rgba(0,0,0,${.55 * cr.s})`; strokeCrease(c, cr, k, mir); } c.filter = 'none';
+    const cm = Math.max(C.crumple, C.age * .5); if (cm > 0) { c.globalAlpha = .5 * cm; c.fillStyle = pat(c, 'mottle', 12 * kq); c.fillRect(0, 0, W, Hh); c.globalAlpha = 1; }
+    if (BLUR_OK) c.filter = `blur(${(.5 * kq).toFixed(1)}px)`; for (const cr of cl) { c.lineWidth = .35 * kq; c.strokeStyle = `rgba(0,0,0,${.55 * cr.s})`; strokeCrease(c, cr, k, mir); } c.filter = 'none';
     foldLines(c, k, [x => { if (BLUR_OK) x.filter = `blur(${(.8 * k).toFixed(1)}px)`; x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 1.4 * k; }, x => { x.filter = 'none'; x.strokeStyle = 'rgba(0,0,0,.85)'; x.lineWidth = .35 * k; }]);
   }
   c.restore();

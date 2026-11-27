@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ID Forge</title>
+<title>Fiction Forge · ID cards, faction emblems and posters</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300..900&family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&family=Courier+Prime:wght@400;700&family=Special+Elite&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,600&family=Playfair+Display:wght@400..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Oswald:wght@300..700&family=Archivo+Black&family=UnifrakturMaguntia&family=Homemade+Apple&family=Caveat:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300..900&family=Space+Grotesk:wght@300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&family=Courier+Prime:wght@400;700&family=Special+Elite&family=Cinzel:wght@400..900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,600&family=Playfair+Display:wght@400..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Oswald:wght@300..700&family=Archivo+Black&family=UnifrakturMaguntia&family=Homemade+Apple&family=Caveat:wght@400..700&family=Anton&family=Black+Ops+One&family=Alfa+Slab+One&family=Rye&family=Stardos+Stencil:wght@400;700&family=Saira+Stencil+One&family=Big+Shoulders+Display:wght@400..900&family=Staatliches&family=Abril+Fatface&family=Russo+One&family=Teko:wght@300..700&display=swap" rel="stylesheet">
 <style>
 /* VOICE: exacting and a little decadent: a security-printing proof bench after hours
    IDEA: an engraver's light table; the card sits under a lamp, inks and burins ranged left and right
@@ -180,19 +180,43 @@ table.keys{width:100%;border-collapse:collapse}table.keys td{padding:6px 4px;bor
  .brand span{display:none}
  .status{min-width:0;max-width:150px}
 }
+/* main menu */
+.menu{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 20%,rgba(40,42,50,.94),rgba(6,7,9,.97));overflow:auto}
+.menu[hidden]{display:none}
+.menuin{width:min(1080px,100%);display:grid;gap:22px}
+.mhead{display:grid;justify-items:center;text-align:center;gap:6px;color:#ebe8e1}
+.mhead .mark{width:44px;height:28px;border-radius:5px}
+.mhead h1{margin:4px 0 0;font:400 54px/1 "Instrument Serif",Georgia,serif;letter-spacing:.01em}
+.mhead h1 i{color:#ff7d62}
+.mhead p{margin:0;color:#a29e96;font-size:14px;max-width:56ch}
+.mtiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.mtile{display:grid;grid-template-rows:auto auto 1fr auto;gap:6px;text-align:left;padding:12px 12px 14px;border:1px solid #2c2e35;border-radius:14px;background:linear-gradient(180deg,#1a1c21,#121317);color:#ebe8e1;transition:transform .15s,border-color .15s,box-shadow .15s}
+.mtile:hover,.mtile:focus-visible{transform:translateY(-3px);border-color:#ff7d62;box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.mtile.cur{border-color:#5a5d68}
+.mth{display:grid;place-items:center;height:220px;border-radius:9px;background:radial-gradient(ellipse at 50% 30%,#3a3d47,#15161a 75%);overflow:hidden}
+.mth canvas{max-width:88%;max-height:194px;width:auto;height:auto;border-radius:4px;box-shadow:0 10px 26px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4)}
+.mtile b{font:600 19px/1.2 "Inter Tight",system-ui,sans-serif;margin-top:6px}
+.mtile small{color:#a29e96;font-size:13px;line-height:1.45}
+.mst{font-size:12px;color:#ff9a82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#7d7a73;font-size:12px}
+.menu.first #menuClose[hidden]{display:none}
+@media(max-width:820px){.mtiles{grid-template-columns:1fr}.mth{height:160px}.mth canvas{max-height:140px}.mhead h1{font-size:40px}}
+@media(max-width:1680px){.brand span{display:none}}
+@media(prefers-reduced-motion:reduce){.mtile{transition:none}}
 @media(prefers-reduced-motion:reduce){.toast,.loading{transition:none}}
 </style>
 </head>
 <body>
 <header class="top">
- <div class="brand"><span class="mark"></span><b>ID <i>Forge</i></b><span>a studio for fictional identity cards</span></div>
+ <button class="btn" id="menuBtn" title="Main menu: ID cards, factions, posters" aria-label="Main menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Menu</button>
+ <div class="brand"><span class="mark"></span><b>Fiction <i>Forge</i></b><span>a studio for fictional identity cards</span></div>
  <button class="btn" id="newBtn" title="Start from a template">New</button>
  <button class="btn" id="libBtn" title="Your saved cards (Ctrl+O)">Library</button>
  <button class="btn" id="saveBtn" title="Save (Ctrl+S)">Save</button>
  <button class="status" id="status" title=""><b id="docName">Untitled card</b><small id="docState">Connecting storage…</small></button>
  <button class="btn" id="undo" title="Undo (Ctrl+Z)">Undo</button>
  <button class="btn" id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
- <div class="seg" id="modeSeg" role="group" aria-label="Designer"><button data-m="card" class="on">ID cards</button><button data-m="logo">Faction logos</button></div>
+ <div class="seg" id="modeSeg" role="group" aria-label="Designer"><button data-m="card" class="on">ID cards</button><button data-m="logo">Factions</button><button data-m="poster">Posters</button></div>
  <div class="seg" id="viewSeg" role="group" aria-label="View"><button data-v="3d" class="on">3D</button><button data-v="split">Split</button><button data-v="flat">Flat</button></div>
  <button class="btn" id="uvBtn" title="Blacklight (U)">UV light</button>
  <button class="btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
@@ -232,6 +256,17 @@ table.keys{width:100%;border-collapse:collapse}table.keys td{padding:6px 4px;bor
   <div class="pane" id="pane-scene" hidden></div>
  </aside>
 </main>
+<div class="menu" id="mainMenu" hidden role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+ <div class="menuin">
+  <div class="mhead"><span class="mark"></span><h1 id="menuTitle">Fiction <i>Forge</i></h1><p>Props for your stories, campaigns and roleplay. Pick a workshop; each one keeps its own work.</p></div>
+  <div class="mtiles">
+   <button class="mtile" data-m="card"><span class="mth"></span><b>ID cards</b><small>Badges, licences, passes and papers with security printing, lit in 3D.</small><span class="mst"></span></button>
+   <button class="mtile" data-m="logo"><span class="mth"></span><b>Faction emblems</b><small>Crests, seals, flags, patches and neon badges for the sides in your world.</small><span class="mst"></span></button>
+   <button class="mtile" data-m="poster"><span class="mth"></span><b>Posters &amp; signs</b><small>Workplace safety signs, propaganda, notices and wanted posters.</small><span class="mst"></span></button>
+  </div>
+  <div class="mfoot"><span>Everything here is fictional: no real agencies, brands or documents.</span><button class="btn" id="menuClose">Back to my work</button></div>
+ </div>
+</div>
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div class="toast" id="toast" role="status"></div>
 <input type="file" id="fileImg" accept="image/*" hidden>

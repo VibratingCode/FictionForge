@@ -15,6 +15,7 @@ const TEXN = (() => {
   const hsl = (h, s, l) => { h = ((h % 1) + 1) % 1; const f = n => { const k = (n + h * 12) % 12; return 255 * (l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }; return [f(0), f(8), f(4)]; };
   const TAU = Math.PI * 2;
   return {
+    fbm: fbmF, tile, hsl,   // shared helpers for other texture families
     /* soft large-scale variation */
     clouds: () => { const f = fbmF(11, 4, 6, .55); return tile('clouds', 512, (u, v) => f(u, v)); },
     /* fine isotropic grain */

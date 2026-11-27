@@ -1,0 +1,88 @@
+/* ================= poster icons: hazards, safety gear and propaganda motifs (all original, generic pictograms) ================= */
+ICON_CATS.push('Hazards', 'Safety gear', 'Propaganda');
+(() => {
+  const I = (cat, id, label, f) => { ICONS[id] = { cat, label, f }; };
+  const TAU = Math.PI * 2, P2 = (cx, cy, r, a) => `${(cx + Math.cos(a) * r).toFixed(2)} ${(cy + Math.sin(a) * r).toFixed(2)}`;
+  const sector = (cx, cy, r0, r1, a0, a1) => `M ${P2(cx, cy, r1, a0)} A ${r1} ${r1} 0 0 1 ${P2(cx, cy, r1, a1)} L ${P2(cx, cy, r0, a1)} A ${r0} ${r0} 0 0 0 ${P2(cx, cy, r0, a0)} Z`;
+  const wobble = (cx, cy, r, amp, f, ph) => { let d = ''; for (let i = 0; i <= 96; i++) { const a = i / 96 * TAU, q = r * (1 + amp * Math.sin(a * f + ph)); d += (i ? ' L ' : 'M ') + P2(cx, cy, q, a); } return d + ' Z'; };
+  const shoulders = 'M 34 72 L 66 72 L 69 82 C 84 85 93 91 95 100 L 5 100 C 7 91 16 85 31 82 Z';
+
+  /* ---------- hazards ---------- */
+  I('Hazards', 'hz_excl', 'General warning', g => { g.path('M 50 8 C 57 8 61.5 12 61 19 L 56.5 63 C 56 68 44 68 43.5 63 L 39 19 C 38.5 12 43 8 50 8 Z'); g.circ(50, 82, 8.5); });
+  I('Hazards', 'hz_flame', 'Flammable', g => { g.path('M 50 5 C 64 23 75 34 72 54 C 70 70 61 79 50 80 C 37 79 27 69 29 54 C 30 43 38 38 41 25 C 45 32 47 36 52 38 C 51 28 52 16 50 5 Z'); g.cut(() => g.path('M 50 45 C 56 53 60 58 58 66 C 57 73 53 75.5 50 75.5 C 45 75 41 71 42 65 C 43 60 47 57 47 50 Z')); g.rect(20, 85, 60, 8, 2); });
+  I('Hazards', 'hz_explode', 'Explosive', g => { g.star(50, 50, 11, 27, 14, -1.2); for (let i = 0; i < 9; i++) { const a = i / 9 * TAU + .3, r = 38 + (i % 3) * 4, cx = 50 + Math.cos(a) * r, cy = 50 + Math.sin(a) * r * .92; g.rot(cx, cy, a * 1.7, () => g.poly([[cx - 4, cy - 3], [cx + 4, cy - 2], [cx + 2, cy + 4], [cx - 3, cy + 3]])); } });
+  I('Hazards', 'hz_toxic', 'Toxic', g => ICONS.skullbones.f(g));
+  I('Hazards', 'hz_corrode', 'Corrosive', g => {
+    g.rot(32, 22, .55, () => g.rect(25, 4, 13, 30, 3)); g.rot(68, 22, -.55, () => g.rect(62, 4, 13, 30, 3));
+    for (const [x, y] of [[37, 40], [39, 51], [63, 40], [61, 51]]) g.path(`M ${x} ${y - 6} C ${x + 3} ${y - 1} ${x + 3.5} ${y + 2} ${x} ${y + 4} C ${x - 3.5} ${y + 2} ${x - 3} ${y - 1} ${x} ${y - 6} Z`);
+    g.rect(10, 64, 36, 12, 2); g.cut(() => g.ell(32, 64, 7, 5));
+    g.rect(56, 66, 34, 10, 5); g.rect(54, 60, 9, 9, 4.5); g.cut(() => g.ell(68, 66, 5, 4));
+    g.rect(8, 84, 84, 6, 2);
+  });
+  I('Hazards', 'hz_volt', 'High voltage', g => { g.poly([[58, 3], [27, 52], [47, 52], [35, 80], [26, 77], [41, 98], [59, 72], [49, 75], [70, 40], [50, 40], [67, 3]]); });
+  I('Hazards', 'hz_rad', 'Radiation', g => { g.circ(50, 50, 9); for (const a of [-150, -30, 90]) { const c = a * Math.PI / 180; g.path(sector(50, 50, 14.5, 45, c - Math.PI / 6, c + Math.PI / 6)); } });
+  I('Hazards', 'hz_bio', 'Biohazard', g => {   // ring behind three crescents, after the classic construction
+    const D = [-90, 30, 150].map(a => a * Math.PI / 180), cx = 50, cy = 54, u = 1.55, at = (a, d) => [cx + Math.cos(a) * d * u, cy + Math.sin(a) * d * u];
+    for (const a of D) g.circ(...at(a, 11), 15 * u);
+    g.cut(() => { for (const a of D) g.circ(...at(a, 18.5), 11 * u); g.circ(cx, cy, 3 * u); for (const a of D) g.line([[cx, cy], at(a + Math.PI, 9)], 1.1 * u); });
+    g.circS(cx, cy, 13.25 * u, 3.5 * u); g.cut(() => { for (const a of D) g.circS(...at(a, 18.5), 10.2 * u, 1.6 * u); g.circ(cx, cy, 3 * u); });
+  });
+  I('Hazards', 'hz_laser', 'Laser beam', g => { g.circ(42, 50, 9); for (let i = 0; i < 12; i++) { const a = i / 12 * TAU, L = i % 2 ? 22 : 32; if (Math.abs(a) < .01) continue; g.poly([[42 + Math.cos(a - .1) * 11, 50 + Math.sin(a - .1) * 11], [42 + Math.cos(a) * L, 50 + Math.sin(a) * L], [42 + Math.cos(a + .1) * 11, 50 + Math.sin(a + .1) * 11]]); } g.rect(42, 47.5, 54, 5, 2.5); });
+  I('Hazards', 'hz_magnet', 'Magnetic field', g => { g.spath('M 28 66 L 28 42 A 22 22 0 0 1 72 42 L 72 66', 15); g.cut(() => { g.rect(18, 58, 20, 3); g.rect(62, 58, 20, 3); }); for (const r of [10, 17]) g.arcS(50, 80, r, .1 * Math.PI, .9 * Math.PI, 3); g.line([[28, 80], [28, 96]], 3.5); g.line([[72, 80], [72, 96]], 3.5); });
+  I('Hazards', 'hz_oxid', 'Oxidiser', g => { g.path('M 50 4 C 60 17 68 25 66 40 C 64 51 58 57 50 58 C 41 57 34 50 36 40 C 37 32 42 28 44 19 C 47 24 48 27 52 28 C 51 21 52 12 50 4 Z'); g.circS(50, 68, 16, 7); g.rect(20, 88, 60, 7, 2); });
+  I('Hazards', 'hz_gas', 'Compressed gas', g => g.rot(50, 52, -.45, () => { g.rect(36, 26, 28, 64, 13); g.rect(44, 14, 12, 14, 3); g.rect(39, 9, 22, 6, 2); g.cut(() => g.line([[36, 44], [64, 44]], 2.5)); }));
+  I('Hazards', 'hz_hot', 'Hot surface', g => { for (const x of [32, 50, 68]) g.spath(`M ${x} 72 C ${x - 9} 62 ${x + 9} 52 ${x} 42 C ${x - 9} 32 ${x + 9} 22 ${x} 10`, 6); g.rect(14, 80, 72, 11, 2); });
+  I('Hazards', 'hz_cold', 'Extreme cold', g => ICONS.snowflake.f(g));
+  I('Hazards', 'hz_slip', 'Slippery floor', g => { g.circ(63, 18, 8.5); g.line([[58, 30], [45, 55]], 11); g.line([[56, 34], [71, 43], [82, 38]], 7); g.line([[54, 36], [38, 29], [29, 33]], 7); g.line([[45, 55], [61, 66], [78, 59]], 8); g.line([[45, 55], [33, 73], [20, 75]], 8); g.ell(46, 84, 22, 3); g.rect(8, 90, 84, 5, 2); });
+  I('Hazards', 'hz_fall', 'Fall from height', g => { g.rect(6, 36, 40, 7, 1); g.rect(38, 43, 8, 54); g.circ(72, 50, 8); g.line([[67, 60], [60, 78]], 10); g.line([[66, 63], [80, 70]], 7); g.line([[65, 62], [56, 50]], 7); g.line([[60, 78], [70, 94]], 8); g.line([[60, 78], [50, 92]], 8); g.line([[56, 26], [63, 37]], 3); g.line([[67, 22], [73, 33]], 3); });
+  I('Hazards', 'hz_crush', 'Crush hazard', g => { g.rect(22, 8, 52, 22, 3); g.poly([[48, 62], [35, 47], [43, 47], [43, 34], [53, 34], [53, 47], [61, 47]]); g.rect(14, 72, 54, 14, 7); g.rect(38, 64, 16, 10, 5); g.rect(62, 74, 30, 12, 3); });
+  I('Hazards', 'hz_overhead', 'Overhead load', g => { g.line([[50, 2], [50, 20]], 4); g.circS(50, 26, 6, 4); g.line([[48, 31], [26, 50]], 3); g.line([[52, 31], [74, 50]], 3); g.rect(20, 50, 60, 32, 3); g.rect(10, 90, 80, 5, 2); });
+  I('Hazards', 'hz_forklift', 'Forklift traffic', g => { g.rect(10, 54, 12, 22, 4); g.rect(16, 50, 46, 26, 4); g.line([[24, 50], [30, 22], [56, 22], [59, 50]], 5); g.rect(64, 14, 7, 66, 2); g.rect(71, 44, 5, 36); g.rect(71, 74, 23, 6, 2); for (const x of [28, 56]) { g.circ(x, 80, 10); g.cut(() => g.circ(x, 80, 4)); } });
+  I('Hazards', 'hz_anomaly', 'Anomaly', g => { g.spath(wobble(50, 50, 40, .07, 5, .4), 4); g.spath(wobble(50, 50, 27, .1, 4, 1.7), 4.5); g.spath(wobble(50, 50, 15, .12, 3, 2.9), 5); g.circ(50, 50, 6); });
+  I('Hazards', 'hz_claw', 'Hostile creature', g => { for (let i = 0; i < 3; i++) { const x = 18 + i * 23; g.path(`M ${x + 12} 5 Q ${x + 3} 50 ${x - 6} 95 Q ${x + 22} 52 ${x + 12} 5 Z`); } });
+  I('Hazards', 'hz_eye', 'Do not look', g => { g.path('M 4 50 C 22 22 78 22 96 50 C 78 78 22 78 4 50 Z'); g.cut(() => g.circ(50, 50, 18)); g.circ(50, 50, 10); for (let i = -2; i <= 2; i++) g.line([[50 + i * 17, 20 - Math.abs(i) * 3], [50 + i * 21, 8 - Math.abs(i) * 4]], 3.2); });
+  I('Hazards', 'hz_virus', 'Infection', g => { g.circ(50, 50, 24); for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; g.line([[50 + Math.cos(a) * 22, 50 + Math.sin(a) * 22], [50 + Math.cos(a) * 36, 50 + Math.sin(a) * 36]], 4); g.circ(50 + Math.cos(a) * 38, 50 + Math.sin(a) * 38, 5.5); } g.cut(() => { g.circ(42, 44, 4.5); g.circ(58, 52, 5.5); g.circ(46, 60, 3.5); }); });
+
+  /* ---------- safety gear and signs ---------- */
+  I('Safety gear', 'sg_goggles', 'Eye protection', g => { g.ell(50, 44, 28, 32); g.path(shoulders); g.cut(() => g.rect(20, 29, 60, 22, 10)); g.rect(24, 32, 23, 16, 7); g.rect(53, 32, 23, 16, 7); g.rect(45, 37, 10, 5, 2.5); });
+  I('Safety gear', 'sg_ear', 'Ear protection', g => { g.ell(50, 48, 24, 30); g.path(shoulders); g.arcS(50, 46, 35, Math.PI * 1.06, Math.PI * 1.94, 7); g.cut(() => { g.rect(9, 30, 21, 36, 9); g.rect(70, 30, 21, 36, 9); }); g.rect(12, 33, 15, 30, 7); g.rect(73, 33, 15, 30, 7); });
+  I('Safety gear', 'sg_hardhat', 'Head protection', g => { g.path('M 18 66 C 18 36 33 22 50 22 C 67 22 82 36 82 66 Z'); g.rect(6, 64, 88, 11, 5.5); g.cut(() => { g.line([[50, 25], [50, 62]], 3.5); g.line([[37, 30], [33, 62]], 2.5); g.line([[63, 30], [67, 62]], 2.5); }); });
+  I('Safety gear', 'sg_glove', 'Hand protection', g => { [[30, 18, 30], [41, 9, 39], [52, 11, 37], [63, 17, 31]].forEach(([x, y, h]) => g.rect(x, y, 10, h, 5)); g.rect(28, 38, 46, 38, 12); g.rot(30, 60, -.7, () => g.rect(14, 48, 12, 26, 6)); g.cut(() => g.line([[24, 75], [78, 75]], 3)); g.rect(26, 77, 50, 18, 3); g.cut(() => { g.line([[28, 83], [74, 83]], 2); g.line([[28, 89], [74, 89]], 2); }); });
+  I('Safety gear', 'sg_mask', 'Respirator', g => { g.path('M 50 10 C 72 10 84 26 84 46 C 84 66 70 80 50 85 C 30 80 16 66 16 46 C 16 26 28 10 50 10 Z'); g.cut(() => { g.ell(35, 40, 10, 9); g.ell(65, 40, 10, 9); g.circ(50, 72, 16); }); g.circ(50, 72, 12.5); g.cut(() => { for (const dx of [-5, 0, 5]) g.line([[50 + dx, 64], [50 + dx, 80]], 2.2); }); g.line([[16, 42], [5, 35]], 4); g.line([[84, 42], [95, 35]], 4); });
+  I('Safety gear', 'sg_boot', 'Foot protection', g => { g.path('M 27 8 L 55 8 L 56 48 C 71 50 87 57 90 69 L 91 81 L 19 81 L 21 57 C 25 51 27 45 27 35 Z'); g.rect(15, 81, 80, 10, 2); g.cut(() => { for (const y of [18, 27, 36]) g.line([[33, y], [49, y]], 2.4); g.line([[17, 81], [93, 81]], 2.2); }); });
+  I('Safety gear', 'sg_walk', 'Pedestrian', g => { g.circ(54, 13, 9); g.line([[52, 27], [48, 56]], 11); g.line([[51, 31], [64, 46], [70, 55]], 7); g.line([[50, 31], [38, 44], [34, 55]], 7); g.line([[48, 56], [60, 74], [64, 94]], 8); g.line([[48, 56], [40, 76], [28, 91]], 8); });
+  I('Safety gear', 'sg_exit', 'Emergency exit', g => { g.rect(64, 8, 30, 86, 2); g.cut(() => g.rect(69, 13, 20, 81)); g.circ(38, 15, 8); g.line([[36, 27], [30, 51]], 10); g.line([[35, 31], [50, 38], [57, 30]], 7); g.line([[34, 32], [22, 40], [14, 36]], 7); g.line([[30, 51], [44, 63], [50, 82]], 8); g.line([[30, 51], [20, 69], [7, 71]], 8); });
+  I('Safety gear', 'sg_aid', 'First aid', g => { g.rect(37, 12, 26, 76, 3); g.rect(12, 37, 76, 26, 3); });
+  I('Safety gear', 'sg_wash', 'Eyewash', g => { g.path('M 18 34 C 32 16 68 16 82 34 C 68 52 32 52 18 34 Z'); g.cut(() => g.circ(50, 34, 10)); g.circ(50, 34, 5.5); g.spath('M 28 90 C 26 72 32 58 42 50', 4); g.spath('M 72 90 C 74 72 68 58 58 50', 4); g.rect(20, 88, 16, 8, 2); g.rect(64, 88, 16, 8, 2); });
+  I('Safety gear', 'sg_extinguisher', 'Fire extinguisher', g => { g.rect(36, 30, 28, 62, 9); g.rect(43, 19, 14, 13, 2); g.line([[57, 23], [74, 21], [82, 42]], 5); g.line([[44, 19], [30, 13]], 5); g.cut(() => g.rect(36, 52, 28, 3)); });
+  I('Safety gear', 'sg_phone', 'Mobile phone', g => { g.rect(31, 8, 38, 84, 7); g.cut(() => { g.rect(36, 17, 28, 56, 2); g.circ(50, 82, 4); }); });
+  I('Safety gear', 'sg_camera', 'Camera', g => { g.rect(10, 30, 80, 52, 8); g.rect(30, 21, 24, 12, 3); g.cut(() => g.circ(50, 56, 18)); g.circ(50, 56, 11.5); g.cut(() => g.rect(70, 36, 12, 6, 2)); });
+  I('Safety gear', 'sg_smoke', 'Cigarette', g => { g.rect(8, 58, 66, 13, 2); g.cut(() => g.rect(54, 58, 2.5, 13)); g.spath('M 84 54 C 76 46 92 40 84 30 C 78 22 88 16 84 8', 5); });
+  I('Safety gear', 'sg_lock', 'Lockout', g => { g.spath('M 32 46 L 32 32 C 32 8 68 8 68 32 L 68 46', 9); g.rect(22, 44, 56, 47, 8); g.cut(() => { g.circ(50, 62, 6.5); g.poly([[46, 64], [54, 64], [57, 79], [43, 79]]); }); });
+  I('Safety gear', 'sg_badge', 'Badge required', g => { g.rect(12, 26, 76, 54, 6); g.rect(42, 14, 16, 14, 3); g.cut(() => { g.rect(46, 18, 8, 3.5, 1.7); g.rect(19, 35, 24, 30, 2); g.rect(50, 37, 30, 5, 2.5); g.rect(50, 47, 24, 4, 2); g.rect(50, 56, 28, 4, 2); }); g.circ(31, 45, 5.5); g.rect(23, 53, 16, 12, 5); });
+  I('Safety gear', 'sg_noentry', 'Stop hand', g => ICONS.hand.f(g));
+
+  /* ---------- propaganda ---------- */
+  I('Propaganda', 'pp_fist', 'Raised fist', g => { g.rect(36, 66, 30, 34, 4); g.rect(26, 32, 50, 38, 11); for (const x of [26, 38.5, 51, 63.5]) g.rect(x, 16, 11.5, 30, 5.75); g.cut(() => { g.line([[27, 44], [75, 44]], 2.4); g.rect(22, 47, 44, 17, 8.5); }); g.rect(24.5, 49.5, 39, 12, 6); });
+  I('Propaganda', 'pp_megaphone', 'Megaphone', g => { g.poly([[24, 40], [66, 16], [66, 84], [24, 60]]); g.rect(10, 41, 16, 18, 3); g.line([[30, 60], [34, 76]], 5); for (const r of [12, 22]) g.arcS(68, 50, r, -.6, .6, 4); });
+  I('Propaganda', 'pp_point', 'Pointing hand', g => { g.rect(4, 40, 17, 32, 3); g.rect(19, 38, 36, 36, 10); g.rect(38, 39, 54, 12, 6); g.rect(30, 27, 26, 11, 5.5); g.cut(() => { g.line([[27, 58], [52, 58]], 2.4); g.line([[27, 66], [50, 66]], 2.4); }); });
+  I('Propaganda', 'pp_dove', 'Dove of peace', g => { g.ell(54, 56, 24, 12, -.15); g.circ(30, 47, 8.5); g.poly([[22, 46], [11, 50], [22, 51]]); g.path('M 46 52 C 50 32 64 14 88 8 C 82 26 76 42 62 54 Z'); g.poly([[72, 58], [95, 52], [91, 64], [74, 66]]); g.line([[13, 51], [6, 64]], 2.2); g.ell(6, 58, 2.6, 5.5, .5); g.ell(12, 62, 2.6, 5.5, -.6); });
+  I('Propaganda', 'pp_wreath', 'Laurel wreath', g => { g.mirror(() => { g.arcS(50, 50, 37, Math.PI * .58, Math.PI * 1.3, 2.5); for (let i = 0; i < 7; i++) { const a = Math.PI * (.63 + i * .1), cx = 50 + Math.cos(a) * 37, cy = 50 + Math.sin(a) * 37; g.ell(cx + Math.cos(a) * 4, cy + Math.sin(a) * 4, 3.6, 8.5, a + .35); } }); g.circ(50, 88, 3.5); });
+  I('Propaganda', 'pp_city', 'City skyline', g => { [[6, 52, 12], [18, 34, 13], [31, 46, 10], [41, 18, 14], [55, 40, 11], [66, 28, 13], [79, 50, 15]].forEach(([x, y, w]) => g.rect(x, y, w, 92 - y)); g.rect(46, 8, 4, 12); g.cut(() => { for (const [x, y, w] of [[18, 34, 13], [41, 18, 14], [66, 28, 13]]) for (let yy = y + 6; yy < 84; yy += 8) for (let xx = x + 3; xx < x + w - 3; xx += 5) g.rect(xx, yy, 2.4, 3.4); }); g.rect(2, 90, 96, 6); });
+  I('Propaganda', 'pp_tower', 'Radio tower', g => { g.line([[50, 18], [30, 94]], 5); g.line([[50, 18], [70, 94]], 5); for (const y of [44, 62, 80]) { const d = (y - 18) * .263; g.line([[50 - d, y], [50 + d, y]], 3); } g.line([[43, 44], [65, 80]], 2.5); g.line([[57, 44], [35, 80]], 2.5); g.circ(50, 14, 5); for (const r of [13, 22]) { g.arcS(50, 14, r, -Math.PI * .95, -Math.PI * .6, 3.5); g.arcS(50, 14, r, -Math.PI * .4, -Math.PI * .05, 3.5); } });
+  I('Propaganda', 'pp_plane', 'Aircraft', g => { g.rect(45, 6, 10, 84, 5); g.poly([[50, 32], [95, 56], [95, 63], [50, 52], [5, 63], [5, 56]]); g.poly([[50, 78], [68, 90], [68, 95], [50, 89], [32, 95], [32, 90]]); });
+  I('Propaganda', 'pp_rifle', 'Rifle', g => { g.poly([[3, 58], [28, 47], [34, 47], [34, 60], [9, 71]]); g.rect(30, 45, 34, 11, 2); g.rect(60, 47.5, 37, 4.5, 1.5); g.rect(45, 54, 9, 15, 1.5); g.arcS(39, 57, 5, 0, Math.PI, 2); g.rect(52, 40, 4, 6); });
+  I('Propaganda', 'pp_helmet', 'Helmet', g => { g.path('M 13 64 C 13 33 31 17 52 17 C 74 17 89 33 91 60 L 91 64 Z'); g.rect(5, 62, 92, 9, 4.5); g.spath('M 26 71 C 34 88 64 88 72 71', 3); });
+  I('Propaganda', 'pp_globe', 'Globe', g => { g.circ(50, 50, 41); g.cut(() => { g.ringE(50, 50, 17, 41, 3); g.line([[50, 9], [50, 91]], 3); g.line([[9, 50], [91, 50]], 3); g.line([[15, 30], [85, 30]], 3); g.line([[15, 70], [85, 70]], 3); }); });
+  I('Propaganda', 'pp_chain', 'Broken chain', g => { for (const x of [13, 31]) g.ringE(x, 50, 11, 7, 5); for (const x of [69, 87]) g.ringE(x, 50, 11, 7, 5); g.arcS(46, 50, 9, Math.PI * .45, Math.PI * 1.55, 5); g.arcS(54, 50, 9, -Math.PI * .55, Math.PI * .55, 5); for (const [a, b] of [[[50, 30], [50, 22]], [[44, 32], [40, 25]], [[56, 32], [60, 25]], [[50, 70], [50, 78]], [[44, 68], [40, 75]], [[56, 68], [60, 75]]]) g.line([a, b], 2.5); });
+  I('Propaganda', 'pp_flag', 'Banner flag', g => { g.rect(13, 8, 6, 88, 2); g.circ(16, 7, 5); g.path('M 19 12 C 40 4 56 20 76 12 C 82 10 88 10 93 12 L 93 52 C 85 48 77 50 71 52 C 52 60 38 44 19 52 Z'); });
+  I('Propaganda', 'pp_hw', 'Hammer & wrench', g => { g.rot(50, 52, .78, () => { g.rect(46, 34, 8, 58, 4); g.circ(50, 24, 14); g.cut(() => g.rect(45, 6, 10, 19, 2)); }); g.rot(50, 52, -.78, () => { g.cut(() => { g.rect(43, 26, 14, 72, 4); g.rect(31, 11, 38, 20, 4); }); g.rect(46, 28, 8, 66, 3); g.rect(34, 14, 32, 14, 3); }); });
+  I('Propaganda', 'pp_can', 'Ration tin', g => { g.rect(22, 20, 56, 68, 5); g.ell(50, 20, 28, 7); g.cut(() => { g.ringE(50, 20, 22, 4.5, 2); g.line([[22, 38], [78, 38]], 3); g.line([[22, 70], [78, 70]], 3); g.rect(34, 46, 32, 16, 2); }); });
+  I('Propaganda', 'pp_mic', 'Microphone', g => { g.rect(36, 6, 28, 46, 14); g.cut(() => { for (const y of [16, 24, 32, 40]) g.line([[39, y], [61, y]], 2); }); g.spath('M 29 28 L 29 38 C 29 58 71 58 71 38 L 71 28', 4); g.rect(47, 56, 6, 28); g.rect(28, 84, 44, 9, 4.5); });
+  I('Propaganda', 'pp_worker', 'Worker', g => { g.circ(44, 17, 9); g.poly([[31, 30], [58, 30], [55, 66], [36, 66]]); g.line([[55, 34], [68, 22], [72, 10]], 8); g.rot(72, 8, .35, () => { g.rect(62, 1, 22, 9, 2); }); g.line([[35, 34], [26, 50], [29, 63]], 8); g.line([[41, 66], [34, 95]], 9.5); g.line([[51, 66], [59, 95]], 9.5); });
+  I('Propaganda', 'pp_eye', 'Watching eye', g => { g.path('M 2 50 C 22 18 78 18 98 50 C 78 82 22 82 2 50 Z'); g.cut(() => g.circ(50, 50, 22)); g.circ(50, 50, 15); g.cut(() => g.circ(56, 44, 4.5)); });
+  I('Propaganda', 'pp_heart', 'Heart', g => g.path('M 50 88 C 22 66 6 50 8 32 C 10 16 24 8 36 10 C 44 11 48 16 50 22 C 52 16 56 11 64 10 C 76 8 90 16 92 32 C 94 50 78 66 50 88 Z'));
+  I('Propaganda', 'pp_bolts', 'Thunder strike', g => { g.poly([[40, 2], [12, 48], [32, 48], [20, 98], [58, 38], [38, 38], [56, 2]]); g.poly([[78, 18], [62, 48], [74, 48], [66, 80], [90, 42], [78, 42], [88, 18]]); });
+})();
+for (const cat of ['Hazards', 'Safety gear', 'Propaganda']) for (const [k, v] of Object.entries(ICONS)) if (v.cat === cat) ICON_OPTS.push([k, `${cat} · ${v.label}`]);
+Forge.glyphMask = glyphMask;
